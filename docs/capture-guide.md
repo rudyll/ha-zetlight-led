@@ -5,6 +5,22 @@
 
 > 协议帧格式见 [`m5-light-protocol.md`](m5-light-protocol.md)；要抓的功能清单（F5–F12）见 [`roadmap.md`](roadmap.md)。
 
+## ⚠️ 前提：让 App 走本地，否则抓不到
+
+App 靠**局域网广播发现灯**。如果手机和灯**不在同一网段**（例如手机在 VLAN 20、
+灯在 VLAN 10 IoT），广播跨不过去，App 发现不了本地设备就会**退回云端控制**
+（抓包里会看到连 `api.zetlight.com` / `admin.zetlight.online`，以及流量走代理的
+`198.18.x` fake-IP），此时**根本没有本地 `EE…CC` 帧可抓**。
+
+抓之前务必：
+
+1. **手机连到和灯同一网段的 Wi‑Fi（与灯同 VLAN）。**
+2. **临时关掉手机代理 / VPN（Surge/Mihomo 等）**，或让局域网/zetlight 域名走 DIRECT。
+3. **完全退出并重开 App**，确认灯显示在线（走本地）。
+
+验证本地通道已生效：`sudo tcpdump -n -i rvi0 'udp port 8855'`，在 App 里操作时
+应能看到手机 → 灯的 `EE…` 请求帧。
+
 ## 通用原则
 
 - **一次只点一个功能**，点完等 1–2 秒再点下一个，并记下顺序，这样每条帧能对应上一个动作。
