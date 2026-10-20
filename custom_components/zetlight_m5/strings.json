@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zetlight M5 Coral Light",
+        "description": "Enter the light's local IP address. Tip: reserve its address in your router's DHCP settings so it doesn't change.",
+        "data": {
+          "host": "IP address",
+          "port": "UDP port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No reply from the light. Check the IP address and that Home Assistant can reach the device on the UDP port.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This light is already configured."
+    }
+  }
+}

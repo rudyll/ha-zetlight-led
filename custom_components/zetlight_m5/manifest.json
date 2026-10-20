@@ -1,0 +1,12 @@
+{
+  "domain": "zetlight_m5",
+  "name": "Zetlight M5 Coral Light",
+  "codeowners": ["@rudyll"],
+  "config_flow": true,
+  "documentation": "https://github.com/rudyll/ha-zetlight-m5",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/rudyll/ha-zetlight-m5/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
