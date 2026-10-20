@@ -11,9 +11,11 @@ Adds a custom lightning effect, clock sync, and daily-schedule writing.
 - **Clock sync** (`0x03`): a `Sync clock` button plus an automatic sync on
   setup, setting the device to Home Assistant's local time.
 - **Write daily schedule** via the `zetlight_led.set_schedule` service (times
-  `0x11` + brightness `0x1C`, 5 slots × 4 channels). **This overwrites the
-  device's stored program — test carefully.** The frame format is confirmed
-  from the app's own code and unit-tested, but not yet exercised on hardware.
+  `0x11` + brightness `0x1C`, 5 slots × 4 channels) — **experimental**. The
+  write frames are confirmed accepted on hardware (the 20 brightness bytes land
+  in the device's config), but the value→displayed-% mapping is not yet verified
+  (the stored encoding looks preset/firmware-scaled). **This overwrites the
+  device's stored program — test with values you can visually confirm.**
 - **Read config** (`0x10`): a diagnostic `Read config` button logs the raw
   reply. Precise schedule parsing (F13) is still pending a safe write→read diff.
 - Command formats were decoded from static analysis of the vendor app; see

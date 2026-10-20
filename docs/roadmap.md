@@ -38,8 +38,8 @@ See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 | F10 | Acclimation mode | 适应模式 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F11 | Fade/ramp duration | 渐变时长 (minutes) | `0x22` (observed) | ⏸️ Deprioritized | Frame partly decoded (see note); skip unless requested |
 | F12 | Temporary-on timer | 临开 | timer frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
-| F13 | Read daily schedule | 5 time periods | `0x10` | 🟡 Raw read works | Raw `0x10` reply captured (`Read config` button); decode the schedule bytes by writing a known schedule (F14) then diffing the re-read |
-| F14 | Write daily schedule | edit/save periods | `0x1C` + `0x11` | ✅ Shipped (v0.5.0) | `set_schedule` service; format unit-tested — **not yet exercised on hardware**, overwrites stored program |
+| F13 | Read daily schedule | 5 time periods | `0x10` | 🟡 Block located | Brightness block is at `0x10` offset 40 (20 B); byte→% encoding still unconfirmed (not plain BCD; preset/firmware-scaled) — needs a daytime visible test |
+| F14 | Write daily schedule | edit/save periods | `0x1C` + `0x11` | ⚗️ Experimental (v0.5.0) | `set_schedule` service; **frames verified accepted on hardware**, but %→displayed mapping unverified — confirm with a daytime visible test before relying on it |
 | F15 | Preset spectra (LPS/SPS #N) | 方案 presets | built on F14 | 🟠 Needs decoding | After F14, store presets in HA and write them to the device |
 | F16 | Config-flow auto-discovery | — | broadcast `C9000000000A021D` | 🟢 Ready | Add a discovery step that broadcasts and lists responding beacons |
 

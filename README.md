@@ -41,7 +41,7 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Per-channel A/B/C/D dimming | ✅ Working (four `number` sliders, 0–100%) |
 | Custom lightning effect | ✅ Working (`button.lightning`, tunable; white+blue flash) |
 | Clock sync | ✅ Working (`0x03`; button + auto on setup) |
-| Write daily schedule | ⚠️ `zetlight_led.set_schedule` service — **overwrites stored program** |
+| Write daily schedule | ⚗️ Experimental — `zetlight_led.set_schedule` (frames verified on HW; %-mapping unconfirmed; **overwrites stored program**) |
 | Reachability polling | ✅ Reads device status (`0x0C`) every 30 s |
 | Read daily schedule | 🚧 Raw read works; parsing pending — see [roadmap](docs/roadmap.md) |
 
@@ -68,9 +68,11 @@ in [`docs/roadmap.md`](docs/roadmap.md).
   frames and restores the previous levels, so it never touches the stored program.
 - **Clock** — the device clock is set to Home Assistant's local time on setup,
   and `button.sync_clock` re-syncs on demand.
-- **Schedule** — the `zetlight_led.set_schedule` service writes the full daily
-  curve (5 time slots × 4 channels). **It overwrites the device's stored
-  program**, so test with values you can visually confirm. Example:
+- **Schedule (experimental)** — the `zetlight_led.set_schedule` service writes
+  the full daily curve (5 time slots × 4 channels). The write frames are
+  verified accepted on hardware, but the value→displayed-% mapping isn't
+  confirmed yet, and **it overwrites the device's stored program** — so test
+  with values you can visually confirm. Example:
 
   ```yaml
   service: zetlight_led.set_schedule
