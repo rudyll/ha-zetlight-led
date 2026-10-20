@@ -24,6 +24,22 @@
    或 **Export PCAP** 用 Wireshark 打开，过滤 `udp.port==8855`，
    右键某包 → Copy → 复制字节，取 UDP 数据区的 hex。
 
+### iPhone（无 PCAPdroid）：用 Mac 的 RVI 抓
+
+PCAPdroid 只有 Android 版。iPhone 用数据线连 Mac，走 Apple 的远程虚拟接口
+（`rvictl` 随 Xcode 提供），即可在 Mac 上抓到 iPhone 全部流量（含局域网 UDP）：
+
+```bash
+# 1. iPhone 连 Mac 并点“信任”，查 UDID：
+xcrun xctrace list devices
+# 2. 用 UDID 建虚拟接口（替换 <UDID>）：
+rvictl -s <UDID>
+# 3. 开抓（需 root）：
+sudo tcpdump -n -i rvi0 -X 'host 10.10.10.138 and udp port 8855'
+# 4. 去 iPhone 点一个功能 → 终端里 EE… 开头即请求帧
+# 5. 停止：Ctrl-C，然后 rvictl -x <UDID>
+```
+
 ## 方法 B：在 UniFi 网关上抓（手机和灯跨 VLAN 时可用）
 
 灯在 VLAN 10（IoT），若手机在别的 VLAN，流量会经 UDM 路由，可在网关 tcpdump：
