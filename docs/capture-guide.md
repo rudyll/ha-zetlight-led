@@ -37,6 +37,11 @@ tcpdump -n -i any -X 'host 10.10.10.138 and udp port 8855'
 （若 `-i any` 不行，用面向该网段的桥接口，如 `br0`。手机和灯若在**同一 VLAN
 且走交换机直连**，网关看不到这条流量，请改用方法 A。）
 
+> **务必在网关(UDM, Linux)上跑，不要在 Mac/旁路主机上跑。** 交换网络里旁路主机
+> 看不到手机→灯的点对点 UDP。在 macOS 上还会遇到 `ioctl(SIOCIFCREATE):
+> Operation not permitted`——那是 `-i any` 要建 pktap 伪接口、需要 root；即便
+> `sudo tcpdump -i en0 …` 能跑起来，Mac 不在流量路径上也抓不到。拓扑不确定时直接用方法 A。
+
 ## 要抓的动作清单（对应 roadmap）
 
 | 功能 | 在 App 里的操作 | 对应待办 |
