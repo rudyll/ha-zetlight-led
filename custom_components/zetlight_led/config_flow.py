@@ -1,4 +1,4 @@
-"""Config flow for the Zetlight M5 integration."""
+"""Config flow for the Zetlight Horizon Aqua LED integration."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ class ZetlightConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 client.close()
                 return self.async_create_entry(
-                    title=status.name or f"Zetlight M5 ({host})",
+                    title=status.name or f"Zetlight LED ({host})",
                     data={
                         CONF_HOST: host,
                         CONF_PORT: port,

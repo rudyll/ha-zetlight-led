@@ -1,0 +1,39 @@
+<svg width="420" height="420" viewBox="0 0 420 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Zetlight Horizon Aqua LED Home Assistant integration logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="420" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1b2a6b"/>
+      <stop offset="0.55" stop-color="#2b5bd7"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="210" y1="120" x2="210" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded badge -->
+  <rect x="10" y="10" width="400" height="400" rx="92" fill="url(#bg)"/>
+
+  <!-- luminaire bar -->
+  <rect x="96" y="96" width="228" height="34" rx="17" fill="#eaf1ff"/>
+  <rect x="96" y="96" width="228" height="34" rx="17" fill="#ffffff" fill-opacity="0.15"/>
+
+  <!-- four channel LEDs A B C D -->
+  <circle cx="138" cy="113" r="8.5" fill="#6ee7ff"/>
+  <circle cx="186" cy="113" r="8.5" fill="#c7d2fe"/>
+  <circle cx="234" cy="113" r="8.5" fill="#a78bfa"/>
+  <circle cx="282" cy="113" r="8.5" fill="#f0abfc"/>
+
+  <!-- light beam -->
+  <path d="M120 130 L300 130 L338 300 L82 300 Z" fill="url(#beam)"/>
+
+  <!-- coral silhouette -->
+  <g fill="#0b1437" fill-opacity="0.92">
+    <path d="M138 356c0-28 11-47 11-70 0-15-9-24-9-39 0-13 11-21 21-21s21 8 21 21c0 15-9 24-9 39 0 23 11 42 11 70z"/>
+    <path d="M190 356c0-32 13-53 13-77 0-17-11-28-11-43 0-15 13-26 26-26s26 11 26 26c0 15-11 26-11 43 0 24 13 45 13 77z"/>
+    <path d="M248 356c0-26 10-43 10-64 0-13-8-21-8-34 0-12 10-19 19-19s19 7 19 19c0 13-8 21-8 34 0 21 10 38 10 64z"/>
+  </g>
+
+  <!-- waterline -->
+  <path d="M82 352c22-11 40-11 60 0s44 11 66 0 44-11 66 0 40 11 58 0" stroke="#bfdbff" stroke-opacity="0.55" stroke-width="7" stroke-linecap="round" fill="none"/>
+</svg>

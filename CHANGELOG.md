@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 — 2026-10-20
+
+**Breaking: the integration was renamed** from `zetlight_m5` to `zetlight_led`
+to reflect that it targets Zetlight's Horizon Aqua LED lights generally, not
+just the M5-80M.
+
+- **Migration:** after updating, remove the old **Zetlight M5 Coral Light**
+  entry/device and add the integration again as **Zetlight Horizon Aqua LED**.
+  (The domain changed, so the old config entry can't be carried over.)
+- Developed and verified on the M5-80M; other Zetlight LED models on the same
+  local UDP protocol may also work (untested — reports welcome).
+- Added a bilingual (English / 中文) README, a logo, a project roadmap
+  (`docs/roadmap.md`), discovery keywords, and a GitHub Sponsors link.
+- No functional change to on/off, brightness, or per-channel control.
+
 ## 0.3.0 — 2026-10-20
 
 Adds **per-channel control**.

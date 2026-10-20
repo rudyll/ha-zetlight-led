@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Zetlight M5 Coral Light",
+        "title": "Zetlight Horizon Aqua LED",
         "description": "Enter the light's local IP address. Tip: reserve its address in your router's DHCP settings so it doesn't change.",
         "data": {
           "host": "IP address",

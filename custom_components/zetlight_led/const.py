@@ -1,10 +1,10 @@
-"""Constants for the Zetlight M5 integration."""
+"""Constants for the Zetlight Horizon Aqua LED integration."""
 
 from __future__ import annotations
 
 from datetime import timedelta
 
-DOMAIN = "zetlight_m5"
+DOMAIN = "zetlight_led"
 
 # UDP port the M5 (and other old-protocol LED devices) listens/replies on.
 DEFAULT_PORT = 8855

@@ -1,4 +1,4 @@
-"""Light platform for the Zetlight M5 coral light."""
+"""Light platform for the Zetlight Horizon Aqua LED."""
 
 from __future__ import annotations
 
@@ -59,12 +59,12 @@ class ZetlightLight(CoordinatorEntity[ZetlightCoordinator], LightEntity):
         self._attr_unique_id = entry_id
         self._is_on: bool | None = None
         code = coordinator.client.device_code.hex().upper()
-        name = coordinator.data.name if coordinator.data else "Zetlight M5"
+        name = coordinator.data.name if coordinator.data else "Zetlight LED"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
             manufacturer="Zetlight",
-            model="M5-80M",
-            name=name or "Zetlight M5",
+            model="Horizon Aqua LED",
+            name=name or "Zetlight LED",
             serial_number=code,
         )
 

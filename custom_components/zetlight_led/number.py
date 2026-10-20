@@ -1,4 +1,4 @@
-"""Per-channel brightness controls (A/B/C/D) for the Zetlight M5."""
+"""Per-channel brightness controls (A/B/C/D) for the Zetlight Horizon Aqua LED."""
 
 from __future__ import annotations
 

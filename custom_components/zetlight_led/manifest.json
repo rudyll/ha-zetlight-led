@@ -1,6 +1,6 @@
 {
-  "domain": "zetlight_m5",
-  "name": "Zetlight M5 Coral Light",
+  "domain": "zetlight_led",
+  "name": "Zetlight Horizon Aqua LED",
   "codeowners": ["@rudyll"],
   "config_flow": true,
   "documentation": "https://github.com/rudyll/ha-zetlight-m5",
@@ -8,5 +8,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/rudyll/ha-zetlight-m5/issues",
   "requirements": [],
-  "version": "0.3.0"
+  "version": "0.4.0"
 }

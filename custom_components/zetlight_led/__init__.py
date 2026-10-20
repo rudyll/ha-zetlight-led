@@ -1,4 +1,4 @@
-"""Zetlight M5 coral light — local UDP integration for Home Assistant.
+"""Zetlight Horizon Aqua LED — local UDP integration for Home Assistant.
 
 Pure local control: binds a UDP socket, sends ``EE...CC`` request frames to the
 device on port 8855 and parses ``DD...CC`` replies. No cloud, no Bluetooth.
