@@ -13,7 +13,7 @@
 
 <p align="center">
   <img alt="HACS Custom" src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg">
-  <img alt="Release" src="https://img.shields.io/github/v/release/rudyll/ha-zetlight-m5">
+  <img alt="Release" src="https://img.shields.io/github/v/release/rudyll/ha-zetlight-led">
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.12%2B-41BDF5.svg?logo=home-assistant&logoColor=white">
 </p>
 
@@ -62,7 +62,7 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 ### HACS (recommended)
 
 1. In HACS, open the menu (⋮) → **Custom repositories**.
-2. Add `https://github.com/rudyll/ha-zetlight-m5` with category **Integration**.
+2. Add `https://github.com/rudyll/ha-zetlight-led` with category **Integration**.
 3. Install **Zetlight Horizon Aqua LED**, then restart Home Assistant.
 
 ### Manual
@@ -153,7 +153,7 @@ Home Assistant  ──UDP :8855──►  灯  (EE…CC 请求 / DD…CC 回包 
 **HACS（推荐）**
 
 1. HACS 菜单（⋮）→ **自定义存储库 / Custom repositories**。
-2. 添加 `https://github.com/rudyll/ha-zetlight-m5`，类别选 **Integration**。
+2. 添加 `https://github.com/rudyll/ha-zetlight-led`，类别选 **Integration**。
 3. 安装 **Zetlight Horizon Aqua LED**，然后重启 Home Assistant。
 
 **手动**
