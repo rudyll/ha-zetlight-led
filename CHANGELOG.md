@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0 — 2026-10-21
+
+Adds a custom lightning effect, clock sync, and daily-schedule writing.
+
+- **Lightning** (`button.lightning`): a clean white+blue flash built from live
+  `0x13` frames — no purple afterglow like the app's built-in effect — then
+  restores the previous levels. Tunable via three config numbers: flashes (1–5),
+  intensity (10–100%), flash duration (30–300 ms).
+- **Clock sync** (`0x03`): a `Sync clock` button plus an automatic sync on
+  setup, setting the device to Home Assistant's local time.
+- **Write daily schedule** via the `zetlight_led.set_schedule` service (times
+  `0x11` + brightness `0x1C`, 5 slots × 4 channels). **This overwrites the
+  device's stored program — test carefully.** The frame format is confirmed
+  from the app's own code and unit-tested, but not yet exercised on hardware.
+- **Read config** (`0x10`): a diagnostic `Read config` button logs the raw
+  reply. Precise schedule parsing (F13) is still pending a safe write→read diff.
+- Command formats were decoded from static analysis of the vendor app; see
+  `docs/m5-light-protocol.md` §8 and `docs/roadmap.md`.
+
 ## 0.4.0 — 2026-10-20
 
 **Breaking: the integration was renamed** from `zetlight_m5` to `zetlight_led`

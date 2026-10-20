@@ -8,25 +8,33 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 
-from homeassistant.config_entries import ConfigEntry
+import voluptuous as vol
+
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from . import protocol
 from .const import (
     CONF_DEVICE_CODE,
     DEFAULT_PORT,
     DOMAIN,
+    LIGHTNING_DEFAULT_FLASHES,
+    LIGHTNING_DEFAULT_INTENSITY,
+    LIGHTNING_DEFAULT_ON_MS,
     REQUEST_TIMEOUT,
     SCAN_INTERVAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.LIGHT, Platform.NUMBER]
+PLATFORMS: list[Platform] = [Platform.LIGHT, Platform.NUMBER, Platform.BUTTON]
 
 
 class ZetlightUDPError(Exception):
@@ -148,6 +156,46 @@ class ZetlightClient:
             expect_reply=False,
         )
 
+    async def async_sync_time(self, now) -> None:  # noqa: ANN001
+        """Send the device clock (0x03) from a datetime. Fire-and-forget."""
+        await self._request(
+            protocol.build_time_sync(
+                now.year, now.month, now.day, now.hour, now.minute, now.second,
+                device_code=self.device_code,
+            ),
+            expect_reply=False,
+        )
+
+    async def async_read_config(self) -> bytes:
+        """Send 0x10 and return the raw reply (schedule config)."""
+        reply = await self._request(
+            protocol.build_read_config(device_code=self.device_code),
+            expect_reply=True,
+        )
+        assert reply is not None
+        return reply
+
+    async def async_write_schedule(
+        self,
+        slots: list[tuple[int, int, int, int]],
+        start_minute: int,
+        durations: list[int],
+    ) -> None:
+        """Write the full daily schedule: times (0x11) then brightness (0x1C).
+
+        WARNING: overwrites the device's stored time-curve program.
+        """
+        await self._request(
+            protocol.build_schedule_times(
+                start_minute, durations, device_code=self.device_code
+            ),
+            expect_reply=False,
+        )
+        await self._request(
+            protocol.build_schedule_brightness(slots, device_code=self.device_code),
+            expect_reply=False,
+        )
+
 
 class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
     """Polls device status and holds the shared 4-channel dimming state.
@@ -167,6 +215,13 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.client = client
         self.channels: list[int] = [0] * protocol.NUM_CHANNELS
         self._channels_seeded = False
+        # Tunable custom-lightning parameters (set by number entities).
+        self.lightning_flashes = LIGHTNING_DEFAULT_FLASHES
+        self.lightning_intensity = LIGHTNING_DEFAULT_INTENSITY
+        self.lightning_on_ms = LIGHTNING_DEFAULT_ON_MS
+        self._lightning_lock = asyncio.Lock()
+        # Raw bytes of the last 0x10 config reply (for schedule decoding work).
+        self.last_config: bytes | None = None
 
     async def _async_update_data(self) -> protocol.DeviceStatus:
         try:
@@ -196,12 +251,51 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.channels = [max(0, min(100, level))] * protocol.NUM_CHANNELS
         await self.async_apply_channels()
 
+    async def async_lightning(self) -> None:
+        """Run a custom lightning effect using live 0x13 frames.
+
+        Flashes white (A) + blue (B) only — no purple afterglow like the app's
+        built-in effect — then restores the pre-flash channel levels. Real-time
+        preview only; the stored program is untouched. Count/intensity/on-time
+        come from the tunable number entities.
+        """
+        async with self._lightning_lock:
+            saved = tuple(self.channels)
+            count = max(1, int(self.lightning_flashes))
+            peak = max(1, min(100, int(self.lightning_intensity)))
+            on_s = max(0.02, int(self.lightning_on_ms) / 1000)
+            try:
+                for n in range(count):
+                    # white + blue bright, color + purple off
+                    await self.client.async_set_brightness((peak, peak, 0, 0))
+                    await asyncio.sleep(on_s * random.uniform(0.8, 1.0))
+                    if n < count - 1:
+                        await self.client.async_set_brightness((0, 0, 0, 0))
+                        await asyncio.sleep(random.uniform(0.03, 0.12))
+            finally:
+                # restore the integration's last known levels
+                await self.client.async_set_brightness(saved)
+
+    async def async_write_schedule(
+        self,
+        slots: list[tuple[int, int, int, int]],
+        start_minute: int,
+        durations: list[int],
+    ) -> None:
+        """Write the daily schedule to the device (overwrites stored program)."""
+        await self.client.async_write_schedule(slots, start_minute, durations)
+
+    async def async_read_config(self) -> bytes:
+        """Read the raw 0x10 config reply and cache it."""
+        self.last_config = await self.client.async_read_config()
+        return self.last_config
+
 
 type ZetlightConfigEntry = ConfigEntry[ZetlightCoordinator]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) -> bool:
-    """Set up a Zetlight M5 device from a config entry."""
+    """Set up a Zetlight device from a config entry."""
     host = entry.data[CONF_HOST]
     port = entry.data.get(CONF_PORT, DEFAULT_PORT)
     device_code = bytes.fromhex(entry.data[CONF_DEVICE_CODE])
@@ -217,8 +311,97 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) -> 
         raise
 
     entry.runtime_data = coordinator
+
+    # Best-effort: sync the device clock to Home Assistant's local time.
+    try:
+        await client.async_sync_time(dt_util.now())
+    except ZetlightUDPError as err:
+        _LOGGER.debug("Initial clock sync failed: %s", err)
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _async_register_services(hass)
     return True
+
+
+SERVICE_SET_SCHEDULE = "set_schedule"
+SERVICE_SYNC_CLOCK = "sync_clock"
+
+_SET_SCHEDULE_SCHEMA = vol.Schema(
+    {
+        vol.Required("start"): cv.string,  # "HH:MM"
+        vol.Required("durations"): vol.All(
+            cv.ensure_list,
+            [vol.All(vol.Coerce(int), vol.Range(min=0, max=1439))],
+            vol.Length(min=protocol.NUM_SLOTS, max=protocol.NUM_SLOTS),
+        ),
+        vol.Required("brightness"): vol.All(
+            cv.ensure_list,
+            [
+                vol.All(
+                    cv.ensure_list,
+                    [vol.All(vol.Coerce(int), vol.Range(min=0, max=100))],
+                    vol.Length(min=protocol.NUM_CHANNELS, max=protocol.NUM_CHANNELS),
+                )
+            ],
+            vol.Length(min=protocol.NUM_SLOTS, max=protocol.NUM_SLOTS),
+        ),
+    }
+)
+
+
+def _parse_hhmm(value: str) -> int:
+    """Parse 'HH:MM' into minutes from midnight."""
+    try:
+        hh, mm = value.split(":")
+        minutes = int(hh) * 60 + int(mm)
+    except (ValueError, AttributeError) as err:
+        raise HomeAssistantError(f"invalid time '{value}', expected HH:MM") from err
+    if not 0 <= minutes < 1440:
+        raise HomeAssistantError(f"time out of range: {value}")
+    return minutes
+
+
+def _loaded_coordinators(hass: HomeAssistant) -> list[ZetlightCoordinator]:
+    return [
+        entry.runtime_data
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if entry.state is ConfigEntryState.LOADED
+    ]
+
+
+@callback
+def _async_register_services(hass: HomeAssistant) -> None:
+    """Register the integration's services once."""
+    if hass.services.has_service(DOMAIN, SERVICE_SET_SCHEDULE):
+        return
+
+    async def handle_set_schedule(call: ServiceCall) -> None:
+        start = _parse_hhmm(call.data["start"])
+        durations = list(call.data["durations"])
+        slots = [tuple(slot) for slot in call.data["brightness"]]
+        coordinators = _loaded_coordinators(hass)
+        if not coordinators:
+            raise HomeAssistantError("no Zetlight device is loaded")
+        for coordinator in coordinators:
+            try:
+                await coordinator.async_write_schedule(slots, start, durations)
+            except ZetlightUDPError as err:
+                raise HomeAssistantError(f"failed to write schedule: {err}") from err
+
+    async def handle_sync_clock(call: ServiceCall) -> None:
+        coordinators = _loaded_coordinators(hass)
+        if not coordinators:
+            raise HomeAssistantError("no Zetlight device is loaded")
+        for coordinator in coordinators:
+            try:
+                await coordinator.client.async_sync_time(dt_util.now())
+            except ZetlightUDPError as err:
+                raise HomeAssistantError(f"failed to sync clock: {err}") from err
+
+    hass.services.async_register(
+        DOMAIN, SERVICE_SET_SCHEDULE, handle_set_schedule, schema=_SET_SCHEDULE_SCHEMA
+    )
+    hass.services.async_register(DOMAIN, SERVICE_SYNC_CLOCK, handle_sync_clock)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) -> bool:
@@ -226,4 +409,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) ->
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         entry.runtime_data.client.close()
+        # Drop the shared services once the last entry is gone.
+        loaded = [
+            e
+            for e in hass.config_entries.async_entries(DOMAIN)
+            if e.entry_id != entry.entry_id and e.state.recoverable
+        ]
+        if not loaded:
+            for service in (SERVICE_SET_SCHEDULE, SERVICE_SYNC_CLOCK):
+                hass.services.async_remove(DOMAIN, service)
     return unload_ok

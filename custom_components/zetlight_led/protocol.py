@@ -30,10 +30,16 @@ TRAILER = 0xCC
 DEFAULT_DEVICE_CODE = bytes.fromhex("01023A01")
 
 # Command bytes (subset of SendLEDAndAlgaeXorByte2 that we actually use).
-CMD_READ_STATUS = 0x0C  # read live lighting status (read-only)
-CMD_SET_LIGHT = 0x13    # set per-channel brightness (TODO: i/i6 params)
-CMD_START = 0x1E        # turn on / resume (device-verified)
-CMD_OFF = 0x1F          # turn off (device-verified)
+CMD_READ_STATUS = 0x0C   # read live lighting status (read-only)
+CMD_READ_CONFIG = 0x10   # read LED config incl. schedule (read-only)
+CMD_SET_LIGHT = 0x13     # set per-channel brightness (live preview)
+CMD_SYNC_TIME = 0x03     # set device clock (BCD yy mm dd hh mm ss)
+CMD_SAVE_TIMES = 0x11    # save the 5 time-slot boundaries
+CMD_SAVE_SCHEDULE = 0x1C # save the 5-slot x 4-channel brightness curve
+CMD_START = 0x1E         # turn on / resume (device-verified)
+CMD_OFF = 0x1F           # turn off (device-verified)
+
+NUM_SLOTS = 5  # the device's daily schedule has 5 time slots
 
 # New-protocol discovery probe broadcast to :8855; devices answer with a
 # ``DD...CC`` beacon that carries their device code and name.
@@ -116,6 +122,94 @@ def build_brightness(
         + bytes([SET_LIGHT_SUFFIX])
     )
     return build_frame(CMD_SET_LIGHT, payload, device_code=device_code)
+
+
+def _bcd(value: int) -> int:
+    """Plain BCD for a 0-99 value (no 100->0xAA special case)."""
+    if not 0 <= value <= 99:
+        raise ValueError("BCD value must be 0-99")
+    return ((value // 10) << 4) | (value % 10)
+
+
+def build_read_config(device_code: bytes = DEFAULT_DEVICE_CODE) -> bytes:
+    """Build the read-config frame (CMD 0x10). Reply carries the schedule."""
+    return build_frame(CMD_READ_CONFIG, device_code=device_code)
+
+
+def build_time_sync(
+    year: int,
+    month: int,
+    day: int,
+    hour: int,
+    minute: int,
+    second: int,
+    *,
+    device_code: bytes = DEFAULT_DEVICE_CODE,
+) -> bytes:
+    """Build the clock-sync frame (CMD 0x03).
+
+    Payload is 6 BCD bytes ``yy mm dd hh mm ss`` (year is the last two digits),
+    matching the app's ``sendCurrentTimeAndDateCmd`` (year passed as ``y-2000``).
+    """
+    payload = bytes(
+        _bcd(v) for v in (year % 100, month, day, hour, minute, second)
+    )
+    return build_frame(CMD_SYNC_TIME, payload, device_code=device_code)
+
+
+def build_schedule_brightness(
+    slots: list[tuple[int, int, int, int]],
+    *,
+    device_code: bytes = DEFAULT_DEVICE_CODE,
+) -> bytes:
+    """Build the save-schedule-brightness frame (CMD 0x1C).
+
+    ``slots`` is the daily curve: ``NUM_SLOTS`` tuples of four channel values
+    (0-100), laid out ``slot0:A B C D, slot1:A B C D, ...`` as BCD (100 -> 0xAA).
+    Mirrors the app's ``sendSaveFivelight`` / ``sendSaveFivelightLED``.
+
+    WARNING: this overwrites the device's stored brightness program.
+    """
+    if len(slots) != NUM_SLOTS:
+        raise ValueError(f"expected {NUM_SLOTS} slots")
+    payload = bytearray()
+    for slot in slots:
+        if len(slot) != NUM_CHANNELS:
+            raise ValueError(f"each slot needs {NUM_CHANNELS} channel values")
+        payload += bytes(_to_bcd(c) for c in slot)
+    return build_frame(CMD_SAVE_SCHEDULE, bytes(payload), device_code=device_code)
+
+
+def build_schedule_times(
+    start_minute: int,
+    durations: list[int],
+    *,
+    device_code: bytes = DEFAULT_DEVICE_CODE,
+) -> bytes:
+    """Build the save-time-slots frame (CMD 0x11).
+
+    ``start_minute`` is the first slot's start (minutes from midnight) and
+    ``durations`` the length of each of the ``NUM_SLOTS`` slots in minutes.
+    Payload is BCD ``HH,MM`` pairs: start, then each cumulative boundary — the
+    first four boundaries written twice, the last once — exactly as the app's
+    ``sendtimerange`` does (each boundary wraps at 1440).
+
+    WARNING: this overwrites the device's stored time program.
+    """
+    if len(durations) != NUM_SLOTS:
+        raise ValueError(f"expected {NUM_SLOTS} durations")
+
+    def hm(minutes: int) -> bytes:
+        minutes %= 1440
+        return bytes([_bcd(minutes // 60), _bcd(minutes % 60)])
+
+    payload = bytearray(hm(start_minute))
+    boundary = start_minute
+    for idx, dur in enumerate(durations):
+        boundary = (boundary + dur) % 1440
+        # first four boundaries are written twice, the last one once
+        payload += hm(boundary) * (1 if idx == NUM_SLOTS - 1 else 2)
+    return build_frame(CMD_SAVE_TIMES, bytes(payload), device_code=device_code)
 
 
 @dataclass(frozen=True)

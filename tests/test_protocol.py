@@ -129,3 +129,62 @@ def test_build_brightness_mixed_channels():
 def test_build_brightness_rejects_wrong_channel_count():
     with pytest.raises(ValueError):
         protocol.build_brightness((50, 50, 50))  # type: ignore[arg-type]
+
+
+def _assert_request(frame: bytes, cmd: int, payload: bytes) -> None:
+    """Validate an EE... request frame's header/cmd/payload/XOR/trailer."""
+    assert frame[0] == protocol.REQUEST_HEADER
+    assert frame[-1] == protocol.TRAILER
+    assert frame[3:7] == protocol.DEFAULT_DEVICE_CODE
+    assert frame[7] == cmd
+    assert frame[8:-2] == payload
+    assert frame[2] == len(protocol.DEFAULT_DEVICE_CODE) + 1 + len(payload) + 1
+    assert protocol._xor(frame[1:-2]) == frame[-2]
+
+
+def test_build_read_config_matches_device():
+    # Confirmed against the real device probe.
+    assert protocol.build_read_config().hex().upper() == "EE000601023A01102ECC"
+
+
+def test_build_time_sync_layout():
+    frame = protocol.build_time_sync(2026, 10, 21, 12, 34, 56)
+    _assert_request(frame, protocol.CMD_SYNC_TIME, bytes.fromhex("261021123456"))
+
+
+def test_build_schedule_brightness_ui_curve():
+    # The five slots from the app screenshots (A, B, C, D percentages).
+    slots = [
+        (2, 18, 18, 2),
+        (4, 36, 24, 4),
+        (10, 90, 60, 10),
+        (6, 54, 36, 6),
+        (3, 27, 18, 3),
+    ]
+    frame = protocol.build_schedule_brightness(slots)
+    expected = bytes.fromhex("02181802" "04362404" "10906010" "06543606" "03271803")
+    _assert_request(frame, protocol.CMD_SAVE_SCHEDULE, expected)
+    assert frame[2] == 0x1A  # LEN
+
+
+def test_build_schedule_brightness_handles_100():
+    slots = [(100, 0, 0, 0)] * protocol.NUM_SLOTS
+    frame = protocol.build_schedule_brightness(slots)
+    assert frame[8] == 0xAA  # 100 -> 0xAA
+
+
+def test_build_schedule_times_ui_schedule():
+    # 07:30 start; slots 60/120/480/120/120 min -> boundaries 08:30,10:30,18:30,20:30,22:30
+    frame = protocol.build_schedule_times(7 * 60 + 30, [60, 120, 480, 120, 120])
+    expected = bytes.fromhex(
+        "0730" "0830" "0830" "1030" "1030" "1830" "1830" "2030" "2030" "2230"
+    )
+    _assert_request(frame, protocol.CMD_SAVE_TIMES, expected)
+    assert frame[2] == 0x1A  # LEN
+
+
+def test_schedule_builders_reject_wrong_counts():
+    with pytest.raises(ValueError):
+        protocol.build_schedule_brightness([(0, 0, 0, 0)])  # not 5 slots
+    with pytest.raises(ValueError):
+        protocol.build_schedule_times(0, [60, 60])  # not 5 durations

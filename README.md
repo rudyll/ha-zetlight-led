@@ -39,8 +39,11 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Turn on / off | ✅ Working (device-verified commands `0x1E` / `0x1F`) |
 | Overall brightness | ✅ Working (device-verified command `0x13`) |
 | Per-channel A/B/C/D dimming | ✅ Working (four `number` sliders, 0–100%) |
+| Custom lightning effect | ✅ Working (`button.lightning`, tunable; white+blue flash) |
+| Clock sync | ✅ Working (`0x03`; button + auto on setup) |
+| Write daily schedule | ⚠️ `zetlight_led.set_schedule` service — **overwrites stored program** |
 | Reachability polling | ✅ Reads device status (`0x0C`) every 30 s |
-| Effects, schedule, modes | 🚧 Planned — see [roadmap](docs/roadmap.md) |
+| Read daily schedule | 🚧 Raw read works; parsing pending — see [roadmap](docs/roadmap.md) |
 
 ### How on/off and brightness behave
 
@@ -56,6 +59,31 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 - **Real-time preview.** `0x13` sets the live output but does **not** write the
   device's stored time-curve program; at the next scheduled point the device
   reverts to its program.
+
+### Lightning, clock & schedule
+
+- **Lightning** — press `button.lightning` for a crisp white+blue flash (no
+  purple afterglow). Tune it with the `Lightning flashes`, `Lightning intensity`
+  and `Lightning flash duration` config numbers. It is built from live `0x13`
+  frames and restores the previous levels, so it never touches the stored program.
+- **Clock** — the device clock is set to Home Assistant's local time on setup,
+  and `button.sync_clock` re-syncs on demand.
+- **Schedule** — the `zetlight_led.set_schedule` service writes the full daily
+  curve (5 time slots × 4 channels). **It overwrites the device's stored
+  program**, so test with values you can visually confirm. Example:
+
+  ```yaml
+  service: zetlight_led.set_schedule
+  data:
+    start: "07:30"
+    durations: [60, 120, 480, 120, 120]
+    brightness:
+      - [2, 18, 18, 2]
+      - [4, 36, 24, 4]
+      - [10, 90, 60, 10]
+      - [6, 54, 36, 6]
+      - [3, 27, 18, 3]
+  ```
 
 ## Installation
 

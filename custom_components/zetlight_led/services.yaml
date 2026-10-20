@@ -1,0 +1,33 @@
+set_schedule:
+  name: Set daily schedule
+  description: >-
+    Write the device's daily lighting schedule (5 time slots x 4 channels).
+    WARNING: this overwrites the light's stored time-curve program.
+  fields:
+    start:
+      name: Start time
+      description: Start time of the first slot, as HH:MM (24h).
+      required: true
+      example: "07:30"
+      selector:
+        text:
+    durations:
+      name: Slot durations (minutes)
+      description: Length in minutes of each of the 5 slots (must sum to <= 1440).
+      required: true
+      example: "[60, 120, 480, 120, 120]"
+      selector:
+        object:
+    brightness:
+      name: Per-slot brightness
+      description: >-
+        Five slots, each a list of four channel values 0-100 in order
+        A (white), B (blue), C (color), D (purple).
+      required: true
+      example: "[[2,18,18,2],[4,36,24,4],[10,90,60,10],[6,54,36,6],[3,27,18,3]]"
+      selector:
+        object:
+
+sync_clock:
+  name: Sync clock
+  description: Set the device clock to Home Assistant's current local time.
