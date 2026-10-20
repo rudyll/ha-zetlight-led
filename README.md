@@ -37,6 +37,14 @@ can't send a malformed frame until one more capture confirms those bytes.
 
 ## Installation
 
+### HACS (recommended)
+
+1. In HACS, open the menu (⋮) → **Custom repositories**.
+2. Add `https://github.com/rudyll/ha-zetlight-m5` with category **Integration**.
+3. Install **Zetlight M5 Coral Light**, then restart Home Assistant.
+
+### Manual
+
 Copy the integration into your Home Assistant config directory:
 
 ```
