@@ -122,4 +122,30 @@ EE 00 0C 01023A01 13 <i> <c1> <c2> <c3> <c4> <i6> XOR CC
 **与 GTS 泵的区别**：泵在 WiFi 上不开端口、只能走 BLE（`[250,…,sum%255]`）；
 灯反而 WiFi 本地 UDP 直通（`EE…CC`+XOR）。两者协议不同，但都能纯本地、不碰云。
 
+## 8. 从 APK 静态解出的命令格式（2026-10-21）
+
+重新反编译 `com.zetlightgoogle` 4.4.2 的 `SendLEDAndAlgaeXorByte2.java`，读出以下
+建帧逻辑（帧仍为 `EE 00 LEN <code4> CMD <payload> XOR CC`，XOR/CC 规则同前）。
+设备码来源确认：`LEDAPPOINTTYPE = LEDTarget.getChanpingCode()`，本灯 = `01023A01`。
+亮度一律 BCD 编码，`100 → 0xAA`；时间按 `BCD(分钟/60, 分钟%60)`。
+
+| 功能 | CMD | LEN | 负载 | 方法 |
+|------|-----|-----|------|------|
+| 对时 | `0x03` | `0x0C` | 6 字节 `y m d h m s` | `sendCurrentTimeAndDateCmd` |
+| 读配置 | `0x10` | `0x06` | 无（回包含完整日程，解析待抓一帧确认） | `sendReadLEDDataCmd` |
+| 设时段时间 | `0x11` | `0x1A` | 20 字节 = 起始 + 各段边界，均 `BCD(时,分)` | `sendtimerange` |
+| 保存单组设定 | `0x12` | `0x0B` | `<i> <A><B><C><D>`（4 通道 BCD） | `sendSavelight` |
+| 实时调光（预览） | `0x13` | `0x0C` | `<i> <A><B><C><D> <i6>` | `sendlight`（已实现） |
+| **保存日程亮度** | `0x1C` | `0x1A` | **5 时段 × 4 通道** BCD（`slot0:A B C D, slot1:… …slot4:…`），共 20 字节 | `sendSaveFivelight` / `sendSaveFivelightLED` |
+
+要点：
+- **日程 = 两条命令分开写**：亮度曲线走 `0x1C`（5×4 值），时段时间走 `0x11`（时间点）。
+  写入会覆盖灯存储的时间曲线程序（比 `0x13` 实时预览风险高，需谨慎、先读后写）。
+- 通道 A/B/C/D 在代码里叫 white/blue/color/purple。
+- `sendSaveFivelightLED` 用 `SEEKBAR_PROGRESS`(通道数)×`TIME_SLOT`(时段数) 计算长度；
+  本灯 4 通道 × 5 时段 = 20，与 LEN `0x1A` 吻合。
+- 读日程（F13）的**回包格式**尚未定：需抓一条 `0x10` 的 `DD…CC` 回包，或继续读解析代码。
+- 模式类命令（`sendlightning`/`sendcloud`/`sendMoonLightCmd`/`sendOptionCmd`）已存在但
+  用户已降级，不实现。
+
 > 本文基于静态反编译 + 对自己设备的本地只读探测，用于互操作/本地控制；未对厂家服务做任何攻击性操作。

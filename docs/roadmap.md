@@ -30,7 +30,7 @@ See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 | F2 | Overall brightness | A–D sliders (live) | `0x13` | ✅ Shipped (v0.2.0) | — |
 | F3 | Per-channel A/B/C/D | A–D sliders (live) | `0x13` | ✅ Shipped (v0.3.0) | — |
 | F4 | Reachability / status read | — | `0x0C` | ✅ Shipped (v0.1.0) | — |
-| F5 | Device clock sync | (auto in app) | `sendCurrentTimeAndDateCmd` | 🟡 Needs capture | Capture a time-sync frame; add a service/periodic sync |
+| F5 | Device clock sync | (auto in app) | `0x03` (decoded) | 🟢 Ready | Build `0x03` (6B y/m/d/h/m/s); add a service/periodic sync |
 | F6 | Lightning effect | 闪电 | `sendlightning` | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F7 | Cloud effect | 云彩 | `sendcloud` | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F8 | Auto-clouds toggle | 自动云彩 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
@@ -38,8 +38,8 @@ See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 | F10 | Acclimation mode | 适应模式 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F11 | Fade/ramp duration | 渐变时长 (minutes) | `0x22` (observed) | ⏸️ Deprioritized | Frame partly decoded (see note); skip unless requested |
 | F12 | Temporary-on timer | 临开 | timer frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
-| F13 | Read daily schedule | 5 time periods | `0x10` (read LED config) | 🟠 Needs decoding | Parse the `0x10` reply (times + per-period 4-channel setpoints) |
-| F14 | Write daily schedule | edit/save periods | `sendSavelight` / `sendSaveFivelight` | 🟠 Needs decoding | Decode the save payload (timestamps + 4-channel values); apply + persist |
+| F13 | Read daily schedule | 5 time periods | `0x10` (read LED config) | 🟡 Needs reply capture | Request `0x10` known; capture one `DD…CC` reply (or read parse code) to decode it |
+| F14 | Write daily schedule | edit/save periods | `0x1C` brightness + `0x11` times (decoded) | 🟢 Ready (verify on device) | Build `0x1C` (5×4 BCD) and `0x11` (BCD times); **overwrites stored program — verify carefully** |
 | F15 | Preset spectra (LPS/SPS #N) | 方案 presets | built on F14 | 🟠 Needs decoding | After F14, store presets in HA and write them to the device |
 | F16 | Config-flow auto-discovery | — | broadcast `C9000000000A021D` | 🟢 Ready | Add a discovery step that broadcasts and lists responding beacons |
 
