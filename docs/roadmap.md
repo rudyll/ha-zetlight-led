@@ -12,6 +12,7 @@ Every item that isn't shipped yet follows the same loop:
 "Capture" means recording the real UDP frame the Horizon Aqua app sends while
 you tap the corresponding control, so the exact payload can be confirmed before
 any code sends it. Nothing is wired to a live device until its frame is verified.
+See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 
 ## Status key
 
