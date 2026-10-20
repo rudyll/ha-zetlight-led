@@ -87,25 +87,35 @@ def _to_bcd(value: int) -> int:
     return ((value // 10) << 4) | (value % 10)
 
 
-def build_set_light(
+# The two auxiliary payload bytes around the four channel values are fixed at
+# 0x00 (device-verified, see docs §6b).
+SET_LIGHT_PREFIX = 0x00
+SET_LIGHT_SUFFIX = 0x00
+
+
+def build_brightness(
     channels: tuple[int, int, int, int],
     *,
     device_code: bytes = DEFAULT_DEVICE_CODE,
 ) -> bytes:
-    """Build a dimming frame (CMD 0x13) — SKELETON, NOT YET SAFE TO SEND.
+    """Build a dimming frame (CMD 0x13) for the four channels (each 0-100).
 
-    TODO: the ``i`` (leading) and ``i6`` (trailing) auxiliary bytes of the
-    ``sendlight`` payload are not yet pinned down (group index / fade?). Until
-    one more capture confirms them, this function is a structural placeholder
-    and must not be wired up to a live device. See docs §5 and §6.
+    Payload is ``<i> <c1> <c2> <c3> <c4> <i6>`` where ``i`` and ``i6`` are both
+    0x00 and each ``c`` is the BCD-encoded brightness (100 -> 0xAA). This is a
+    real-time preview command: it sets the live output but does NOT write the
+    device's stored time-curve program. Device-verified (docs §6b):
+
+    * all 10% -> ``EE000C01023A011300101010100027CC``
+    * all 100% -> ``EE000C01023A011300AAAAAAAA0027CC``
     """
-    raise NotImplementedError(
-        "0x13 dimming is not implemented yet: the i/i6 auxiliary payload bytes "
-        "still need one capture to confirm. See docs/m5-light-protocol.md."
+    if len(channels) != NUM_CHANNELS:
+        raise ValueError(f"expected {NUM_CHANNELS} channel values")
+    payload = (
+        bytes([SET_LIGHT_PREFIX])
+        + bytes(_to_bcd(c) for c in channels)
+        + bytes([SET_LIGHT_SUFFIX])
     )
-    # Intended shape once i/i6 are known:
-    #   payload = bytes([i]) + bytes(_to_bcd(c) for c in channels) + bytes([i6])
-    #   return build_frame(CMD_SET_LIGHT, payload, device_code=device_code)
+    return build_frame(CMD_SET_LIGHT, payload, device_code=device_code)
 
 
 @dataclass(frozen=True)

@@ -101,7 +101,31 @@ def test_to_bcd_encoding():
         protocol._to_bcd(101)
 
 
-def test_set_light_is_todo_skeleton():
-    # Dimming must not send anything until i/i6 are confirmed.
-    with pytest.raises(NotImplementedError):
-        protocol.build_set_light((50, 50, 50, 50))
+def test_build_brightness_all_10_percent():
+    # Verified on device: all channels at 10%.
+    assert (
+        protocol.build_brightness((10, 10, 10, 10)).hex().upper()
+        == "EE000C01023A011300101010100027CC"
+    )
+
+
+def test_build_brightness_all_100_percent():
+    # Verified on device: all channels at 100% (BCD special-cased to 0xAA).
+    assert (
+        protocol.build_brightness((100, 100, 100, 100)).hex().upper()
+        == "EE000C01023A011300AAAAAAAA0027CC"
+    )
+
+
+def test_build_brightness_mixed_channels():
+    # (0, 30, 55, 100) -> payload i(00) + 00 30 55 AA + i6(00)
+    frame = protocol.build_brightness((0, 30, 55, 100))
+    assert frame[0] == protocol.REQUEST_HEADER
+    assert frame[7] == protocol.CMD_SET_LIGHT
+    assert frame[8:14] == bytes.fromhex("00003055AA00")
+    assert frame[-1] == protocol.TRAILER
+
+
+def test_build_brightness_rejects_wrong_channel_count():
+    with pytest.raises(ValueError):
+        protocol.build_brightness((50, 50, 50))  # type: ignore[arg-type]

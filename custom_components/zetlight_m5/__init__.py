@@ -138,6 +138,16 @@ class ZetlightClient:
             protocol.build_off(device_code=self.device_code), expect_reply=False
         )
 
+    async def async_set_brightness(self, channels: tuple[int, int, int, int]) -> None:
+        """Send a 0x13 dimming frame (each channel 0-100). Fire-and-forget.
+
+        Real-time preview only; does not persist to the device's stored program.
+        """
+        await self._request(
+            protocol.build_brightness(channels, device_code=self.device_code),
+            expect_reply=False,
+        )
+
 
 class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
     """Polls device status so entities know the device is reachable."""

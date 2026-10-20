@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 — 2026-10-20
+
+Adds **brightness** control.
+
+- Overall brightness via the device-verified `0x13` command (four BCD channel
+  values, `100 → 0xAA`, with both auxiliary bytes fixed at `0x00`). Home
+  Assistant's 0–255 brightness is scaled to 0–100 and applied to all four
+  channels together. Per-channel control is possible with the same frame but is
+  not exposed in the UI.
+- Note: `0x13` is a real-time preview and does not persist to the device's
+  stored time-curve program. On/off (`0x1E`/`0x1F`) is unchanged.
+- New unit tests assert the captured 10% and 100% dimming frames.
+
 ## 0.1.0 — 2026-10-20
 
 First release. Local-LAN control of the Zetlight **M5-80M** coral light over
