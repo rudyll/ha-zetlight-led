@@ -18,8 +18,8 @@ The full, device-verified protocol is documented in
 | --- | --- |
 | Turn on / off | ✅ Working (device-verified commands `0x1E` / `0x1F`) |
 | Brightness (overall) | ✅ Working (device-verified command `0x13`) |
+| Per-channel A/B/C/D dimming | ✅ Working (four `number` sliders, 0–100%) |
 | Reachability polling | ✅ Reads device status (`0x0C`) every 30 s |
-| Per-channel dimming | 🚧 Possible with the same frame; not exposed in the UI |
 
 ### Why on/off is "optimistic"
 
@@ -34,9 +34,14 @@ Dimming uses command `0x13`
 ([`protocol.build_brightness`](custom_components/zetlight_m5/protocol.py)): four
 BCD channel values (100 → `0xAA`) wrapped by two auxiliary bytes (`i`, `i6`),
 both device-verified as `0x00`. Home Assistant's 0–255 brightness is scaled to
-0–100 and applied to all four channels together as one overall level. Setting a
-per-channel brightness is possible with the same frame but isn't exposed in the
-UI yet.
+0–100 and applied to all four channels together as one overall level.
+
+Each channel is also exposed individually as a **`number` slider (0–100%)** —
+`Channel A`/`B`/`C`/`D`, matching the app's per-channel sliders. The overall
+light and the four sliders share one channel state, so changing one updates the
+others: the overall brightness follows the brightest channel, and setting the
+overall brightness flattens all channels to the same level. The sliders are
+seeded from the device's reported setpoints on startup.
 
 Note: `0x13` is a **real-time preview** — it sets the live output but does not
 write the device's stored time-curve program.

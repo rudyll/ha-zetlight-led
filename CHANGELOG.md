@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 — 2026-10-20
+
+Adds **per-channel control**.
+
+- Four new `number` entities — `Channel A`/`B`/`C`/`D` (0–100% sliders) —
+  mapping to the app's per-channel sliders. Each change sends a full `0x13`
+  frame with the other channels left at their current values.
+- The overall-brightness light and the four channel sliders now share one
+  channel state: the overall brightness follows the brightest channel, and
+  setting it flattens all channels to the same level.
+- Channel sliders are seeded from the device's reported setpoints on startup.
+- Still a real-time preview (`0x13`); does not persist to the stored program.
+
 ## 0.2.0 — 2026-10-20
 
 Adds **brightness** control.

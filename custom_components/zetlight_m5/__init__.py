@@ -26,7 +26,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.LIGHT]
+PLATFORMS: list[Platform] = [Platform.LIGHT, Platform.NUMBER]
 
 
 class ZetlightUDPError(Exception):
@@ -150,7 +150,12 @@ class ZetlightClient:
 
 
 class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
-    """Polls device status so entities know the device is reachable."""
+    """Polls device status and holds the shared 4-channel dimming state.
+
+    The 0x13 command sets all four channels at once, so the overall-brightness
+    light and the per-channel number entities share one list of channel levels
+    (0-100). Any change sends the full frame and notifies all entities.
+    """
 
     def __init__(self, hass: HomeAssistant, client: ZetlightClient) -> None:
         super().__init__(
@@ -160,12 +165,36 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             update_interval=SCAN_INTERVAL,
         )
         self.client = client
+        self.channels: list[int] = [0] * protocol.NUM_CHANNELS
+        self._channels_seeded = False
 
     async def _async_update_data(self) -> protocol.DeviceStatus:
         try:
-            return await self.client.async_read_status()
+            status = await self.client.async_read_status()
         except ZetlightUDPError as err:
             raise UpdateFailed(str(err)) from err
+        # Seed the channel state once from the device's reported setpoints so
+        # the sliders start at sensible values. These are the current program
+        # setpoints, not live on/off state (see docs §6).
+        if not self._channels_seeded:
+            self.channels = [max(0, min(100, s)) for s in status.setpoints]
+            self._channels_seeded = True
+        return status
+
+    async def async_apply_channels(self) -> None:
+        """Send the current channel state as a 0x13 frame and notify entities."""
+        await self.client.async_set_brightness(tuple(self.channels))
+        self.async_update_listeners()
+
+    async def async_set_channel(self, index: int, value: int) -> None:
+        """Set one channel (0-100) and apply."""
+        self.channels[index] = max(0, min(100, value))
+        await self.async_apply_channels()
+
+    async def async_set_all(self, level: int) -> None:
+        """Set all channels to the same level (0-100) and apply."""
+        self.channels = [max(0, min(100, level))] * protocol.NUM_CHANNELS
+        await self.async_apply_channels()
 
 
 type ZetlightConfigEntry = ConfigEntry[ZetlightCoordinator]
