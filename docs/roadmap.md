@@ -31,17 +31,38 @@ See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 | F3 | Per-channel A/B/C/D | A–D sliders (live) | `0x13` | ✅ Shipped (v0.3.0) | — |
 | F4 | Reachability / status read | — | `0x0C` | ✅ Shipped (v0.1.0) | — |
 | F5 | Device clock sync | (auto in app) | `sendCurrentTimeAndDateCmd` | 🟡 Needs capture | Capture a time-sync frame; add a service/periodic sync |
-| F6 | Lightning effect | 闪电 | `sendlightning` | 🟡 Needs capture | Capture the 闪电 tap; expose as a button/service |
-| F7 | Cloud effect | 云彩 | `sendcloud` | 🟡 Needs capture | Capture the 云彩 tap; expose as a button/service |
-| F8 | Auto-clouds toggle | 自动云彩 | config frame | 🟡 Needs capture | Capture toggling 自动云彩; expose as a switch |
-| F9 | Moonlight mode | 月相模式 | config frame | 🟡 Needs capture | Capture toggling 月相模式; expose as a switch |
-| F10 | Acclimation mode | 适应模式 | config frame | 🟡 Needs capture | Capture toggling 适应模式; expose as a switch |
-| F11 | Fade/ramp duration | 渐变时长 (minutes) | config frame | 🟡 Needs capture | Capture setting the slider; expose as a number |
-| F12 | Temporary-on timer | 临开 | timer frame | 🟡 Needs capture | Capture 临开; decide on entity shape |
+| F6 | Lightning effect | 闪电 | `sendlightning` | ⏸️ Deprioritized | Low value for the user; skip unless requested |
+| F7 | Cloud effect | 云彩 | `sendcloud` | ⏸️ Deprioritized | Low value for the user; skip unless requested |
+| F8 | Auto-clouds toggle | 自动云彩 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
+| F9 | Moonlight mode | 月相模式 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
+| F10 | Acclimation mode | 适应模式 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
+| F11 | Fade/ramp duration | 渐变时长 (minutes) | `0x22` (observed) | ⏸️ Deprioritized | Frame partly decoded (see note); skip unless requested |
+| F12 | Temporary-on timer | 临开 | timer frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F13 | Read daily schedule | 5 time periods | `0x10` (read LED config) | 🟠 Needs decoding | Parse the `0x10` reply (times + per-period 4-channel setpoints) |
 | F14 | Write daily schedule | edit/save periods | `sendSavelight` / `sendSaveFivelight` | 🟠 Needs decoding | Decode the save payload (timestamps + 4-channel values); apply + persist |
 | F15 | Preset spectra (LPS/SPS #N) | 方案 presets | built on F14 | 🟠 Needs decoding | After F14, store presets in HA and write them to the device |
 | F16 | Config-flow auto-discovery | — | broadcast `C9000000000A021D` | 🟢 Ready | Add a discovery step that broadcasts and lists responding beacons |
+
+## Capture findings (2026-10-20)
+
+A local capture (phone on the light's subnet, proxy off) while tapping several
+mode controls was partly decoded. The effect/mode features (F6–F12) are
+**deprioritized** — the user finds them low-value and unlikely to use. Recorded
+here only so they don't need re-capturing if revisited:
+
+- **渐变时长 (fade duration) — CMD `0x22`**, payload `[enable, minutes]`:
+  - 5 min → `EE 00 08 01023A01 22 01 05 16 CC`
+  - 3 min → `EE 00 08 01023A01 22 01 03 10 CC`
+- Other command bytes seen from the phone during mode taps but **not reliably
+  mapped to a feature** (the UI scrolled and several controls were tapped):
+  `0x14` (payload `00 01 00` / `00 00 00`), `0x16` (`00 01 01`), `0x17`
+  (`01 01 01` / `00 01 01`), `0x20` (no payload; reply carries a state page).
+  These look like per-mode toggles/reads; re-capture one action at a time if
+  ever needed.
+
+The core local control the user actually wants (on/off + brightness + per-channel,
+no cloud) is already shipped (F1–F4). The one remaining high-value item is the
+daily schedule (F13/F14).
 
 ## Beyond the app (Home Assistant only)
 
