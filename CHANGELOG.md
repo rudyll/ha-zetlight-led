@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.1 — 2026-10-21
+
+- **Whole-tank blueprints tailored to the GTS pump:** its control is a `fan`
+  entity, so the blueprints now use `fan.turn_off` / `fan.set_percentage` (not a
+  switch/number), plus the pump's wave-mode `select` for the storm surge. Entity
+  pickers still keep them pump-agnostic.
+
 ## 0.10.0 — 2026-10-21
 
 - **Whole-tank blueprints** (light + wave pump): coordinate the light with any

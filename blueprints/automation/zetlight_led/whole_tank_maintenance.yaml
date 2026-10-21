@@ -4,7 +4,7 @@ blueprint:
     Flip a helper toggle on for water changes / cleaning: the wave pump stops and
     the light goes full white for visibility. Flip it off to restore: pump on and
     the light resumes its stored program. Create an input_boolean (helper) first
-    and select it below.
+    and select it below. (GTS pump control is a fan entity.)
   domain: automation
   input:
     toggle:
@@ -20,12 +20,12 @@ blueprint:
           filter:
             - integration: zetlight_led
               domain: light
-    pump_switch:
-      name: Wave pump switch
+    pump_fan:
+      name: Wave pump (fan)
       selector:
         entity:
           filter:
-            - domain: switch
+            - domain: fan
 
 mode: queued
 
@@ -43,9 +43,9 @@ action:
   - choose:
       - conditions: "{{ trigger.id == 'start' }}"
         sequence:
-          - service: switch.turn_off
+          - service: fan.turn_off
             target:
-              entity_id: !input pump_switch
+              entity_id: !input pump_fan
           - service: light.turn_on
             target:
               entity_id: !input light_entity
@@ -53,9 +53,9 @@ action:
               brightness: 255
       - conditions: "{{ trigger.id == 'end' }}"
         sequence:
-          - service: switch.turn_on
+          - service: fan.turn_on
             target:
-              entity_id: !input pump_switch
+              entity_id: !input pump_fan
           - service: light.turn_on
             target:
               entity_id: !input light_entity

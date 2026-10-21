@@ -2,8 +2,8 @@ blueprint:
   name: Zetlight whole-tank — pump follows feeding mode
   description: >-
     When the light's Feeding mode turns on, pause the wave pump; resume it when
-    feeding ends. Piggybacks on the light's built-in feeding timer, so you still
-    only press one thing (the Feeding switch) to feed the whole tank.
+    feeding ends. Piggybacks on the light's built-in feeding timer, so one tap on
+    the Feeding switch feeds the whole tank. (GTS pump control is a fan entity.)
   domain: automation
   input:
     feeding_switch:
@@ -13,13 +13,13 @@ blueprint:
           filter:
             - integration: zetlight_led
               domain: switch
-    pump_switch:
-      name: Wave pump switch
+    pump_fan:
+      name: Wave pump (fan)
       description: Turned off while feeding, back on afterwards.
       selector:
         entity:
           filter:
-            - domain: switch
+            - domain: fan
 
 mode: queued
 
@@ -37,11 +37,11 @@ action:
   - choose:
       - conditions: "{{ trigger.id == 'start' }}"
         sequence:
-          - service: switch.turn_off
+          - service: fan.turn_off
             target:
-              entity_id: !input pump_switch
+              entity_id: !input pump_fan
       - conditions: "{{ trigger.id == 'end' }}"
         sequence:
-          - service: switch.turn_on
+          - service: fan.turn_on
             target:
-              entity_id: !input pump_switch
+              entity_id: !input pump_fan

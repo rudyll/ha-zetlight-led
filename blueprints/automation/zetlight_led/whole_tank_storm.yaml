@@ -1,9 +1,9 @@
 blueprint:
   name: Zetlight whole-tank — storm (lightning + flow surge)
   description: >-
-    On stormy weather, fire the light's lightning effect AND surge the wave pump
-    for a while, then return the pump to its normal flow. Weather comes from a HA
-    weather integration. Requires a pump with a flow/intensity number entity.
+    On stormy weather, fire the light's lightning effect, switch the wave pump to
+    a surge/turbulence wave and raise its intensity for a while, then restore the
+    normal wave and intensity. Weather comes from a HA weather integration.
   domain: automation
   input:
     weather_entity:
@@ -19,28 +19,49 @@ blueprint:
           filter:
             - integration: zetlight_led
               domain: button
-    pump_flow:
-      name: Wave pump flow number
+    pump_fan:
+      name: Wave pump (fan)
       selector:
         entity:
           filter:
-            - domain: number
-    surge_value:
-      name: Surge flow
+            - domain: fan
+    pump_wave_mode:
+      name: Wave pump wave-mode select
+      selector:
+        entity:
+          filter:
+            - integration: gts_wavepump
+              domain: select
+    surge_percentage:
+      name: Surge intensity
       default: 90
       selector:
         number:
           min: 0
           max: 100
           unit_of_measurement: "%"
-    normal_value:
-      name: Normal flow (restored after)
+    surge_wave:
+      name: Surge wave mode
+      default: surge
+      selector:
+        select:
+          custom_value: true
+          options: [surge, turbulence, pulse]
+    normal_percentage:
+      name: Normal intensity (restored)
       default: 50
       selector:
         number:
           min: 0
           max: 100
           unit_of_measurement: "%"
+    normal_wave:
+      name: Normal wave mode (restored)
+      default: sine
+      selector:
+        select:
+          custom_value: true
+          options: [constant, pulse, sine, turbulence, surge]
     surge_duration:
       name: Surge duration
       default: "00:02:00"
@@ -48,18 +69,12 @@ blueprint:
         duration:
     storm_states:
       name: Weather states that count as a storm
-      default:
-        - lightning
-        - lightning-rainy
+      default: [lightning, lightning-rainy]
       selector:
         select:
           multiple: true
           custom_value: true
-          options:
-            - lightning
-            - lightning-rainy
-            - pouring
-            - hail
+          options: [lightning, lightning-rainy, pouring, hail]
 
 mode: single
 
@@ -78,14 +93,24 @@ action:
   - service: button.press
     target:
       entity_id: !input lightning_button
-  - service: number.set_value
+  - service: select.select_option
     target:
-      entity_id: !input pump_flow
+      entity_id: !input pump_wave_mode
     data:
-      value: !input surge_value
+      option: !input surge_wave
+  - service: fan.set_percentage
+    target:
+      entity_id: !input pump_fan
+    data:
+      percentage: !input surge_percentage
   - delay: !input surge_duration
-  - service: number.set_value
+  - service: select.select_option
     target:
-      entity_id: !input pump_flow
+      entity_id: !input pump_wave_mode
     data:
-      value: !input normal_value
+      option: !input normal_wave
+  - service: fan.set_percentage
+    target:
+      entity_id: !input pump_fan
+    data:
+      percentage: !input normal_percentage

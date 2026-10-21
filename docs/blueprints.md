@@ -19,9 +19,11 @@ and paste the raw file URL (or copy the file into
 
 ## Whole-tank (light + wave pump)
 
-These coordinate the light with a wave pump (e.g. the GTS pump integration).
-Switch-based ones work with any pump; flow-based ones need a pump flow/intensity
-`number` entity.
+These coordinate the light with a wave pump. They target the GTS pump
+integration (`gts_wavepump`), whose on/off and intensity are a **`fan`** entity
+(`fan.turn_off` / `fan.set_percentage`), with `select` entities for run-mode
+(`tide` = built-in day/night curve) and wave-mode (`surge` / `turbulence` …).
+You pick the entities at import, so other pumps with a `fan` entity work too.
 
 - **whole_tank_feed** — when the light's Feeding mode turns on, pause the pump;
   resume it when feeding ends (one tap on the Feeding switch feeds the whole tank).
