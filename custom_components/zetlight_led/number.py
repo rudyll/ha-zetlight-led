@@ -16,6 +16,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import ZetlightConfigEntry, ZetlightCoordinator
 from .const import (
     DOMAIN,
+    FEEDING_DEFAULT_LEVEL,
+    FEEDING_DEFAULT_MINUTES,
     LIGHTNING_DEFAULT_FLASHES,
     LIGHTNING_DEFAULT_INTENSITY,
     LIGHTNING_DEFAULT_ON_MS,
@@ -53,6 +55,16 @@ async def async_setup_entry(
                 coordinator, entry.entry_id, "lightning_on_ms",
                 "Lightning flash duration", 30, 300, 10,
                 UnitOfTime.MILLISECONDS, LIGHTNING_DEFAULT_ON_MS, "mdi:timer-outline",
+            ),
+            ZetlightLightningParam(
+                coordinator, entry.entry_id, "feeding_level",
+                "Feeding level", 0, 100, 1, PERCENTAGE,
+                FEEDING_DEFAULT_LEVEL, "mdi:brightness-5",
+            ),
+            ZetlightLightningParam(
+                coordinator, entry.entry_id, "feeding_minutes",
+                "Feeding duration", 1, 120, 1, UnitOfTime.MINUTES,
+                FEEDING_DEFAULT_MINUTES, "mdi:timer-sand",
             ),
         ]
     )
@@ -96,10 +108,10 @@ class ZetlightChannelNumber(CoordinatorEntity[ZetlightCoordinator], NumberEntity
 
 
 class ZetlightLightningParam(CoordinatorEntity[ZetlightCoordinator], RestoreNumber):
-    """A tunable parameter for the custom lightning effect.
+    """A tunable local config number (lightning or feeding parameters).
 
     Pure local config (no device I/O): the value is stored on the coordinator
-    and read by the lightning button. Restored across restarts.
+    and read by the lightning button / feeding switch. Restored across restarts.
     """
 
     _attr_has_entity_name = True

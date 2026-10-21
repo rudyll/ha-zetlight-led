@@ -28,6 +28,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             ZetlightLightningButton(coordinator, entry.entry_id),
+            ZetlightCloudButton(coordinator, entry.entry_id),
             ZetlightSyncClockButton(coordinator, entry.entry_id),
             ZetlightReadConfigButton(coordinator, entry.entry_id),
         ]
@@ -58,6 +59,19 @@ class ZetlightLightningButton(_ZetlightButton):
 
     async def async_press(self) -> None:
         await self.coordinator.async_lightning()
+
+
+class ZetlightCloudButton(_ZetlightButton):
+    """Trigger a custom passing-cloud effect (ramp down, hold, ramp up)."""
+
+    _attr_name = "Cloud"
+    _attr_icon = "mdi:weather-partly-cloudy"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator, entry_id, "cloud")
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_cloud()
 
 
 class ZetlightSyncClockButton(_ZetlightButton):

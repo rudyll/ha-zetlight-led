@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "积光 Horizon Aqua LED",
+        "description": "选择发现到的灯，或选“手动输入 IP”。",
+        "data": {
+          "device": "设备"
+        }
+      },
+      "manual": {
+        "title": "积光 Horizon Aqua LED",
+        "description": "输入灯的局域网 IP 地址。建议在路由器里给它做 DHCP 保留，避免 IP 变动。",
+        "data": {
+          "host": "IP 地址",
+          "port": "UDP 端口"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "灯没有回应。请检查 IP 地址，以及 Home Assistant 能否在该 UDP 端口访问到设备。",
+      "unknown": "发生未知错误。"
+    },
+    "abort": {
+      "already_configured": "这盏灯已经配置过了。",
+      "cannot_connect": "灯没有回应。",
+      "unknown": "发生未知错误。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "日程预设与选项",
+        "description": "用 YAML 定义命名预设：每个预设含 start（HH:MM 起始时间）、durations（5 个时段的分钟数）、brightness（5 时段 × 4 通道 A,B,C,D，0-100）。选择某个预设会覆盖设备里存储的日程。扫描间隔为状态轮询秒数。",
+        "data": {
+          "presets": "预设（YAML）",
+          "scan_interval": "扫描间隔（秒）"
+        }
+      }
+    },
+    "error": {
+      "invalid_presets": "预设解析失败。请检查 YAML，确保每个预设是 5 个时段、每段 4 个通道值。"
+    }
+  }
+}

@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+from datetime import timedelta
 
 import voluptuous as vol
 
@@ -17,6 +18,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -24,9 +26,13 @@ from . import protocol
 from .const import (
     CONF_DEVICE_CODE,
     CONF_PRESETS,
+    CONF_SCAN_INTERVAL,
     DEFAULT_PORT,
+    DEFAULT_SCAN_SECONDS,
     DISCOVERY_TIMEOUT,
     DOMAIN,
+    FEEDING_DEFAULT_LEVEL,
+    FEEDING_DEFAULT_MINUTES,
     LIGHTNING_DEFAULT_FLASHES,
     LIGHTNING_DEFAULT_INTENSITY,
     LIGHTNING_DEFAULT_ON_MS,
@@ -42,6 +48,7 @@ PLATFORMS: list[Platform] = [
     Platform.BUTTON,
     Platform.SENSOR,
     Platform.SELECT,
+    Platform.SWITCH,
 ]
 
 
@@ -278,12 +285,17 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
     (0-100). Any change sends the full frame and notifies all entities.
     """
 
-    def __init__(self, hass: HomeAssistant, client: ZetlightClient) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        client: ZetlightClient,
+        update_interval=SCAN_INTERVAL,  # noqa: ANN001
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=SCAN_INTERVAL,
+            update_interval=update_interval,
         )
         self.client = client
         self.channels: list[int] = [0] * protocol.NUM_CHANNELS
@@ -293,6 +305,12 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.lightning_intensity = LIGHTNING_DEFAULT_INTENSITY
         self.lightning_on_ms = LIGHTNING_DEFAULT_ON_MS
         self._lightning_lock = asyncio.Lock()
+        # Feeding / maintenance mode state.
+        self.feeding_level = FEEDING_DEFAULT_LEVEL
+        self.feeding_minutes = FEEDING_DEFAULT_MINUTES
+        self.feeding_on = False
+        self._feeding_saved: list[int] | None = None
+        self._feeding_unsub = None
         # Raw bytes of the last 0x10 config reply (for schedule decoding work).
         self.last_config: bytes | None = None
         # Parsed per-slot brightness from the last 0x10 reply (raw %), or None.
@@ -358,6 +376,62 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                 # restore the integration's last known levels
                 await self.client.async_set_brightness(saved)
 
+    async def async_cloud(self) -> None:
+        """Custom passing-cloud effect: ramp all channels down, hold, ramp up.
+
+        Built from live 0x13 frames; restores the previous levels afterwards.
+        """
+        async with self._lightning_lock:
+            saved = tuple(self.channels)
+            target = tuple(int(c * 0.4) for c in saved)
+            steps = 8
+            try:
+                for i in range(1, steps + 1):
+                    vals = tuple(
+                        int(saved[j] + (target[j] - saved[j]) * i / steps)
+                        for j in range(protocol.NUM_CHANNELS)
+                    )
+                    await self.client.async_set_brightness(vals)
+                    await asyncio.sleep(0.18)
+                await asyncio.sleep(2.0)
+                for i in range(1, steps + 1):
+                    vals = tuple(
+                        int(target[j] + (saved[j] - target[j]) * i / steps)
+                        for j in range(protocol.NUM_CHANNELS)
+                    )
+                    await self.client.async_set_brightness(vals)
+                    await asyncio.sleep(0.18)
+            finally:
+                await self.client.async_set_brightness(saved)
+
+    async def async_feeding_set(self, on: bool) -> None:
+        """Toggle feeding mode: dim to the feeding level, auto-restore on timeout."""
+        if self._feeding_unsub is not None:
+            self._feeding_unsub()
+            self._feeding_unsub = None
+        if on:
+            if not self.feeding_on:
+                self._feeding_saved = list(self.channels)
+            self.feeding_on = True
+            level = max(0, min(100, int(self.feeding_level)))
+            self.channels = [level] * protocol.NUM_CHANNELS
+            await self.async_apply_channels()
+            self._feeding_unsub = async_call_later(
+                self.hass, max(1, int(self.feeding_minutes)) * 60, self._feeding_timeout
+            )
+        else:
+            self.feeding_on = False
+            if self._feeding_saved is not None:
+                self.channels = self._feeding_saved
+                self._feeding_saved = None
+            await self.async_apply_channels()
+        self.async_update_listeners()
+
+    @callback
+    def _feeding_timeout(self, _now) -> None:  # noqa: ANN001
+        self._feeding_unsub = None
+        self.hass.async_create_task(self.async_feeding_set(False))
+
     async def async_write_schedule(
         self,
         slots: list[tuple[int, int, int, int]],
@@ -385,7 +459,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) -> 
     client = ZetlightClient(hass, host, port, device_code)
     await client.async_connect()
 
-    coordinator = ZetlightCoordinator(hass, client)
+    interval = timedelta(
+        seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_SECONDS)
+    )
+    coordinator = ZetlightCoordinator(hass, client, interval)
     try:
         await coordinator.async_config_entry_first_refresh()
     except ConfigEntryNotReady:
@@ -429,7 +506,8 @@ _SET_SCHEDULE_SCHEMA = vol.Schema(
             [
                 vol.All(
                     cv.ensure_list,
-                    [vol.All(vol.Coerce(int), vol.Range(min=0, max=100))],
+                    # 0-200: values above 100 are overdrive (device-supported).
+                    [vol.All(vol.Coerce(int), vol.Range(min=0, max=200))],
                     vol.Length(min=protocol.NUM_CHANNELS, max=protocol.NUM_CHANNELS),
                 )
             ],

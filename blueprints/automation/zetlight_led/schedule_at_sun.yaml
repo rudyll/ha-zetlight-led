@@ -1,0 +1,50 @@
+blueprint:
+  name: Zetlight LED — apply schedule at sunrise/sunset
+  description: >-
+    Write a Zetlight daily schedule whose start time follows the real sun.
+    Triggers on a sun event (with an optional offset) and calls
+    zetlight_led.set_schedule with start = the trigger time, so the curve shifts
+    with the seasons. Edit the durations/brightness to taste.
+  domain: automation
+  input:
+    sun_event:
+      name: Sun event
+      default: sunrise
+      selector:
+        select:
+          options:
+            - sunrise
+            - sunset
+    offset:
+      name: Offset
+      description: Time offset from the sun event (e.g. -00:30:00 for 30 min before).
+      default: "00:00:00"
+      selector:
+        time:
+    durations:
+      name: Slot durations (minutes)
+      description: The 5 slot lengths in minutes.
+      default: [60, 120, 480, 120, 120]
+    brightness:
+      name: Per-slot brightness
+      description: 5 slots, each [A, B, C, D] 0-100.
+      default:
+        - [10, 40, 30, 10]
+        - [20, 60, 45, 20]
+        - [40, 90, 70, 40]
+        - [20, 60, 45, 20]
+        - [5, 25, 18, 5]
+
+mode: single
+
+trigger:
+  - platform: sun
+    event: !input sun_event
+    offset: !input offset
+
+action:
+  - service: zetlight_led.set_schedule
+    data:
+      start: "{{ now().strftime('%H:%M') }}"
+      durations: !input durations
+      brightness: !input brightness

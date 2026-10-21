@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.8.0 — 2026-10-21
+
+A batch of extras.
+
+- **Feeding / maintenance mode** (`switch.feeding_mode`): dims all channels to a
+  set level and auto-restores after a timer (configurable via `Feeding level` /
+  `Feeding duration` numbers). Live-only; the stored program is untouched.
+- **Cloud effect** (`button.cloud`): a custom passing-cloud dim-down → hold →
+  ramp-up, built from live `0x13` frames, then restores the previous levels.
+- **Per-channel raw sensors** (diagnostic, disabled by default): the device's
+  internal per-channel drive values from the `0x0C` reply.
+- **Schedule overdrive:** `set_schedule` now accepts channel values up to 200
+  (the device supports >100%).
+- **Scan interval option:** the status poll period is now configurable (5–600 s)
+  in the integration's options.
+- **Chinese (zh-Hans) translation** for the config/options flow.
+- **Sun blueprint:** `blueprints/automation/zetlight_led/schedule_at_sun.yaml`
+  applies a schedule whose start follows sunrise/sunset.
+- DHCP auto-discovery is intentionally not added (it would false-match every
+  Espressif device); the broadcast discovery from 0.7.0 covers setup.
+
 ## 0.7.0 — 2026-10-21
 
 Adds discovery, schedule presets, and a ready-made dashboard.

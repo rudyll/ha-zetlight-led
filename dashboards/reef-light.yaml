@@ -45,14 +45,24 @@ views:
         cards:
           - type: heading
             heading: Effects & schedule
-          - type: button
-            name: Lightning
-            icon: mdi:flash
-            tap_action:
-              action: perform-action
-              perform_action: button.press
-              target:
-                entity_id: button.aedc45_lightning
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Lightning
+                icon: mdi:flash
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.aedc45_lightning
+              - type: button
+                name: Cloud
+                icon: mdi:weather-partly-cloudy
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.aedc45_cloud
           - type: entities
             title: Lightning settings
             entities:
@@ -62,6 +72,15 @@ views:
                 name: Intensity
               - entity: number.aedc45_lightning_flash_duration
                 name: Flash duration
+          - type: entities
+            title: Feeding / maintenance
+            entities:
+              - entity: switch.aedc45_feeding_mode
+                name: Feeding mode
+              - entity: number.aedc45_feeding_level
+                name: Feeding level
+              - entity: number.aedc45_feeding_duration
+                name: Feeding duration
           - type: entities
             title: Schedule
             entities:

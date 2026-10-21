@@ -13,6 +13,9 @@ DEFAULT_PORT = 8855
 CONF_DEVICE_CODE = "device_code"
 # Options key: a mapping of preset name -> {start, durations, brightness}.
 CONF_PRESETS = "presets"
+# Options key: status poll interval in seconds.
+CONF_SCAN_INTERVAL = "scan_interval"
+DEFAULT_SCAN_SECONDS = 30
 
 # Discovery broadcast timeout (seconds).
 DISCOVERY_TIMEOUT = 2.0
@@ -30,3 +33,7 @@ REQUEST_TIMEOUT = 3.0
 LIGHTNING_DEFAULT_FLASHES = 2      # number of quick flashes per press
 LIGHTNING_DEFAULT_INTENSITY = 100  # peak white/blue level per flash (0-100)
 LIGHTNING_DEFAULT_ON_MS = 80       # on-time per flash, milliseconds
+
+# Feeding / maintenance mode: temporarily dim all channels, then auto-restore.
+FEEDING_DEFAULT_LEVEL = 20      # channel level while feeding (0-100)
+FEEDING_DEFAULT_MINUTES = 10    # auto-restore after this many minutes

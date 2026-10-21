@@ -66,14 +66,27 @@ daily schedule (F13/F14).
 
 ## Beyond the app (Home Assistant only)
 
-These add value the vendor app can't, but still only use commands the device
-supports:
+Shipped (v0.8.0):
 
-- Automations/scenes: tie lighting to presence, time, sensors, or real weather
-  (e.g. a storm scene triggering the lightning effect).
-- A "feeding" / "maintenance" scene that dims channels, then restores them.
+- ✅ **Feeding / maintenance mode** (`switch.feeding_mode`): dim + auto-restore.
+- ✅ **Custom cloud effect** (`button.cloud`): ramp down, hold, ramp up.
+- ✅ **Per-channel raw diagnostic sensors** (from `0x0C`).
+- ✅ **Schedule overdrive** (values up to 200% in `set_schedule`).
+- ✅ **Configurable scan interval** (options, 5–600 s).
+- ✅ **Chinese (zh-Hans) translation** for the config/options flow.
+- ✅ **Sun-anchored schedule blueprint** (sunrise/sunset).
+
+Still open / possible later:
+
 - Whole-tank scenes combining the light with the wave pump integration.
-- Local history/logging of state via HA recorder.
+- Local history/logging via HA recorder (works already; no code needed).
+- Acclimation mode (scale schedule brightness up over several days).
+- Entity-name translations (zh-Hans) beyond the config flow.
+
+Intentionally not done:
+
+- **Native DHCP auto-discovery** — matching Espressif OUIs would false-match
+  every ESP device on the network; the broadcast discovery (F16) covers setup.
 
 ## Known limitation
 

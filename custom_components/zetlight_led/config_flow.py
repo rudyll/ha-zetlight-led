@@ -22,7 +22,14 @@ from homeassistant.helpers.selector import (
 )
 
 from . import ZetlightClient, ZetlightUDPError, async_discover, preset_to_args, protocol
-from .const import CONF_DEVICE_CODE, CONF_PRESETS, DEFAULT_PORT, DOMAIN
+from .const import (
+    CONF_DEVICE_CODE,
+    CONF_PRESETS,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_PORT,
+    DEFAULT_SCAN_SECONDS,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -154,10 +161,15 @@ class ZetlightOptionsFlow(OptionsFlow):
                 errors["base"] = "invalid_presets"
             else:
                 return self.async_create_entry(
-                    title="", data={CONF_PRESETS: presets or {}}
+                    title="",
+                    data={
+                        CONF_PRESETS: presets or {},
+                        CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
+                    },
                 )
 
-        current = self.config_entry.options.get(CONF_PRESETS)
+        options = self.config_entry.options
+        current = options.get(CONF_PRESETS)
         default = yaml.safe_dump(
             current if current else _PRESET_EXAMPLE, sort_keys=False, allow_unicode=True
         )
@@ -166,6 +178,10 @@ class ZetlightOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_PRESETS, default=default
                 ): TextSelector(TextSelectorConfig(multiline=True)),
+                vol.Optional(
+                    CONF_SCAN_INTERVAL,
+                    default=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_SECONDS),
+                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=600)),
             }
         )
         return self.async_show_form(

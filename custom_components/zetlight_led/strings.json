@@ -30,10 +30,11 @@
   "options": {
     "step": {
       "init": {
-        "title": "Schedule presets",
-        "description": "Define named presets as YAML. Each preset has `start` (HH:MM), `durations` (5 slot lengths in minutes) and `brightness` (5 slots x 4 channels A,B,C,D, 0-100). Selecting a preset overwrites the device's stored program.",
+        "title": "Presets & options",
+        "description": "Define named presets as YAML. Each preset has `start` (HH:MM), `durations` (5 slot lengths in minutes) and `brightness` (5 slots x 4 channels A,B,C,D, 0-100). Selecting a preset overwrites the device's stored program. Scan interval is the status poll period in seconds.",
         "data": {
-          "presets": "Presets (YAML)"
+          "presets": "Presets (YAML)",
+          "scan_interval": "Scan interval (seconds)"
         }
       }
     },

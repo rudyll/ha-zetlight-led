@@ -40,6 +40,8 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Overall brightness | ✅ Working (device-verified command `0x13`) |
 | Per-channel A/B/C/D dimming | ✅ Working (four `number` sliders, 0–100%) |
 | Custom lightning effect | ✅ Working (`button.lightning`, tunable; white+blue flash) |
+| Custom cloud effect | ✅ Working (`button.cloud`; ramp down → hold → up) |
+| Feeding / maintenance mode | ✅ Working (`switch.feeding_mode`; dim + auto-restore) |
 | Clock sync | ✅ Working (`0x03`; button + auto on setup) |
 | Write daily schedule | ✅ `zetlight_led.set_schedule` (brightness + times verified; **overwrites stored program**) |
 | Read daily schedule | ✅ `sensor.schedule` (5×4 brightness, raw %) |
