@@ -257,6 +257,29 @@ def parse_frame(frame: bytes) -> tuple[bytes, int, bytes]:
     return device_code, cmd, payload
 
 
+# In a 0x10 config reply the 20 schedule-brightness bytes start at this frame
+# offset (after DD 00 LEN code 10 <name6> <date/time...>), device-verified.
+SCHEDULE_OFFSET = 40
+
+
+def parse_schedule_brightness(frame: bytes) -> list[tuple[int, int, int, int]]:
+    """Parse the per-slot brightness from a 0x10 config reply.
+
+    Returns ``NUM_SLOTS`` tuples of four raw-percent channel values
+    (``slot0:A B C D, ...``). See §8c — the stored byte is the displayed %.
+    """
+    device_code, cmd, _ = parse_frame(frame)
+    if cmd != CMD_READ_CONFIG:
+        raise ValueError(f"not a config reply (cmd 0x{cmd:02X})")
+    block = frame[SCHEDULE_OFFSET : SCHEDULE_OFFSET + NUM_SLOTS * NUM_CHANNELS]
+    if len(block) < NUM_SLOTS * NUM_CHANNELS:
+        raise ValueError("config reply too short for schedule")
+    return [
+        tuple(block[s * NUM_CHANNELS + c] for c in range(NUM_CHANNELS))
+        for s in range(NUM_SLOTS)
+    ]
+
+
 def parse_status(frame: bytes) -> DeviceStatus:
     """Parse a 0x0C read-status reply into a :class:`DeviceStatus`."""
     device_code, cmd, payload = parse_frame(frame)

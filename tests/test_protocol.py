@@ -183,6 +183,28 @@ def test_build_schedule_times_ui_schedule():
     assert frame[2] == 0x1A  # LEN
 
 
+def test_parse_schedule_brightness_from_captured_reply():
+    # Real 0x10 config reply captured from the device.
+    reply = bytes.fromhex(
+        "DD009301023A0110"
+        "414544433435"  # name AEDC45
+        "2610210043270900"  # date/time + misc
+        "100010001200120020002000220022000000"  # misc
+        "040E1E0C081C3C181446963C0C2A5A2406152D12"  # <- schedule brightness (offset 40)
+        "05010000000101FFFFFFFF000000522240"
+        "303130303030303030333030303030313031303330303030303030303030303030303030303030303030303030303030303030303030303030313030222C227A65746C696768742248"
+        "CC"
+    )
+    slots = protocol.parse_schedule_brightness(reply)
+    assert slots == [
+        (4, 14, 30, 12),
+        (8, 28, 60, 24),
+        (20, 70, 150, 60),
+        (12, 42, 90, 36),
+        (6, 21, 45, 18),
+    ]
+
+
 def test_schedule_builders_reject_wrong_counts():
     with pytest.raises(ValueError):
         protocol.build_schedule_brightness([(0, 0, 0, 0)])  # not 5 slots

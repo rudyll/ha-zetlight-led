@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.0 — 2026-10-21
+
+Schedule read-out, and the schedule write is now fully verified.
+
+- **Schedule sensor** (`sensor.schedule`): read-only view of the device's stored
+  daily brightness curve (5 slots × 4 channels, raw %), decoded from the `0x10`
+  reply and exposed in the sensor's attributes. (Offset assumes the standard
+  layout; it can shift ±1 byte under some vendor presets.)
+- **Schedule write (F14) verified on hardware.** Time slots (`0x11`) were
+  confirmed too: the frame is stored verbatim and the app shows the written
+  times correctly (BCD HH:MM). Together with the raw-% brightness fix in 0.5.1,
+  `set_schedule` is no longer experimental.
+- **More robust UDP reads:** replies are now matched by command byte, so the
+  device's broadcast heartbeats (or a late ACK) can't be mistaken for a reply.
+
 ## 0.5.1 — 2026-10-21
 
 Fixes the schedule brightness encoding after an on-device + app check.

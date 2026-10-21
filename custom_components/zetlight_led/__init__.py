@@ -34,7 +34,12 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.LIGHT, Platform.NUMBER, Platform.BUTTON]
+PLATFORMS: list[Platform] = [
+    Platform.LIGHT,
+    Platform.NUMBER,
+    Platform.BUTTON,
+    Platform.SENSOR,
+]
 
 
 class ZetlightUDPError(Exception):
@@ -42,17 +47,30 @@ class ZetlightUDPError(Exception):
 
 
 class _ClientProtocol(asyncio.DatagramProtocol):
-    """Minimal datagram protocol that resolves one pending reply at a time."""
+    """Minimal datagram protocol that resolves one pending reply at a time.
+
+    An optional expected command byte lets a read ignore unrelated datagrams
+    (e.g. the device's broadcast heartbeats, or a late ACK) and wait for the
+    matching reply.
+    """
 
     def __init__(self) -> None:
         self._pending: asyncio.Future[bytes] | None = None
+        self._expect_cmd: int | None = None
 
-    def set_pending(self, future: asyncio.Future[bytes]) -> None:
+    def set_pending(self, future: asyncio.Future[bytes], expect_cmd: int | None) -> None:
         self._pending = future
+        self._expect_cmd = expect_cmd
 
     def datagram_received(self, data: bytes, addr) -> None:  # noqa: ANN001
-        if self._pending is not None and not self._pending.done():
-            self._pending.set_result(data)
+        if self._pending is None or self._pending.done():
+            return
+        if self._expect_cmd is not None and not (
+            len(data) >= 8 and data[0] == protocol.RESPONSE_HEADER
+            and data[7] == self._expect_cmd
+        ):
+            return  # not the reply we're waiting for; keep listening
+        self._pending.set_result(data)
 
     def error_received(self, exc: Exception) -> None:
         if self._pending is not None and not self._pending.done():
@@ -109,13 +127,15 @@ class ZetlightClient:
             self._transport.close()
             self._transport = None
 
-    async def _request(self, frame: bytes, *, expect_reply: bool) -> bytes | None:
+    async def _request(
+        self, frame: bytes, *, expect_reply: bool, expect_cmd: int | None = None
+    ) -> bytes | None:
         if self._transport is None or self._proto is None:
             raise ZetlightUDPError("client not connected")
         async with self._lock:
             loop = asyncio.get_running_loop()
             future: asyncio.Future[bytes] = loop.create_future()
-            self._proto.set_pending(future)
+            self._proto.set_pending(future, expect_cmd)
             self._transport.sendto(frame)
             if not expect_reply:
                 return None
@@ -127,7 +147,9 @@ class ZetlightClient:
     async def async_read_status(self) -> protocol.DeviceStatus:
         """Send 0x0C and parse the reply. Also confirms the device code."""
         frame = protocol.build_read_status(device_code=self.device_code)
-        reply = await self._request(frame, expect_reply=True)
+        reply = await self._request(
+            frame, expect_reply=True, expect_cmd=protocol.CMD_READ_STATUS
+        )
         assert reply is not None
         status = protocol.parse_status(reply)
         # The device echoes its real code; adopt it so later commands match.
@@ -171,6 +193,7 @@ class ZetlightClient:
         reply = await self._request(
             protocol.build_read_config(device_code=self.device_code),
             expect_reply=True,
+            expect_cmd=protocol.CMD_READ_CONFIG,
         )
         assert reply is not None
         return reply
@@ -229,6 +252,8 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self._lightning_lock = asyncio.Lock()
         # Raw bytes of the last 0x10 config reply (for schedule decoding work).
         self.last_config: bytes | None = None
+        # Parsed per-slot brightness from the last 0x10 reply (raw %), or None.
+        self.schedule: list[tuple[int, int, int, int]] | None = None
 
     async def _async_update_data(self) -> protocol.DeviceStatus:
         try:
@@ -241,6 +266,13 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         if not self._channels_seeded:
             self.channels = [max(0, min(100, s)) for s in status.setpoints]
             self._channels_seeded = True
+        # Best-effort schedule read (0x10); don't fail the update if it errors.
+        try:
+            raw = await self.client.async_read_config()
+            self.last_config = raw
+            self.schedule = protocol.parse_schedule_brightness(raw)
+        except (ZetlightUDPError, ValueError) as err:
+            _LOGGER.debug("Schedule read failed: %s", err)
         return status
 
     async def async_apply_channels(self) -> None:
