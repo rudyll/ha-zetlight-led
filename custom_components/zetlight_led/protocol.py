@@ -164,9 +164,13 @@ def build_schedule_brightness(
 ) -> bytes:
     """Build the save-schedule-brightness frame (CMD 0x1C).
 
-    ``slots`` is the daily curve: ``NUM_SLOTS`` tuples of four channel values
-    (0-100), laid out ``slot0:A B C D, slot1:A B C D, ...`` as BCD (100 -> 0xAA).
-    Mirrors the app's ``sendSaveFivelight`` / ``sendSaveFivelightLED``.
+    ``slots`` is the daily curve: ``NUM_SLOTS`` tuples of four channel values,
+    laid out ``slot0:A B C D, slot1:A B C D, ...``. Each channel byte is the
+    **raw percentage** (device-verified 2026-10-21): the stored byte equals the
+    displayed % (e.g. 50 -> 0x32, 100 -> 0x64). Values above 100 are allowed as
+    overdrive (the app shows them in red), so the byte may be 0-255.
+
+    NOTE: this is *raw*, unlike the live 0x13 command which uses BCD (100->0xAA).
 
     WARNING: this overwrites the device's stored brightness program.
     """
@@ -176,7 +180,10 @@ def build_schedule_brightness(
     for slot in slots:
         if len(slot) != NUM_CHANNELS:
             raise ValueError(f"each slot needs {NUM_CHANNELS} channel values")
-        payload += bytes(_to_bcd(c) for c in slot)
+        for c in slot:
+            if not 0 <= c <= 255:
+                raise ValueError("channel value must be 0-255")
+        payload += bytes(slot)
     return build_frame(CMD_SAVE_SCHEDULE, bytes(payload), device_code=device_code)
 
 

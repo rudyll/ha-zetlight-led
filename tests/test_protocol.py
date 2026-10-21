@@ -162,15 +162,15 @@ def test_build_schedule_brightness_ui_curve():
         (3, 27, 18, 3),
     ]
     frame = protocol.build_schedule_brightness(slots)
-    expected = bytes.fromhex("02181802" "04362404" "10906010" "06543606" "03271803")
+    # Raw-percent bytes (device-verified): stored byte == displayed %.
+    expected = bytes.fromhex("02121202" "04241804" "0A5A3C0A" "06362406" "031B1203")
     _assert_request(frame, protocol.CMD_SAVE_SCHEDULE, expected)
     assert frame[2] == 0x1A  # LEN
 
 
-def test_build_schedule_brightness_handles_100():
-    slots = [(100, 0, 0, 0)] * protocol.NUM_SLOTS
-    frame = protocol.build_schedule_brightness(slots)
-    assert frame[8] == 0xAA  # 100 -> 0xAA
+def test_build_schedule_brightness_raw_and_overdrive():
+    frame = protocol.build_schedule_brightness([(100, 50, 0, 144)] * protocol.NUM_SLOTS)
+    assert frame[8:12] == bytes([0x64, 0x32, 0x00, 0x90])  # 100->0x64, overdrive 144 ok
 
 
 def test_build_schedule_times_ui_schedule():

@@ -191,9 +191,16 @@ class ZetlightClient:
             ),
             expect_reply=False,
         )
+        await asyncio.sleep(0.1)
         await self._request(
             protocol.build_schedule_brightness(slots, device_code=self.device_code),
             expect_reply=False,
+        )
+        # Apply the saved program (0x1C alone does not refresh live output; the
+        # vendor app does save -> start).
+        await asyncio.sleep(0.1)
+        await self._request(
+            protocol.build_on(device_code=self.device_code), expect_reply=False
         )
 
 

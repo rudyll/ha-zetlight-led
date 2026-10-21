@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.1 — 2026-10-21
+
+Fixes the schedule brightness encoding after an on-device + app check.
+
+- **Schedule brightness is raw percent, not BCD.** An on-device test (write
+  `0x1C`, read back in the app) showed the stored byte equals the displayed %
+  (`0x50` → 80%, `0x90` → 144%, …). `build_schedule_brightness` now writes raw
+  bytes (`50% → 0x32`, `100% → 0x64`); values over 100 are allowed as overdrive.
+  (The live `0x13` command still uses BCD — only the schedule differs.)
+- The `set_schedule` service now also sends `START` (`0x1E`) after writing, since
+  `0x1C` alone does not refresh live output (the app does save → start).
+- Schedule time slots (`0x11`) remain unverified on hardware.
+
 ## 0.5.0 — 2026-10-21
 
 Adds a custom lightning effect, clock sync, and daily-schedule writing.
