@@ -23,7 +23,9 @@ from homeassistant.util import dt as dt_util
 from . import protocol
 from .const import (
     CONF_DEVICE_CODE,
+    CONF_PRESETS,
     DEFAULT_PORT,
+    DISCOVERY_TIMEOUT,
     DOMAIN,
     LIGHTNING_DEFAULT_FLASHES,
     LIGHTNING_DEFAULT_INTENSITY,
@@ -39,11 +41,52 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.BUTTON,
     Platform.SENSOR,
+    Platform.SELECT,
 ]
 
 
 class ZetlightUDPError(Exception):
     """Raised when a UDP request fails or times out."""
+
+
+class _DiscoveryProtocol(asyncio.DatagramProtocol):
+    """Collects beacon datagrams during a discovery broadcast."""
+
+    def __init__(self) -> None:
+        self.found: dict[str, bytes] = {}
+
+    def datagram_received(self, data: bytes, addr) -> None:  # noqa: ANN001
+        if data[:1] == b"\xdd":
+            self.found.setdefault(addr[0], data)
+
+
+async def async_discover(hass: HomeAssistant, timeout: float = DISCOVERY_TIMEOUT) -> list[dict]:
+    """Broadcast the discovery probe and return [{host, device_code, name}]."""
+    loop = asyncio.get_running_loop()
+    try:
+        transport, proto = await loop.create_datagram_endpoint(
+            _DiscoveryProtocol,
+            local_addr=("0.0.0.0", 0),
+            allow_broadcast=True,
+        )
+    except OSError as err:
+        _LOGGER.debug("Discovery socket error: %s", err)
+        return []
+    results: list[dict] = []
+    try:
+        transport.sendto(protocol.DISCOVERY_FRAME, ("255.255.255.255", DEFAULT_PORT))
+        await asyncio.sleep(timeout)
+        for host, data in proto.found.items():  # type: ignore[attr-defined]
+            try:
+                code, name = protocol.parse_beacon(data)
+            except ValueError:
+                continue
+            results.append(
+                {"host": host, "device_code": code.hex().upper(), "name": name}
+            )
+    finally:
+        transport.close()
+    return results
 
 
 class _ClientProtocol(asyncio.DatagramProtocol):
@@ -359,7 +402,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) -> 
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _async_register_services(hass)
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
+
+
+async def _async_update_listener(
+    hass: HomeAssistant, entry: ZetlightConfigEntry
+) -> None:
+    """Reload the entry when options (e.g. presets) change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 SERVICE_SET_SCHEDULE = "set_schedule"
@@ -398,6 +449,25 @@ def _parse_hhmm(value: str) -> int:
     if not 0 <= minutes < 1440:
         raise HomeAssistantError(f"time out of range: {value}")
     return minutes
+
+
+def preset_to_args(preset: dict) -> tuple[list[tuple], int, list[int]]:
+    """Convert a preset dict into (slots, start_minute, durations).
+
+    Raises HomeAssistantError on malformed data.
+    """
+    try:
+        start = _parse_hhmm(preset["start"])
+        durations = [int(d) for d in preset["durations"]]
+        slots = [tuple(int(x) for x in s) for s in preset["brightness"]]
+    except (KeyError, TypeError, ValueError) as err:
+        raise HomeAssistantError(f"invalid preset: {err}") from err
+    if len(durations) != protocol.NUM_SLOTS or len(slots) != protocol.NUM_SLOTS:
+        raise HomeAssistantError(f"preset needs {protocol.NUM_SLOTS} slots")
+    for slot in slots:
+        if len(slot) != protocol.NUM_CHANNELS:
+            raise HomeAssistantError(f"each slot needs {protocol.NUM_CHANNELS} values")
+    return slots, start, durations
 
 
 def _loaded_coordinators(hass: HomeAssistant) -> list[ZetlightCoordinator]:

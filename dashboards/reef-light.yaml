@@ -1,0 +1,73 @@
+# Dedicated dashboard for the Zetlight Horizon Aqua LED.
+#
+# How to use (gives you a separate entry in the LEFT SIDEBAR, not mixed into
+# your Home / areas):
+#   1. Settings -> Dashboards -> Add dashboard -> New dashboard from scratch.
+#      Give it a title ("Reef Light") and an icon (e.g. mdi:fishbowl). It now
+#      shows in the left sidebar.
+#   2. Open it -> top-right pencil (Edit) -> three dots -> "Raw configuration
+#      editor" -> paste this file's contents -> Save.
+#
+# IMPORTANT: the entity IDs below use the prefix "aedc45" (from the device name
+# "AEDC45"). If yours differ, do a find & replace of "aedc45" with your device's
+# slug. Find it in Settings -> Devices & Services -> Zetlight -> the device, or
+# Developer Tools -> States.
+
+title: Reef Light
+views:
+  - title: Light
+    path: light
+    icon: mdi:fishbowl
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Light
+          - type: light
+            entity: light.aedc45
+            name: Coral light
+          - type: entities
+            title: Channels
+            show_header_toggle: false
+            entities:
+              - entity: number.aedc45_channel_a
+                name: A · white
+              - entity: number.aedc45_channel_b
+                name: B · blue
+              - entity: number.aedc45_channel_c
+                name: C · color
+              - entity: number.aedc45_channel_d
+                name: D · purple
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Effects & schedule
+          - type: button
+            name: Lightning
+            icon: mdi:flash
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.aedc45_lightning
+          - type: entities
+            title: Lightning settings
+            entities:
+              - entity: number.aedc45_lightning_flashes
+                name: Flashes
+              - entity: number.aedc45_lightning_intensity
+                name: Intensity
+              - entity: number.aedc45_lightning_flash_duration
+                name: Flash duration
+          - type: entities
+            title: Schedule
+            entities:
+              - entity: select.aedc45_preset
+                name: Preset
+              - entity: sensor.aedc45_schedule
+                name: Stored schedule
+              - entity: button.aedc45_sync_clock
+                name: Sync clock

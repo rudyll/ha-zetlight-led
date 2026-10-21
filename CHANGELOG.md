@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 — 2026-10-21
+
+Adds discovery, schedule presets, and a ready-made dashboard.
+
+- **Auto-discovery (F16):** the config flow broadcasts the discovery probe and
+  lists responding lights to pick from; manual IP entry remains available.
+- **Schedule presets (F15):** define named presets as YAML in the integration's
+  options (**Configure**), then apply them one tap via `select.preset`. Each
+  preset is a full daily schedule (start, 5 durations, 5×4 brightness).
+- **Dashboard:** `dashboards/reef-light.yaml` — a dedicated dashboard (its own
+  left-sidebar panel) with the light, channels, lightning, schedule and presets.
+
 ## 0.6.0 — 2026-10-21
 
 Schedule read-out, and the schedule write is now fully verified.

@@ -40,8 +40,8 @@ See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 | F12 | Temporary-on timer | 临开 | timer frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F13 | Read daily schedule | 5 time periods | `0x10` | ✅ Shipped (v0.6.0) | `sensor.schedule` shows the 5×4 brightness (raw %); offset 40 assumes standard layout (may shift ±1 under some presets) |
 | F14 | Write daily schedule | edit/save periods | `0x1C` + `0x11` | ✅ Verified (v0.6.0) | `set_schedule` service; **brightness (raw %) and times (BCD) both verified on hardware**, +START to apply |
-| F15 | Preset spectra (LPS/SPS #N) | 方案 presets | built on F14 | 🟠 Needs decoding | After F14, store presets in HA and write them to the device |
-| F16 | Config-flow auto-discovery | — | broadcast `C9000000000A021D` | 🟢 Ready | Add a discovery step that broadcasts and lists responding beacons |
+| F15 | Schedule presets | named schedules | built on F14 | ✅ Shipped (v0.7.0) | `select.preset` applies named presets defined in the options flow (YAML) |
+| F16 | Config-flow auto-discovery | — | broadcast `C9000000000A021D` | ✅ Shipped (v0.7.0) | Config flow broadcasts and lists responding lights; manual entry remains |
 
 ## Capture findings (2026-10-20)
 

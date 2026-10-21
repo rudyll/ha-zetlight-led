@@ -44,6 +44,7 @@ NUM_SLOTS = 5  # the device's daily schedule has 5 time slots
 # New-protocol discovery probe broadcast to :8855; devices answer with a
 # ``DD...CC`` beacon that carries their device code and name.
 DISCOVERY_FRAME = bytes.fromhex("C9000000000A021D")
+CMD_BEACON = 0x01  # discovery beacon reply command
 
 NUM_CHANNELS = 4
 
@@ -278,6 +279,16 @@ def parse_schedule_brightness(frame: bytes) -> list[tuple[int, int, int, int]]:
         tuple(block[s * NUM_CHANNELS + c] for c in range(NUM_CHANNELS))
         for s in range(NUM_SLOTS)
     ]
+
+
+def parse_beacon(frame: bytes) -> tuple[bytes, str]:
+    """Parse a discovery beacon reply into (device_code, name).
+
+    Example: ``DD 00 0F 01023A01 01 414544433435 030400 33 CC`` -> name "AEDC45".
+    """
+    device_code, _cmd, payload = parse_frame(frame)
+    name = payload[0:6].decode("ascii", errors="replace").strip("\x00").strip()
+    return device_code, name
 
 
 def parse_status(frame: bytes) -> DeviceStatus:

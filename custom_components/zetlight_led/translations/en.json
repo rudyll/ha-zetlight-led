@@ -3,6 +3,13 @@
     "step": {
       "user": {
         "title": "Zetlight Horizon Aqua LED",
+        "description": "Pick a discovered light, or choose \"Enter IP manually\".",
+        "data": {
+          "device": "Device"
+        }
+      },
+      "manual": {
+        "title": "Zetlight Horizon Aqua LED",
         "description": "Enter the light's local IP address. Tip: reserve its address in your router's DHCP settings so it doesn't change.",
         "data": {
           "host": "IP address",
@@ -15,7 +22,23 @@
       "unknown": "Unexpected error."
     },
     "abort": {
-      "already_configured": "This light is already configured."
+      "already_configured": "This light is already configured.",
+      "cannot_connect": "No reply from the light.",
+      "unknown": "Unexpected error."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Schedule presets",
+        "description": "Define named presets as YAML. Each preset has `start` (HH:MM), `durations` (5 slot lengths in minutes) and `brightness` (5 slots x 4 channels A,B,C,D, 0-100). Selecting a preset overwrites the device's stored program.",
+        "data": {
+          "presets": "Presets (YAML)"
+        }
+      }
+    },
+    "error": {
+      "invalid_presets": "Could not parse the presets. Check the YAML and that each preset has 5 slots of 4 channel values."
     }
   }
 }

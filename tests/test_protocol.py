@@ -183,6 +183,15 @@ def test_build_schedule_times_ui_schedule():
     assert frame[2] == 0x1A  # LEN
 
 
+def test_parse_beacon():
+    # Discovery beacon from the docs.
+    code, name = protocol.parse_beacon(
+        bytes.fromhex("DD000F01023A010141454443343503040033CC")
+    )
+    assert code == protocol.DEFAULT_DEVICE_CODE
+    assert name == "AEDC45"
+
+
 def test_parse_schedule_brightness_from_captured_reply():
     # Real 0x10 config reply captured from the device.
     reply = bytes.fromhex(

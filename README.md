@@ -105,10 +105,18 @@ Assistant.
 ## Configuration
 
 1. **Settings → Devices & Services → Add Integration → "Zetlight Horizon Aqua LED"**.
-2. Enter the light's **IP address** (port defaults to `8855`).
+2. Pick a **discovered** light, or choose *Enter IP manually* and type its IP
+   (port defaults to `8855`).
 
 Home Assistant sends a read probe; a reply confirms reachability and auto-detects
 the device code and name.
+
+**Presets:** on the integration's **Configure** button, define named schedule
+presets as YAML; apply them one tap from `select.preset`.
+
+**Dashboard:** [`dashboards/reef-light.yaml`](dashboards/reef-light.yaml) is a
+ready-made dashboard you can add as its own left-sidebar panel (instructions are
+at the top of the file).
 
 > **Tip:** give the light a **DHCP reservation** so its IP doesn't change. If
 > Home Assistant and the light are on different VLANs, allow UDP to the light on

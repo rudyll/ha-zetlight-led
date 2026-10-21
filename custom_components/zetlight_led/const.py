@@ -11,6 +11,11 @@ DEFAULT_PORT = 8855
 
 # Config entry / flow keys.
 CONF_DEVICE_CODE = "device_code"
+# Options key: a mapping of preset name -> {start, durations, brightness}.
+CONF_PRESETS = "presets"
+
+# Discovery broadcast timeout (seconds).
+DISCOVERY_TIMEOUT = 2.0
 
 # How often the coordinator polls the device status (0x0C). On/off is not
 # readable, so this mainly tracks reachability and the configured setpoints.
