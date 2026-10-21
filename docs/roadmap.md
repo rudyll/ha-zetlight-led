@@ -83,10 +83,15 @@ Shipped (v0.9.0):
 - ✅ **Entity-name translations** (English + 简体中文).
 - ✅ **Lightning-on-storm blueprint** — fire lightning from a HA weather entity.
 
+Shipped (v0.10.0):
+
+- ✅ **Whole-tank blueprints** (light + wave pump): feed, storm, day/night flow,
+  maintenance — see `docs/blueprints.md`.
+
 Still open / possible later:
 
-- Whole-tank scenes combining the light with the wave pump integration.
 - Local history/logging via HA recorder (works already; no code needed).
+- Tailored pump defaults once the pump integration's entities are finalized.
 
 Intentionally not done:
 

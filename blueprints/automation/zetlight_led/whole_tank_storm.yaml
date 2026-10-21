@@ -1,0 +1,91 @@
+blueprint:
+  name: Zetlight whole-tank — storm (lightning + flow surge)
+  description: >-
+    On stormy weather, fire the light's lightning effect AND surge the wave pump
+    for a while, then return the pump to its normal flow. Weather comes from a HA
+    weather integration. Requires a pump with a flow/intensity number entity.
+  domain: automation
+  input:
+    weather_entity:
+      name: Weather entity
+      selector:
+        entity:
+          filter:
+            - domain: weather
+    lightning_button:
+      name: Light lightning button
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: button
+    pump_flow:
+      name: Wave pump flow number
+      selector:
+        entity:
+          filter:
+            - domain: number
+    surge_value:
+      name: Surge flow
+      default: 90
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    normal_value:
+      name: Normal flow (restored after)
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    surge_duration:
+      name: Surge duration
+      default: "00:02:00"
+      selector:
+        duration:
+    storm_states:
+      name: Weather states that count as a storm
+      default:
+        - lightning
+        - lightning-rainy
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options:
+            - lightning
+            - lightning-rainy
+            - pouring
+            - hail
+
+mode: single
+
+variables:
+  storm: !input storm_states
+
+trigger:
+  - platform: state
+    entity_id: !input weather_entity
+
+condition:
+  - condition: template
+    value_template: "{{ trigger.to_state.state in storm }}"
+
+action:
+  - service: button.press
+    target:
+      entity_id: !input lightning_button
+  - service: number.set_value
+    target:
+      entity_id: !input pump_flow
+    data:
+      value: !input surge_value
+  - delay: !input surge_duration
+  - service: number.set_value
+    target:
+      entity_id: !input pump_flow
+    data:
+      value: !input normal_value

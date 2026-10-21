@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0 — 2026-10-21
+
+- **Whole-tank blueprints** (light + wave pump): coordinate the light with any
+  wave-pump integration via entity pickers —
+  - `whole_tank_feed` — pump pauses while the light's feeding mode is on.
+  - `whole_tank_storm` — lightning + pump flow surge on stormy weather.
+  - `whole_tank_day_night_flow` — day/night pump flow following sunrise/sunset.
+  - `whole_tank_maintenance` — a toggle that stops the pump and sets full white.
+- All blueprints are catalogued in `docs/blueprints.md`.
+
 ## 0.9.0 — 2026-10-21
 
 - **Acclimation mode:** an `Acclimation` number (%) scales every schedule write,

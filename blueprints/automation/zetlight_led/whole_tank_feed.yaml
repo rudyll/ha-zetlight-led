@@ -1,0 +1,47 @@
+blueprint:
+  name: Zetlight whole-tank — pump follows feeding mode
+  description: >-
+    When the light's Feeding mode turns on, pause the wave pump; resume it when
+    feeding ends. Piggybacks on the light's built-in feeding timer, so you still
+    only press one thing (the Feeding switch) to feed the whole tank.
+  domain: automation
+  input:
+    feeding_switch:
+      name: Light feeding switch
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: switch
+    pump_switch:
+      name: Wave pump switch
+      description: Turned off while feeding, back on afterwards.
+      selector:
+        entity:
+          filter:
+            - domain: switch
+
+mode: queued
+
+trigger:
+  - platform: state
+    entity_id: !input feeding_switch
+    to: "on"
+    id: start
+  - platform: state
+    entity_id: !input feeding_switch
+    to: "off"
+    id: end
+
+action:
+  - choose:
+      - conditions: "{{ trigger.id == 'start' }}"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input pump_switch
+      - conditions: "{{ trigger.id == 'end' }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input pump_switch

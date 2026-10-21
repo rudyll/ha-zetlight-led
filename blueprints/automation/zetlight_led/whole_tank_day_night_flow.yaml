@@ -1,0 +1,69 @@
+blueprint:
+  name: Zetlight whole-tank — day/night flow rhythm
+  description: >-
+    Set the wave pump to a stronger "day" flow at sunrise and a gentler "night"
+    flow at sunset, so flow follows the light's natural rhythm. Requires a pump
+    with a flow/intensity number entity.
+  domain: automation
+  input:
+    pump_flow:
+      name: Wave pump flow number
+      selector:
+        entity:
+          filter:
+            - domain: number
+    day_value:
+      name: Day flow
+      default: 70
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    night_value:
+      name: Night flow
+      default: 35
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    day_offset:
+      name: Sunrise offset
+      default: "00:00:00"
+      selector:
+        time:
+    night_offset:
+      name: Sunset offset
+      default: "00:00:00"
+      selector:
+        time:
+
+mode: single
+
+trigger:
+  - platform: sun
+    event: sunrise
+    offset: !input day_offset
+    id: day
+  - platform: sun
+    event: sunset
+    offset: !input night_offset
+    id: night
+
+action:
+  - choose:
+      - conditions: "{{ trigger.id == 'day' }}"
+        sequence:
+          - service: number.set_value
+            target:
+              entity_id: !input pump_flow
+            data:
+              value: !input day_value
+      - conditions: "{{ trigger.id == 'night' }}"
+        sequence:
+          - service: number.set_value
+            target:
+              entity_id: !input pump_flow
+            data:
+              value: !input night_value
