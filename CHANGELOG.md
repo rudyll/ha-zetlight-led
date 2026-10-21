@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.0 — 2026-10-21
+
+- **Acclimation mode:** an `Acclimation` number (%) scales every schedule write,
+  so you can ease new corals in. Pair it with the new acclimation-ramp blueprint
+  to raise it a step each day and re-apply a preset.
+- **Chinese entity names:** all entities now use translation keys, with English
+  and 简体中文 names (the config/options flow was already translated).
+- **Blueprints:** `acclimation_ramp.yaml` (daily ramp) and `lightning_on_storm.yaml`
+  (fire the lightning effect when your weather entity reports a thunderstorm).
+  Lightning itself is a manual `button.lightning`; triggering it from real
+  weather/sun is done via these HA blueprints, since the integration has no
+  weather data of its own.
+
 ## 0.8.0 — 2026-10-21
 
 A batch of extras.

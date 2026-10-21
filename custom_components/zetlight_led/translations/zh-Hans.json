@@ -41,5 +41,38 @@
     "error": {
       "invalid_presets": "预设解析失败。请检查 YAML，确保每个预设是 5 个时段、每段 4 个通道值。"
     }
+  },
+  "entity": {
+    "number": {
+      "channel_a": { "name": "通道 A（白）" },
+      "channel_b": { "name": "通道 B（蓝）" },
+      "channel_c": { "name": "通道 C（色）" },
+      "channel_d": { "name": "通道 D（紫）" },
+      "lightning_flashes": { "name": "闪电次数" },
+      "lightning_intensity": { "name": "闪电强度" },
+      "lightning_on_ms": { "name": "单次闪电时长" },
+      "feeding_level": { "name": "喂食亮度" },
+      "feeding_minutes": { "name": "喂食时长" },
+      "acclimation_scale": { "name": "驯化比例" }
+    },
+    "button": {
+      "lightning": { "name": "闪电" },
+      "cloud": { "name": "云彩" },
+      "sync_clock": { "name": "校时" },
+      "read_config": { "name": "读取配置" }
+    },
+    "sensor": {
+      "schedule": { "name": "日程" },
+      "channel_a_raw": { "name": "通道 A 原始值" },
+      "channel_b_raw": { "name": "通道 B 原始值" },
+      "channel_c_raw": { "name": "通道 C 原始值" },
+      "channel_d_raw": { "name": "通道 D 原始值" }
+    },
+    "select": {
+      "preset": { "name": "预设" }
+    },
+    "switch": {
+      "feeding_mode": { "name": "喂食模式" }
+    }
   }
 }

@@ -30,7 +30,7 @@ class ZetlightFeedingSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity
     """
 
     _attr_has_entity_name = True
-    _attr_name = "Feeding mode"
+    _attr_translation_key = "feeding_mode"
     _attr_icon = "mdi:food-apple"
 
     def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:

@@ -1,0 +1,53 @@
+blueprint:
+  name: Zetlight LED — lightning on stormy weather
+  description: >-
+    Fire the custom lightning effect when your Home Assistant weather entity
+    reports a thunderstorm. Weather comes from a HA weather integration (Met.no,
+    etc.) — this integration has no weather data of its own.
+  domain: automation
+  input:
+    weather_entity:
+      name: Weather entity
+      selector:
+        entity:
+          filter:
+            - domain: weather
+    lightning_button:
+      name: Lightning button
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: button
+    storm_states:
+      name: Weather states that count as a storm
+      default:
+        - lightning
+        - lightning-rainy
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options:
+            - lightning
+            - lightning-rainy
+            - pouring
+            - hail
+
+mode: single
+
+variables:
+  storm: !input storm_states
+
+trigger:
+  - platform: state
+    entity_id: !input weather_entity
+
+condition:
+  - condition: template
+    value_template: "{{ trigger.to_state.state in storm }}"
+
+action:
+  - service: button.press
+    target:
+      entity_id: !input lightning_button

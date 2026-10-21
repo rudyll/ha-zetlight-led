@@ -41,5 +41,38 @@
     "error": {
       "invalid_presets": "Could not parse the presets. Check the YAML and that each preset has 5 slots of 4 channel values."
     }
+  },
+  "entity": {
+    "number": {
+      "channel_a": { "name": "Channel A" },
+      "channel_b": { "name": "Channel B" },
+      "channel_c": { "name": "Channel C" },
+      "channel_d": { "name": "Channel D" },
+      "lightning_flashes": { "name": "Lightning flashes" },
+      "lightning_intensity": { "name": "Lightning intensity" },
+      "lightning_on_ms": { "name": "Lightning flash duration" },
+      "feeding_level": { "name": "Feeding level" },
+      "feeding_minutes": { "name": "Feeding duration" },
+      "acclimation_scale": { "name": "Acclimation" }
+    },
+    "button": {
+      "lightning": { "name": "Lightning" },
+      "cloud": { "name": "Cloud" },
+      "sync_clock": { "name": "Sync clock" },
+      "read_config": { "name": "Read config" }
+    },
+    "sensor": {
+      "schedule": { "name": "Schedule" },
+      "channel_a_raw": { "name": "Channel A raw" },
+      "channel_b_raw": { "name": "Channel B raw" },
+      "channel_c_raw": { "name": "Channel C raw" },
+      "channel_d_raw": { "name": "Channel D raw" }
+    },
+    "select": {
+      "preset": { "name": "Preset" }
+    },
+    "switch": {
+      "feeding_mode": { "name": "Feeding mode" }
+    }
   }
 }

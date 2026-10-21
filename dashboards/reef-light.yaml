@@ -81,6 +81,8 @@ views:
                 name: Feeding level
               - entity: number.aedc45_feeding_duration
                 name: Feeding duration
+              - entity: number.aedc45_acclimation
+                name: Acclimation
           - type: entities
             title: Schedule
             entities:

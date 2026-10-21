@@ -1,0 +1,62 @@
+blueprint:
+  name: Zetlight LED — acclimation ramp
+  description: >-
+    Ease new corals in: each day at a set time, raise the Acclimation % by a step
+    (capped at 100) and re-apply a preset so the device runs at the new level.
+    Set the Acclimation number low to start (e.g. 40), then let this ramp it up.
+  domain: automation
+  input:
+    at_time:
+      name: Time of day
+      default: "11:00:00"
+      selector:
+        time:
+    acclimation_number:
+      name: Acclimation number entity
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: number
+    preset_select:
+      name: Preset select entity
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: select
+    preset_name:
+      name: Preset to re-apply
+      selector:
+        text:
+    step:
+      name: Daily step (%)
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 50
+          unit_of_measurement: "%"
+
+mode: single
+
+variables:
+  accl_entity: !input acclimation_number
+  day_step: !input step
+
+trigger:
+  - platform: time
+    at: !input at_time
+
+action:
+  - service: number.set_value
+    target:
+      entity_id: "{{ accl_entity }}"
+    data:
+      value: "{{ [100, (states(accl_entity) | float(100)) + day_step] | min }}"
+  - delay: "00:00:02"
+  - service: select.select_option
+    target:
+      entity_id: !input preset_select
+    data:
+      option: !input preset_name

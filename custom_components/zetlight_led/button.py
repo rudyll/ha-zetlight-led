@@ -51,7 +51,7 @@ class _ZetlightButton(CoordinatorEntity[ZetlightCoordinator], ButtonEntity):
 class ZetlightLightningButton(_ZetlightButton):
     """Trigger a custom lightning flash (white+blue, no purple afterglow)."""
 
-    _attr_name = "Lightning"
+    _attr_translation_key = "lightning"
     _attr_icon = "mdi:flash"
 
     def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
@@ -64,7 +64,7 @@ class ZetlightLightningButton(_ZetlightButton):
 class ZetlightCloudButton(_ZetlightButton):
     """Trigger a custom passing-cloud effect (ramp down, hold, ramp up)."""
 
-    _attr_name = "Cloud"
+    _attr_translation_key = "cloud"
     _attr_icon = "mdi:weather-partly-cloudy"
 
     def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
@@ -77,7 +77,7 @@ class ZetlightCloudButton(_ZetlightButton):
 class ZetlightSyncClockButton(_ZetlightButton):
     """Sync the device clock to Home Assistant's local time."""
 
-    _attr_name = "Sync clock"
+    _attr_translation_key = "sync_clock"
     _attr_icon = "mdi:clock-check"
     _attr_entity_category = EntityCategory.CONFIG
 
@@ -91,7 +91,7 @@ class ZetlightSyncClockButton(_ZetlightButton):
 class ZetlightReadConfigButton(_ZetlightButton):
     """Read the raw 0x10 config reply (for schedule decoding work)."""
 
-    _attr_name = "Read config"
+    _attr_translation_key = "read_config"
     _attr_icon = "mdi:download"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 

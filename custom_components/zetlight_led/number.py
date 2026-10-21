@@ -66,6 +66,10 @@ async def async_setup_entry(
                 "Feeding duration", 1, 120, 1, UnitOfTime.MINUTES,
                 FEEDING_DEFAULT_MINUTES, "mdi:timer-sand",
             ),
+            ZetlightLightningParam(
+                coordinator, entry.entry_id, "acclimation_scale",
+                "Acclimation", 10, 100, 1, PERCENTAGE, 100, "mdi:sprout",
+            ),
         ]
     )
     async_add_entities(entities)
@@ -95,7 +99,7 @@ class ZetlightChannelNumber(CoordinatorEntity[ZetlightCoordinator], NumberEntity
         super().__init__(coordinator)
         self._index = index
         label = CHANNEL_LABELS[index]
-        self._attr_name = f"Channel {label}"
+        self._attr_translation_key = f"channel_{label.lower()}"
         self._attr_unique_id = f"{entry_id}_channel_{label.lower()}"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
 
@@ -132,7 +136,7 @@ class ZetlightLightningParam(CoordinatorEntity[ZetlightCoordinator], RestoreNumb
         icon: str,
     ) -> None:
         super().__init__(coordinator)
-        self._attr_name = name
+        self._attr_translation_key = attr  # `name` kept for readability only
         self._attr_unique_id = f"{entry_id}_{attr}"
         self._attr_native_min_value = minimum
         self._attr_native_max_value = maximum

@@ -41,7 +41,7 @@ class ZetlightScheduleSensor(CoordinatorEntity[ZetlightCoordinator], SensorEntit
     """
 
     _attr_has_entity_name = True
-    _attr_name = "Schedule"
+    _attr_translation_key = "schedule"
     _attr_icon = "mdi:chart-timeline-variant"
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -87,7 +87,7 @@ class ZetlightRawChannelSensor(CoordinatorEntity[ZetlightCoordinator], SensorEnt
         super().__init__(coordinator)
         self._index = index
         label = CHANNEL_LABELS[index]
-        self._attr_name = f"Channel {label} raw"
+        self._attr_translation_key = f"channel_{label.lower()}_raw"
         self._attr_unique_id = f"{entry_id}_channel_{label.lower()}_raw"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
 

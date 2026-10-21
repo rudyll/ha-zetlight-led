@@ -42,6 +42,7 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Custom lightning effect | ✅ Working (`button.lightning`, tunable; white+blue flash) |
 | Custom cloud effect | ✅ Working (`button.cloud`; ramp down → hold → up) |
 | Feeding / maintenance mode | ✅ Working (`switch.feeding_mode`; dim + auto-restore) |
+| Acclimation mode | ✅ Working (`Acclimation` number scales schedule writes) |
 | Clock sync | ✅ Working (`0x03`; button + auto on setup) |
 | Write daily schedule | ✅ `zetlight_led.set_schedule` (brightness + times verified; **overwrites stored program**) |
 | Read daily schedule | ✅ `sensor.schedule` (5×4 brightness, raw %) |

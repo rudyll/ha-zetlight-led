@@ -305,6 +305,8 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.lightning_intensity = LIGHTNING_DEFAULT_INTENSITY
         self.lightning_on_ms = LIGHTNING_DEFAULT_ON_MS
         self._lightning_lock = asyncio.Lock()
+        # Acclimation: schedule writes are scaled by this percent (100 = off).
+        self.acclimation_scale = 100
         # Feeding / maintenance mode state.
         self.feeding_level = FEEDING_DEFAULT_LEVEL
         self.feeding_minutes = FEEDING_DEFAULT_MINUTES
@@ -438,7 +440,18 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         start_minute: int,
         durations: list[int],
     ) -> None:
-        """Write the daily schedule to the device (overwrites stored program)."""
+        """Write the daily schedule, scaled by the acclimation percent.
+
+        With acclimation < 100 (e.g. for new corals) every brightness value is
+        reduced; a daily ramp back to 100 restores full intensity. Overwrites
+        the device's stored program.
+        """
+        scale = max(0, min(100, int(self.acclimation_scale)))
+        if scale != 100:
+            slots = [
+                tuple(min(255, round(c * scale / 100)) for c in slot)
+                for slot in slots
+            ]
         await self.client.async_write_schedule(slots, start_minute, durations)
 
     async def async_read_config(self) -> bytes:

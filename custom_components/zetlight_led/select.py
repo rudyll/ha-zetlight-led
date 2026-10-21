@@ -34,7 +34,7 @@ class ZetlightPresetSelect(CoordinatorEntity[ZetlightCoordinator], SelectEntity)
     """
 
     _attr_has_entity_name = True
-    _attr_name = "Preset"
+    _attr_translation_key = "preset"
     _attr_icon = "mdi:playlist-check"
 
     def __init__(

@@ -76,12 +76,17 @@ Shipped (v0.8.0):
 - ✅ **Chinese (zh-Hans) translation** for the config/options flow.
 - ✅ **Sun-anchored schedule blueprint** (sunrise/sunset).
 
+Shipped (v0.9.0):
+
+- ✅ **Acclimation mode** — `Acclimation` number scales schedule writes; the
+  `acclimation_ramp` blueprint raises it daily.
+- ✅ **Entity-name translations** (English + 简体中文).
+- ✅ **Lightning-on-storm blueprint** — fire lightning from a HA weather entity.
+
 Still open / possible later:
 
 - Whole-tank scenes combining the light with the wave pump integration.
 - Local history/logging via HA recorder (works already; no code needed).
-- Acclimation mode (scale schedule brightness up over several days).
-- Entity-name translations (zh-Hans) beyond the config flow.
 
 Intentionally not done:
 
