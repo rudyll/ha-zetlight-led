@@ -40,6 +40,8 @@
 | whole_tank_storm | 雷暴：随机间隔的「闪电 + 泵打大浪」一阵阵 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_storm.yaml) |
 | whole_tank_day_night_flow | 日出强流、日落柔流 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_day_night_flow.yaml) |
 | whole_tank_maintenance | 开关：停泵 + 灯全白（换水） | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_maintenance.yaml) |
+| whole_tank_acclimation | **整缸驯化**:每天同时升灯「调光比例」+泵「潮汐强度」 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_acclimation.yaml) |
+| whole_tank_weather_dimming | **整缸天气调暗**:按天气同时调灯+泵强度 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_weather_dimming.yaml) |
 
 ## 驯化的两种方式
 

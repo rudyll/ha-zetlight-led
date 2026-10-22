@@ -1,0 +1,92 @@
+blueprint:
+  name: 积光整缸 — 阴雨天调暗（灯+泵） / Whole-tank weather dimming
+  description: >-
+    按天气同时把灯的「调光比例」和泵的「潮汐强度」设成对应百分比:晴天满,阴雨逐级调暗,
+    天气转好回升。窗边缸很合适。每级百分比可自定义。泵的潮汐强度只在 tide 模式下有效。
+
+    Set both the light Dimming and the pump Tidal intensity from your weather
+    entity. Percentages per condition are customizable.
+  domain: automation
+  input:
+    weather_entity:
+      name: 天气实体 / Weather entity
+      selector:
+        entity:
+          filter:
+            - domain: weather
+    light_dimming:
+      name: 灯「调光比例」实体 / Light Dimming number
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: number
+    pump_tidal:
+      name: 泵「潮汐强度」实体 / Pump Tidal intensity number
+      selector:
+        entity:
+          filter:
+            - integration: gts_wavepump
+              domain: number
+    sunny_pct:
+      name: 晴天 / Sunny
+      default: 100
+      selector:
+        number: { min: 10, max: 100, step: 5, unit_of_measurement: "%" }
+    partly_pct:
+      name: 多云 / Partly cloudy
+      default: 90
+      selector:
+        number: { min: 10, max: 100, step: 5, unit_of_measurement: "%" }
+    cloudy_pct:
+      name: 阴天/雾 / Cloudy / fog
+      default: 75
+      selector:
+        number: { min: 10, max: 100, step: 5, unit_of_measurement: "%" }
+    rainy_pct:
+      name: 雨/雪 / Rainy / snowy
+      default: 60
+      selector:
+        number: { min: 10, max: 100, step: 5, unit_of_measurement: "%" }
+    pouring_pct:
+      name: 暴雨/雷暴 / Pouring / storm
+      default: 50
+      selector:
+        number: { min: 10, max: 100, step: 5, unit_of_measurement: "%" }
+
+mode: single
+
+variables:
+  w_entity: !input weather_entity
+  v_sunny: !input sunny_pct
+  v_partly: !input partly_pct
+  v_cloudy: !input cloudy_pct
+  v_rainy: !input rainy_pct
+  v_pouring: !input pouring_pct
+
+trigger:
+  - platform: state
+    entity_id: !input weather_entity
+  - platform: homeassistant
+    event: start
+
+action:
+  - variables:
+      pct: >-
+        {% set s = states(w_entity) %}
+        {% if s in ['sunny','clear-night','exceptional'] %}{{ v_sunny }}
+        {% elif s in ['partlycloudy'] %}{{ v_partly }}
+        {% elif s in ['cloudy','fog','windy','windy-variant'] %}{{ v_cloudy }}
+        {% elif s in ['rainy','snowy','snowy-rainy'] %}{{ v_rainy }}
+        {% elif s in ['pouring','lightning','lightning-rainy','hail'] %}{{ v_pouring }}
+        {% else %}{{ v_sunny }}{% endif %}
+  - service: number.set_value
+    target:
+      entity_id: !input light_dimming
+    data:
+      value: "{{ pct | int }}"
+  - service: number.set_value
+    target:
+      entity_id: !input pump_tidal
+    data:
+      value: "{{ ((pct | int) / 5) | round | int * 5 }}"

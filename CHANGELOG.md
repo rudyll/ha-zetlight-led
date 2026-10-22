@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.1 — 2026-10-22
+
+- **Whole-tank acclimation & weather dimming blueprints** (light + wave pump):
+  drive both the light's Dimming and the GTS pump's Tidal intensity together —
+  `whole_tank_acclimation` (daily ramp) and `whole_tank_weather_dimming` (by
+  weather). The pump overlay needs tide mode (the acclimation blueprint sets it).
+
 ## 0.13.0 — 2026-10-22
 
 - **Native coral-acclimation mode** (decoded from the app): `switch.coral_acclimation`

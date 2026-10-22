@@ -1,0 +1,74 @@
+blueprint:
+  name: 积光整缸 — 驯化渐进（灯+泵） / Whole-tank acclimation ramp
+  description: >-
+    新缸/新珊瑚整缸驯化：每天把灯的「调光比例」和泵的「潮汐强度」各提高一个步长(最高
+    100%)，让光和流一起逐日加大。先把两者手动设低(如 40)再让它逐日升到 100。
+    泵的潮汐强度只在 tide 模式下有效,蓝图会先把泵切到 tide。
+
+    Each day, raise both the light's Dimming and the pump's Tidal intensity by a
+    step (capped at 100), to ease a new tank in. The pump is set to tide mode.
+  domain: automation
+  input:
+    at_time:
+      name: 每天时间 / Time of day
+      default: "11:00:00"
+      selector:
+        time:
+    light_dimming:
+      name: 灯「调光比例」实体 / Light Dimming number
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: number
+    pump_tidal:
+      name: 泵「潮汐强度」实体 / Pump Tidal intensity number
+      selector:
+        entity:
+          filter:
+            - integration: gts_wavepump
+              domain: number
+    pump_run_mode:
+      name: 泵运行模式选择器(切 tide) / Pump run-mode select
+      selector:
+        entity:
+          filter:
+            - integration: gts_wavepump
+              domain: select
+    step:
+      name: 每日步长（%） / Daily step (%)
+      default: 10
+      selector:
+        number:
+          min: 5
+          max: 50
+          step: 5
+          unit_of_measurement: "%"
+
+mode: single
+
+variables:
+  l_ent: !input light_dimming
+  p_ent: !input pump_tidal
+  day_step: !input step
+
+trigger:
+  - platform: time
+    at: !input at_time
+
+action:
+  - service: select.select_option
+    target:
+      entity_id: !input pump_run_mode
+    data:
+      option: tide
+  - service: number.set_value
+    target:
+      entity_id: !input light_dimming
+    data:
+      value: "{{ [100, (states(l_ent) | float(100)) + day_step] | min }}"
+  - service: number.set_value
+    target:
+      entity_id: !input pump_tidal
+    data:
+      value: "{{ [100, (((states(p_ent) | float(100)) + day_step) / 5) | round | int * 5] | min }}"
