@@ -1,0 +1,81 @@
+blueprint:
+  name: 积光灯 — 阴雨天调暗 / Dim on cloudy weather
+  description: >-
+    根据 HA 天气实体,把灯的「调光比例」设成对应百分比:晴天 100%,多云/阴天/雨天逐级
+    调暗,天气转好自动回升。适合放窗边的缸——阴雨天自然光弱,灯也跟着柔和些,更自然、
+    也不刺眼。每种天气的百分比都可自定义。缩放是在你现有日程上整体叠加(保留曲线),
+    可逆。
+
+    Set the light's Dimming % based on your weather entity: full on sunny days,
+    gradually dimmer when cloudy/rainy, back up when it clears. Percentages per
+    condition are customizable.
+  domain: automation
+  input:
+    weather_entity:
+      name: 天气实体 / Weather entity
+      selector:
+        entity:
+          filter:
+            - domain: weather
+    dimming_number:
+      name: 调光比例实体 / Dimming number entity
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: number
+    sunny_pct:
+      name: 晴天 / Sunny
+      default: 100
+      selector:
+        number: { min: 10, max: 100, unit_of_measurement: "%" }
+    partly_pct:
+      name: 多云 / Partly cloudy
+      default: 90
+      selector:
+        number: { min: 10, max: 100, unit_of_measurement: "%" }
+    cloudy_pct:
+      name: 阴天/雾 / Cloudy / fog
+      default: 75
+      selector:
+        number: { min: 10, max: 100, unit_of_measurement: "%" }
+    rainy_pct:
+      name: 雨/雪 / Rainy / snowy
+      default: 60
+      selector:
+        number: { min: 10, max: 100, unit_of_measurement: "%" }
+    pouring_pct:
+      name: 暴雨/雷暴 / Pouring / storm
+      default: 50
+      selector:
+        number: { min: 10, max: 100, unit_of_measurement: "%" }
+
+mode: single
+
+variables:
+  w_entity: !input weather_entity
+  v_sunny: !input sunny_pct
+  v_partly: !input partly_pct
+  v_cloudy: !input cloudy_pct
+  v_rainy: !input rainy_pct
+  v_pouring: !input pouring_pct
+
+trigger:
+  - platform: state
+    entity_id: !input weather_entity
+  - platform: homeassistant
+    event: start
+
+action:
+  - service: number.set_value
+    target:
+      entity_id: !input dimming_number
+    data:
+      value: >-
+        {% set s = states(w_entity) %}
+        {% if s in ['sunny','clear-night','exceptional'] %}{{ v_sunny }}
+        {% elif s in ['partlycloudy'] %}{{ v_partly }}
+        {% elif s in ['cloudy','fog','windy','windy-variant'] %}{{ v_cloudy }}
+        {% elif s in ['rainy','snowy','snowy-rainy'] %}{{ v_rainy }}
+        {% elif s in ['pouring','lightning','lightning-rainy','hail'] %}{{ v_pouring }}
+        {% else %}{{ v_sunny }}{% endif %}

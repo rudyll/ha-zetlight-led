@@ -15,7 +15,7 @@ blueprint:
       selector:
         time:
     acclimation_number:
-      name: 驯化比例实体 / Acclimation number entity
+      name: 调光比例实体 / Dimming number entity
       selector:
         entity:
           filter:

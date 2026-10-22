@@ -262,6 +262,33 @@ class ZetlightClient:
         assert reply is not None
         return reply
 
+    async def async_read_options(self) -> protocol.OptionState:
+        """Send 0x20 and parse the option/mode state."""
+        reply = await self._request(
+            protocol.build_read_options(device_code=self.device_code),
+            expect_reply=True,
+            expect_cmd=protocol.CMD_READ_OPTIONS,
+        )
+        assert reply is not None
+        return protocol.parse_options(reply)
+
+    async def async_set_coral(self, on: bool) -> None:
+        """Enable/disable the device's native coral-acclimation mode (0x14).
+
+        Preserves the auto-cloud and phase switches read from 0x20.
+        """
+        try:
+            current = await self.async_read_options()
+            auto_cloud, phase = current.auto_cloud, current.phase
+        except (ZetlightUDPError, ValueError):
+            auto_cloud = phase = 0
+        await self._request(
+            protocol.build_set_options(
+                auto_cloud, phase, 1 if on else 0, device_code=self.device_code
+            ),
+            expect_reply=False,
+        )
+
     async def async_write_schedule(
         self,
         slots: list[tuple[int, int, int, int]],
@@ -335,6 +362,8 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.last_config: bytes | None = None
         # Parsed per-slot brightness from the last 0x10 reply (raw %), or None.
         self.schedule: list[tuple[int, int, int, int]] | None = None
+        # Last parsed option state (0x20), or None.
+        self.options: protocol.OptionState | None = None
 
     async def _async_update_data(self) -> protocol.DeviceStatus:
         try:
@@ -354,7 +383,21 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             self.schedule = protocol.parse_schedule_brightness(raw)
         except (ZetlightUDPError, ValueError) as err:
             _LOGGER.debug("Schedule read failed: %s", err)
+        try:
+            self.options = await self.client.async_read_options()
+        except (ZetlightUDPError, ValueError) as err:
+            _LOGGER.debug("Option read failed: %s", err)
         return status
+
+    async def async_set_coral(self, on: bool) -> None:
+        """Toggle the device's native coral-acclimation mode and refresh."""
+        await self.client.async_set_coral(on)
+        await asyncio.sleep(0.2)
+        try:
+            self.options = await self.client.async_read_options()
+        except (ZetlightUDPError, ValueError):
+            pass
+        self.async_update_listeners()
 
     async def async_apply_channels(self) -> None:
         """Send the current channel state as a 0x13 frame and notify entities."""

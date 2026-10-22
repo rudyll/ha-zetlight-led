@@ -29,6 +29,7 @@ async def async_setup_entry(
         ZetlightRawChannelSensor(coordinator, entry.entry_id, i)
         for i in range(NUM_CHANNELS)
     )
+    entities.append(ZetlightAcclimationDaySensor(coordinator, entry.entry_id))
     async_add_entities(entities)
 
 
@@ -97,3 +98,23 @@ class ZetlightRawChannelSensor(CoordinatorEntity[ZetlightCoordinator], SensorEnt
         if data is None or self._index >= len(data.raw):
             return None
         return data.raw[self._index]
+
+
+class ZetlightAcclimationDaySensor(
+    CoordinatorEntity[ZetlightCoordinator], SensorEntity
+):
+    """Native coral-acclimation progress (day 1-10; 0 = not running)."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "acclimation_day"
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_acclimation_day"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def native_value(self) -> int | None:
+        opts = self.coordinator.options
+        return None if opts is None else opts.coral

@@ -17,8 +17,14 @@ async def async_setup_entry(
     entry: ZetlightConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the feeding-mode switch."""
-    async_add_entities([ZetlightFeedingSwitch(entry.runtime_data, entry.entry_id)])
+    """Set up the feeding-mode and native coral-acclimation switches."""
+    coordinator = entry.runtime_data
+    async_add_entities(
+        [
+            ZetlightFeedingSwitch(coordinator, entry.entry_id),
+            ZetlightCoralSwitch(coordinator, entry.entry_id),
+        ]
+    )
 
 
 class ZetlightFeedingSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
@@ -47,3 +53,35 @@ class ZetlightFeedingSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_feeding_set(False)
+
+
+class ZetlightCoralSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
+    """The device's native coral-acclimation mode (0x14).
+
+    Device-managed: the lamp ramps its own output up over several days without
+    changing your stored schedule. Non-destructive — unlike the `Acclimation`
+    number, this is the vendor's built-in mode, and `sensor.acclimation_day`
+    shows its progress.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "coral_acclimation"
+    _attr_icon = "mdi:sprout-outline"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_coral_acclimation"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def is_on(self) -> bool | None:
+        opts = self.coordinator.options
+        if opts is None:
+            return None
+        return opts.coral > 0
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_coral(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_coral(False)

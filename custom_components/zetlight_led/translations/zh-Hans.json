@@ -53,7 +53,7 @@
       "lightning_on_ms": { "name": "单次闪电时长" },
       "feeding_level": { "name": "喂食亮度" },
       "feeding_minutes": { "name": "喂食时长" },
-      "acclimation_scale": { "name": "驯化比例" }
+      "acclimation_scale": { "name": "调光比例" }
     },
     "button": {
       "lightning": { "name": "闪电" },
@@ -66,13 +66,15 @@
       "channel_a_raw": { "name": "通道 A 原始值" },
       "channel_b_raw": { "name": "通道 B 原始值" },
       "channel_c_raw": { "name": "通道 C 原始值" },
-      "channel_d_raw": { "name": "通道 D 原始值" }
+      "channel_d_raw": { "name": "通道 D 原始值" },
+      "acclimation_day": { "name": "驯化天数" }
     },
     "select": {
       "preset": { "name": "预设" }
     },
     "switch": {
-      "feeding_mode": { "name": "喂食模式" }
+      "feeding_mode": { "name": "喂食模式" },
+      "coral_acclimation": { "name": "珊瑚驯化（原生）" }
     }
   }
 }

@@ -36,10 +36,17 @@ CMD_SET_LIGHT = 0x13     # set per-channel brightness (live preview)
 CMD_SYNC_TIME = 0x03     # set device clock (BCD yy mm dd hh mm ss)
 CMD_SAVE_TIMES = 0x11    # save the 5 time-slot boundaries
 CMD_SAVE_SCHEDULE = 0x1C # save the 5-slot x 4-channel brightness curve
+CMD_SET_OPTIONS = 0x14   # set option switches [auto_cloud, phase, coral]
 CMD_START = 0x1E         # turn on / resume (device-verified)
 CMD_OFF = 0x1F           # turn off (device-verified)
+CMD_READ_OPTIONS = 0x20  # read option/mode state
 
 NUM_SLOTS = 5  # the device's daily schedule has 5 time slots
+
+# In a 0x20 option-state reply, the switch bytes start at this frame offset:
+# [auto_cloud, phase, coral, moon]. The coral byte is 0 (off) or 1-10 (the
+# acclimation day while running). Device-verified 2026-10-22.
+OPTIONS_OFFSET = 14
 
 # New-protocol discovery probe broadcast to :8855; devices answer with a
 # ``DD...CC`` beacon that carries their device code and name.
@@ -279,6 +286,44 @@ def parse_schedule_brightness(frame: bytes) -> list[tuple[int, int, int, int]]:
         tuple(block[s * NUM_CHANNELS + c] for c in range(NUM_CHANNELS))
         for s in range(NUM_SLOTS)
     ]
+
+
+def build_read_options(device_code: bytes = DEFAULT_DEVICE_CODE) -> bytes:
+    """Build the read-option-state frame (CMD 0x20)."""
+    return build_frame(CMD_READ_OPTIONS, device_code=device_code)
+
+
+def build_set_options(
+    auto_cloud: int,
+    phase: int,
+    coral: int,
+    *,
+    device_code: bytes = DEFAULT_DEVICE_CODE,
+) -> bytes:
+    """Build the set-options frame (CMD 0x14): [auto_cloud, phase, coral]."""
+    payload = bytes([auto_cloud & 0xFF, phase & 0xFF, coral & 0xFF])
+    return build_frame(CMD_SET_OPTIONS, payload, device_code=device_code)
+
+
+@dataclass(frozen=True)
+class OptionState:
+    """Parsed option switches from a 0x20 reply."""
+
+    auto_cloud: int
+    phase: int
+    coral: int  # 0 = off; 1-10 = acclimation day while running
+    moon: int
+
+
+def parse_options(frame: bytes) -> OptionState:
+    """Parse a 0x20 option-state reply."""
+    _device_code, cmd, _payload = parse_frame(frame)
+    if cmd != CMD_READ_OPTIONS:
+        raise ValueError(f"not an option reply (cmd 0x{cmd:02X})")
+    o = OPTIONS_OFFSET
+    if len(frame) < o + 4:
+        raise ValueError("option reply too short")
+    return OptionState(frame[o], frame[o + 1], frame[o + 2], frame[o + 3])
 
 
 def parse_beacon(frame: bytes) -> tuple[bytes, str]:

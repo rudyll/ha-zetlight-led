@@ -53,7 +53,7 @@
       "lightning_on_ms": { "name": "Lightning flash duration" },
       "feeding_level": { "name": "Feeding level" },
       "feeding_minutes": { "name": "Feeding duration" },
-      "acclimation_scale": { "name": "Acclimation" }
+      "acclimation_scale": { "name": "Dimming" }
     },
     "button": {
       "lightning": { "name": "Lightning" },
@@ -66,13 +66,15 @@
       "channel_a_raw": { "name": "Channel A raw" },
       "channel_b_raw": { "name": "Channel B raw" },
       "channel_c_raw": { "name": "Channel C raw" },
-      "channel_d_raw": { "name": "Channel D raw" }
+      "channel_d_raw": { "name": "Channel D raw" },
+      "acclimation_day": { "name": "Acclimation day" }
     },
     "select": {
       "preset": { "name": "Preset" }
     },
     "switch": {
-      "feeding_mode": { "name": "Feeding mode" }
+      "feeding_mode": { "name": "Feeding mode" },
+      "coral_acclimation": { "name": "Coral acclimation (native)" }
     }
   }
 }

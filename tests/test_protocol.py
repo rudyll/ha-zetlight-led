@@ -183,6 +183,22 @@ def test_build_schedule_times_ui_schedule():
     assert frame[2] == 0x1A  # LEN
 
 
+def test_build_set_options_coral_on():
+    frame = protocol.build_set_options(0, 0, 1)
+    _assert_request(frame, protocol.CMD_SET_OPTIONS, bytes([0, 0, 1]))
+
+
+def test_parse_options_from_captured_reply():
+    # Captured 0x20 reply: moon on, coral off.
+    reply = bytes.fromhex("DD001701023A0120414544433435000000010000000000010F02CC")
+    opts = protocol.parse_options(reply)
+    assert (opts.auto_cloud, opts.phase, opts.coral, opts.moon) == (0, 0, 0, 1)
+
+    # And the enabled-coral reply.
+    reply_on = bytes.fromhex("DD001701023A0120414544433435000001010000000000010F03CC")
+    assert protocol.parse_options(reply_on).coral == 1
+
+
 def test_parse_beacon():
     # Discovery beacon from the docs.
     code, name = protocol.parse_beacon(

@@ -25,6 +25,7 @@
 | schedule_at_sun | 日程起点跟随日出/日落 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fschedule_at_sun.yaml) |
 | acclimation_ramp | 每天抬高驯化比例并重应用预设 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Facclimation_ramp.yaml) |
 | lightning_on_storm | 雷暴天**按随机间隔反复**放闪电 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Flightning_on_storm.yaml) |
+| weather_dimming | **阴雨天自动调暗**灯(按天气设「调光比例」,每级可自定义) | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fweather_dimming.yaml) |
 
 ## 整缸（灯 + 造浪泵） / Whole-tank
 
@@ -39,6 +40,17 @@
 | whole_tank_storm | 雷暴：随机间隔的「闪电 + 泵打大浪」一阵阵 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_storm.yaml) |
 | whole_tank_day_night_flow | 日出强流、日落柔流 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_day_night_flow.yaml) |
 | whole_tank_maintenance | 开关：停泵 + 灯全白（换水） | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_maintenance.yaml) |
+
+## 驯化的两种方式
+
+- **「调光比例」number(我们的方案,推荐、透明可控)**:一个 0–100% 旋钮,在你现有
+  日程上整体叠加缩放(保留曲线、可逆、100% 还原)。既能做**天气调暗**(weather_dimming
+  蓝图),也能做**驯化**(acclimation_ramp 蓝图逐日升到 100)。这是同一个旋钮,一次用
+  于一个目的即可。
+- **「珊瑚驯化(原生)」switch + 「驯化天数」sensor(设备自带)**:开关一下,设备自己
+  按天数(1–10)渐进,不改你的日程。**但它是厂家黑盒**——没有百分比、看不到总共几天、
+  也不确定第 10 天是否自动恢复(我只解出了开关和天数计数)。想要透明可控就用上面的
+  「调光比例」。
 
 ## 风暴节奏说明(频率/随机)
 

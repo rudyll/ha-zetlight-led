@@ -162,12 +162,15 @@ class ZetlightLightningParam(CoordinatorEntity[ZetlightCoordinator], RestoreNumb
 
 
 class ZetlightAcclimationNumber(CoordinatorEntity[ZetlightCoordinator], RestoreNumber):
-    """Acclimation: one percent that scales all channels of the stored schedule.
+    """A general output dimmer: one percent that scales all channels of the
+    stored schedule, preserving its shape.
 
     Non-destructive (the configured curve is snapshotted as the base and
     restored at 100%) and persistent — it stays until you change it, it does not
-    auto-restore (that is feeding mode). Set up your normal full-brightness
-    schedule first, then lower this to ease new corals in.
+    auto-restore. Drive it however you like: lower it on cloudy days (see the
+    weather-dimming blueprint), or ramp it up over days to acclimate new corals
+    (see the acclimation-ramp blueprint). Set up your normal full-brightness
+    schedule first.
     """
 
     _attr_has_entity_name = True

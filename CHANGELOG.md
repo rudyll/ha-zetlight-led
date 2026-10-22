@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.13.0 — 2026-10-22
+
+- **Native coral-acclimation mode** (decoded from the app): `switch.coral_acclimation`
+  toggles the device's own acclimation (`0x14`), and `sensor.acclimation_day`
+  shows its day counter (1–10). Device-managed and non-destructive, but opaque
+  (no percentage, and the exact ramp/completion isn't documented by the vendor).
+- **Weather dimming:** the `weather_dimming` blueprint sets the dimmer from your
+  weather entity (sunny → full, cloudy/rainy → dimmer), with a customizable
+  percentage per condition. Great for tanks by a window.
+- The `Acclimation` number is renamed **Dimming** (调光比例) — it is a general
+  non-destructive output scale, used by both the weather-dimming and
+  acclimation-ramp blueprints.
+
 ## 0.12.0 — 2026-10-22
 
 **Acclimation reworked into a non-destructive global scale.** Previously it
