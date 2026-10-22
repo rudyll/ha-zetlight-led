@@ -4,6 +4,8 @@ blueprint:
     新缸/新珊瑚整缸驯化：每天把灯的「调光比例」和泵的「潮汐强度」各提高一个步长(最高
     100%)，让光和流一起逐日加大。先把两者手动设低(如 40)再让它逐日升到 100。
     泵的潮汐强度只在 tide 模式下有效,蓝图会先把泵切到 tide。
+    重要:首次下调前,请确保灯的日程是你的满配置、泵的潮汐强度在 100% —— 两者都是在
+    "当前 100%" 时快照基线,基线正确后逐日升回 100% 才能精确还原。
 
     Each day, raise both the light's Dimming and the pump's Tidal intensity by a
     step (capped at 100), to ease a new tank in. The pump is set to tide mode.
