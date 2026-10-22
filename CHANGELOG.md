@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.0 — 2026-10-22
+
+- **More dramatic, realistic lightning.** Each press is now a storm bolt: a brief
+  dark dip for contrast, a full main stroke, then a few rapid flickers of varying
+  intensity and random gaps, and a smooth afterglow that fades back to normal —
+  instead of uniform even flashes with an abrupt restore. Still white+blue only
+  (no purple), still tunable; default strokes raised to 3.
+
 ## 0.15.0 — 2026-10-22
 
 **Broader model support.** The integration speaks the shared Horizon Aqua

@@ -460,22 +460,40 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         """
         async with self._lightning_lock:
             saved = tuple(self.channels)
-            count = max(1, int(self.lightning_flashes))
+            strokes = max(1, int(self.lightning_flashes))
             peak = max(1, min(100, int(self.lightning_intensity)))
             on_s = max(0.02, int(self.lightning_on_ms) / 1000)
             nch = len(saved)
-            # white + blue (first two channels) bright, the rest off
-            flash = tuple(peak if i < 2 else 0 for i in range(nch))
+
+            def vec(level: int) -> tuple[int, ...]:
+                # white + blue (first two channels) only; the rest off
+                lvl = max(0, min(100, int(level)))
+                return tuple(lvl if i < 2 else 0 for i in range(nch))
+
             dark = tuple(0 for _ in range(nch))
             try:
-                for n in range(count):
-                    await self.client.async_set_brightness(flash)
-                    await asyncio.sleep(on_s * random.uniform(0.8, 1.0))
-                    if n < count - 1:
-                        await self.client.async_set_brightness(dark)
-                        await asyncio.sleep(random.uniform(0.03, 0.12))
+                # a brief dark dip first makes the strike pop
+                await self.client.async_set_brightness(dark)
+                await asyncio.sleep(random.uniform(0.02, 0.05))
+                for n in range(strokes):
+                    # the first (main) stroke is full; later flickers vary
+                    level = peak if n == 0 else int(peak * random.uniform(0.35, 1.0))
+                    await self.client.async_set_brightness(vec(level))
+                    await asyncio.sleep(on_s * random.uniform(0.5, 1.1))
+                    await self.client.async_set_brightness(dark)
+                    await asyncio.sleep(random.uniform(0.02, 0.09))
+                # afterglow: fade the glow smoothly back to normal
+                glow = vec(int(peak * 0.4))
+                steps = 6
+                for i in range(1, steps + 1):
+                    frac = i / steps
+                    vals = tuple(
+                        round(glow[j] + (saved[j] - glow[j]) * frac) for j in range(nch)
+                    )
+                    await self.client.async_set_brightness(vals)
+                    await asyncio.sleep(0.07)
             finally:
-                # restore the integration's last known levels
+                # ensure we end exactly at the normal levels
                 await self.client.async_set_brightness(saved)
 
     async def async_cloud(self) -> None:
