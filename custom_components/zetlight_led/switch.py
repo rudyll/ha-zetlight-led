@@ -23,6 +23,8 @@ async def async_setup_entry(
         [
             ZetlightFeedingSwitch(coordinator, entry.entry_id),
             ZetlightCoralSwitch(coordinator, entry.entry_id),
+            ZetlightAutoCloudSwitch(coordinator, entry.entry_id),
+            ZetlightMoonSwitch(coordinator, entry.entry_id),
         ]
     )
 
@@ -85,3 +87,51 @@ class ZetlightCoralSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_coral(False)
+
+
+class ZetlightAutoCloudSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
+    """Auto-clouds: the device randomly dims briefly during the day (0x14)."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "auto_cloud"
+    _attr_icon = "mdi:weather-cloudy"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_auto_cloud"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def is_on(self) -> bool | None:
+        opts = self.coordinator.options
+        return None if opts is None else opts.auto_cloud > 0
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_auto_cloud(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_auto_cloud(False)
+
+
+class ZetlightMoonSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
+    """Moon-phase mode: moonlight follows the lunar cycle at night (0x19)."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "moon_phase"
+    _attr_icon = "mdi:moon-waning-crescent"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_moon_phase"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def is_on(self) -> bool | None:
+        opts = self.coordinator.options
+        return None if opts is None else opts.moon > 0
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_moon(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_moon(False)

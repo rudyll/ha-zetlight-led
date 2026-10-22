@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0 — 2026-10-22
+
+- **Auto-clouds and moon-phase switches** (decoded and verified on-device):
+  `switch.auto_cloud` (random daytime cloud dimming, `0x14`) and
+  `switch.moon_phase` (moonlight follows the lunar cycle at night, `0x19`).
+  State is read from the `0x20` option reply.
+- Dashboard gains a "Modes" card with the dimming, acclimation, clouds and moon
+  controls.
+
 ## 0.13.1 — 2026-10-22
 
 - **Whole-tank acclimation & weather dimming blueprints** (light + wave pump):

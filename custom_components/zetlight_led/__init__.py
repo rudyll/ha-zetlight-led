@@ -289,6 +289,27 @@ class ZetlightClient:
             expect_reply=False,
         )
 
+    async def async_set_auto_cloud(self, on: bool) -> None:
+        """Enable/disable auto-clouds (0x14), preserving phase and coral."""
+        try:
+            cur = await self.async_read_options()
+            phase, coral = cur.phase, cur.coral
+        except (ZetlightUDPError, ValueError):
+            phase = coral = 0
+        await self._request(
+            protocol.build_set_options(
+                1 if on else 0, phase, coral, device_code=self.device_code
+            ),
+            expect_reply=False,
+        )
+
+    async def async_set_moon(self, on: bool) -> None:
+        """Enable/disable moon-phase mode (0x19)."""
+        await self._request(
+            protocol.build_set_moon(on, device_code=self.device_code),
+            expect_reply=False,
+        )
+
     async def async_write_schedule(
         self,
         slots: list[tuple[int, int, int, int]],
@@ -392,6 +413,19 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
     async def async_set_coral(self, on: bool) -> None:
         """Toggle the device's native coral-acclimation mode and refresh."""
         await self.client.async_set_coral(on)
+        await self._refresh_options()
+
+    async def async_set_auto_cloud(self, on: bool) -> None:
+        """Toggle auto-clouds and refresh."""
+        await self.client.async_set_auto_cloud(on)
+        await self._refresh_options()
+
+    async def async_set_moon(self, on: bool) -> None:
+        """Toggle moon-phase mode and refresh."""
+        await self.client.async_set_moon(on)
+        await self._refresh_options()
+
+    async def _refresh_options(self) -> None:
         await asyncio.sleep(0.2)
         try:
             self.options = await self.client.async_read_options()

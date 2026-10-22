@@ -188,6 +188,11 @@ def test_build_set_options_coral_on():
     _assert_request(frame, protocol.CMD_SET_OPTIONS, bytes([0, 0, 1]))
 
 
+def test_build_set_moon():
+    _assert_request(protocol.build_set_moon(True), protocol.CMD_SET_MOON, bytes([1]))
+    _assert_request(protocol.build_set_moon(False), protocol.CMD_SET_MOON, bytes([0]))
+
+
 def test_parse_options_from_captured_reply():
     # Captured 0x20 reply: moon on, coral off.
     reply = bytes.fromhex("DD001701023A0120414544433435000000010000000000010F02CC")

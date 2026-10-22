@@ -74,7 +74,9 @@
     },
     "switch": {
       "feeding_mode": { "name": "喂食模式" },
-      "coral_acclimation": { "name": "珊瑚驯化（原生）" }
+      "coral_acclimation": { "name": "珊瑚驯化（原生）" },
+      "auto_cloud": { "name": "自动云彩" },
+      "moon_phase": { "name": "月相模式" }
     }
   }
 }

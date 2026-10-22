@@ -37,6 +37,7 @@ CMD_SYNC_TIME = 0x03     # set device clock (BCD yy mm dd hh mm ss)
 CMD_SAVE_TIMES = 0x11    # save the 5 time-slot boundaries
 CMD_SAVE_SCHEDULE = 0x1C # save the 5-slot x 4-channel brightness curve
 CMD_SET_OPTIONS = 0x14   # set option switches [auto_cloud, phase, coral]
+CMD_SET_MOON = 0x19      # set moon-phase mode on/off (1 byte)
 CMD_START = 0x1E         # turn on / resume (device-verified)
 CMD_OFF = 0x1F           # turn off (device-verified)
 CMD_READ_OPTIONS = 0x20  # read option/mode state
@@ -303,6 +304,11 @@ def build_set_options(
     """Build the set-options frame (CMD 0x14): [auto_cloud, phase, coral]."""
     payload = bytes([auto_cloud & 0xFF, phase & 0xFF, coral & 0xFF])
     return build_frame(CMD_SET_OPTIONS, payload, device_code=device_code)
+
+
+def build_set_moon(on: bool, *, device_code: bytes = DEFAULT_DEVICE_CODE) -> bytes:
+    """Build the set-moon-phase frame (CMD 0x19), 1-byte on/off payload."""
+    return build_frame(CMD_SET_MOON, bytes([1 if on else 0]), device_code=device_code)
 
 
 @dataclass(frozen=True)

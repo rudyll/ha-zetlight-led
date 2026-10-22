@@ -92,3 +92,16 @@ views:
                 name: Stored schedule
               - entity: button.aedc45_sync_clock
                 name: Sync clock
+          - type: entities
+            title: Modes
+            entities:
+              - entity: number.aedc45_acclimation
+                name: Dimming
+              - entity: switch.aedc45_coral_acclimation
+                name: Coral acclimation (native)
+              - entity: sensor.aedc45_acclimation_day
+                name: Acclimation day
+              - entity: switch.aedc45_auto_cloud
+                name: Auto clouds
+              - entity: switch.aedc45_moon_phase
+                name: Moon phase

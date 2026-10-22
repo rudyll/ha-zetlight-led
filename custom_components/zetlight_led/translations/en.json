@@ -74,7 +74,9 @@
     },
     "switch": {
       "feeding_mode": { "name": "Feeding mode" },
-      "coral_acclimation": { "name": "Coral acclimation (native)" }
+      "coral_acclimation": { "name": "Coral acclimation (native)" },
+      "auto_cloud": { "name": "Auto clouds" },
+      "moon_phase": { "name": "Moon phase" }
     }
   }
 }
