@@ -121,6 +121,11 @@ presets as YAML; apply them one tap from `select.preset`.
 ready-made dashboard you can add as its own left-sidebar panel (instructions are
 at the top of the file).
 
+**Blueprints:** bilingual (中/英) automation blueprints for sun-anchored
+schedules, acclimation, storm lightning + pump waves, feeding and more — with
+one-click import links — are in [`docs/blueprints.md`](docs/blueprints.md).
+(HACS installs the integration only; blueprints are imported separately.)
+
 > **Tip:** give the light a **DHCP reservation** so its IP doesn't change. If
 > Home Assistant and the light are on different VLANs, allow UDP to the light on
 > port `8855`.

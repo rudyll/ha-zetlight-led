@@ -1,39 +1,55 @@
-# Blueprints
+# 蓝图 / Blueprints
 
-Ready-made Home Assistant automation blueprints in
-[`blueprints/automation/zetlight_led/`](../blueprints/automation/zetlight_led).
-Each takes entity pickers, so the whole-tank ones work with **any** wave-pump
-integration (you select its switch / flow number at import).
+现成的 Home Assistant 自动化蓝图，位于
+[`blueprints/automation/zetlight_led/`](../blueprints/automation/zetlight_led)。
+蓝图的名字、说明、字段都是**中/英双语**；都用实体选择器，所以整缸联动的那几个
+对**任何**有 `fan` 实体的造浪泵都适用（导入时自己选泵的实体）。
 
-To import: **Settings → Automations & scenes → Blueprints → Import blueprint**,
-and paste the raw file URL (or copy the file into
-`config/blueprints/automation/zetlight_led/`).
+## 要手动导入吗？（是的）
 
-## Light only
+**HACS 装的是"集成"，只会拷贝 `custom_components/`，不会自动安装蓝图。** 蓝图要
+单独导入，两种方式：
 
-- **schedule_at_sun** — write a daily schedule whose start follows sunrise/sunset.
-- **acclimation_ramp** — each day raise the `Acclimation` % and re-apply a preset,
-  to ease new corals in.
-- **lightning_on_storm** — fire the lightning effect when your weather entity
-  reports a thunderstorm.
+- **一键导入（推荐）**：点下面每个蓝图的链接，会直接打开你 HA 的"导入蓝图"对话框、
+  URL 已填好，确认即可。
+- 手动：**设置 → 自动化与场景 → 蓝图 → 导入蓝图**，粘贴该文件的 GitHub 链接；
+  或把文件复制到 `config/blueprints/automation/zetlight_led/`。
 
-## Whole-tank (light + wave pump)
+> 一键链接走 `my.home-assistant.io` 跳转，需要你在 HA 里启用过 My Home Assistant
+> （默认开启）。导入后在 **设置 → 自动化 → 用蓝图创建自动化** 里选它、填实体。
 
-These coordinate the light with a wave pump. They target the GTS pump
-integration (`gts_wavepump`), whose on/off and intensity are a **`fan`** entity
-(`fan.turn_off` / `fan.set_percentage`), with `select` entities for run-mode
-(`tide` = built-in day/night curve) and wave-mode (`surge` / `turbulence` …).
-You pick the entities at import, so other pumps with a `fan` entity work too.
+## 只控制灯 / Light only
 
-- **whole_tank_feed** — when the light's Feeding mode turns on, pause the pump;
-  resume it when feeding ends (one tap on the Feeding switch feeds the whole tank).
-- **whole_tank_storm** — on stormy weather: lightning + surge the pump flow for a
-  while, then return it to normal.
-- **whole_tank_day_night_flow** — stronger "day" flow at sunrise, gentler "night"
-  flow at sunset, following the light's rhythm.
-- **whole_tank_maintenance** — a helper toggle that stops the pump and sets the
-  light to full white for water changes; off restores both.
+| 蓝图 | 作用 | 一键导入 |
+|---|---|---|
+| schedule_at_sun | 日程起点跟随日出/日落 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fschedule_at_sun.yaml) |
+| acclimation_ramp | 每天抬高驯化比例并重应用预设 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Facclimation_ramp.yaml) |
+| lightning_on_storm | 雷暴天**按随机间隔反复**放闪电 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Flightning_on_storm.yaml) |
 
-> Weather data comes from a HA weather integration (Met.no, etc.) — this
-> integration has no weather of its own. The light's lightning/cloud are manual
-> buttons; the blueprints are what tie them to weather, sun and the pump.
+## 整缸（灯 + 造浪泵） / Whole-tank
+
+针对 GTS 泵集成（`gts_wavepump`）：它的开/停和强度是 **`fan`** 实体
+（`fan.turn_off` / `fan.set_percentage`），运行模式 `run_mode`（`tide` = 内置
+昼夜曲线）、波形 `wave_mode`（`surge` / `turbulence` …）是 `select`。你在导入时
+选实体，所以别的有 `fan` 实体的泵也能用。
+
+| 蓝图 | 作用 | 一键导入 |
+|---|---|---|
+| whole_tank_feed | 灯喂食→泵暂停，喂完恢复 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_feed.yaml) |
+| whole_tank_storm | 雷暴：随机间隔的「闪电 + 泵打大浪」一阵阵 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_storm.yaml) |
+| whole_tank_day_night_flow | 日出强流、日落柔流 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_day_night_flow.yaml) |
+| whole_tank_maintenance | 开关：停泵 + 灯全白（换水） | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_maintenance.yaml) |
+
+## 风暴节奏说明(频率/随机)
+
+雷暴类蓝图是**天气进入雷暴状态后循环造风暴,直到天气转好自动停止**,不是只触发一次、
+也不是固定节拍:
+
+- `lightning_on_storm`(只灯):按随机间隔反复放闪电。间隔在"最短/最长间隔"里设
+  (默认 20–90 秒随机)。
+- `whole_tank_storm`(灯+泵):**一阵阵**地来——每阵 = 放闪电 + 泵切浪涌/乱流拉满
+  **打一阵大浪**(随机时长,默认 8–20 秒),然后回落到平缓流一段(随机间隔,默认
+  30–90 秒),如此反复。大浪强度、平缓强度、每阵时长、间隔都可在字段里调。
+
+> 天气数据来自 HA 的天气集成(Met.no / 和风等),本集成没有自己的天气源。灯的
+> 闪电/云彩是手动按钮,这些蓝图才是把它们接到天气、太阳和泵上的东西。

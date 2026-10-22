@@ -1,21 +1,23 @@
 blueprint:
-  name: Zetlight whole-tank — pump follows feeding mode
+  name: 积光整缸 — 泵跟随喂食模式 / Pump follows feeding
   description: >-
+    灯进入"喂食模式"时自动停泵，喂食结束自动恢复。借用灯内置的喂食计时器，所以只按
+    一下灯的喂食开关就能喂整缸。（GTS 泵的控制是 fan 实体。）
+
     When the light's Feeding mode turns on, pause the wave pump; resume it when
-    feeding ends. Piggybacks on the light's built-in feeding timer, so one tap on
-    the Feeding switch feeds the whole tank. (GTS pump control is a fan entity.)
+    feeding ends.
   domain: automation
   input:
     feeding_switch:
-      name: Light feeding switch
+      name: 灯喂食开关 / Light feeding switch
       selector:
         entity:
           filter:
             - integration: zetlight_led
               domain: switch
     pump_fan:
-      name: Wave pump (fan)
-      description: Turned off while feeding, back on afterwards.
+      name: 造浪泵（fan 实体） / Wave pump (fan)
+      description: 喂食时停泵，喂完恢复。
       selector:
         entity:
           filter:

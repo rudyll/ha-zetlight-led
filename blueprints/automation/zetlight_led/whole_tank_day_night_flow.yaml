@@ -1,20 +1,21 @@
 blueprint:
-  name: Zetlight whole-tank — day/night flow rhythm
+  name: 积光整缸 — 昼夜流态 / Day-night flow
   description: >-
-    Set the wave pump to a stronger "day" intensity at sunrise and a gentler
-    "night" intensity at sunset, so flow follows the light's rhythm. (GTS pump
-    control is a fan entity. Alternatively, the pump's run_mode "tide" runs its
-    own built-in 24-segment day/night curve with no automation needed.)
+    日出时把造浪泵设为较强的"白天"强度，日落时设为较柔的"夜间"强度，让水流跟随灯的
+    节律。（GTS 泵控制是 fan 实体。另一个选择：直接把泵的 run_mode 设为 tide，
+    让泵自己跑内置的 24 段昼夜曲线，无需自动化。）
+
+    Stronger "day" intensity at sunrise, gentler "night" intensity at sunset.
   domain: automation
   input:
     pump_fan:
-      name: Wave pump (fan)
+      name: 造浪泵（fan 实体） / Wave pump (fan)
       selector:
         entity:
           filter:
             - domain: fan
     day_value:
-      name: Day intensity
+      name: 白天强度 / Day intensity
       default: 70
       selector:
         number:
@@ -22,7 +23,7 @@ blueprint:
           max: 100
           unit_of_measurement: "%"
     night_value:
-      name: Night intensity
+      name: 夜间强度 / Night intensity
       default: 35
       selector:
         number:
@@ -30,12 +31,12 @@ blueprint:
           max: 100
           unit_of_measurement: "%"
     day_offset:
-      name: Sunrise offset
+      name: 日出偏移 / Sunrise offset
       default: "00:00:00"
       selector:
         time:
     night_offset:
-      name: Sunset offset
+      name: 日落偏移 / Sunset offset
       default: "00:00:00"
       selector:
         time:

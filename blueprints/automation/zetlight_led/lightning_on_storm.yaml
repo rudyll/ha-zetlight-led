@@ -1,26 +1,44 @@
 blueprint:
-  name: Zetlight LED — lightning on stormy weather
+  name: 积光灯 — 雷暴天闪电（随机间隔） / Lightning on storm
   description: >-
-    Fire the custom lightning effect when your Home Assistant weather entity
-    reports a thunderstorm. Weather comes from a HA weather integration (Met.no,
-    etc.) — this integration has no weather data of its own.
+    天气实体报雷暴时，按随机间隔反复触发灯的闪电效果，天气转好自动停止。
+    天气数据来自 HA 的天气集成（Met.no / 和风等），本集成没有自己的天气源。
+
+    While your weather entity reports a thunderstorm, repeatedly fire the light's
+    lightning effect at a random interval; stops when the weather clears.
   domain: automation
   input:
     weather_entity:
-      name: Weather entity
+      name: 天气实体 / Weather entity
       selector:
         entity:
           filter:
             - domain: weather
     lightning_button:
-      name: Lightning button
+      name: 闪电按钮 / Lightning button
       selector:
         entity:
           filter:
             - integration: zetlight_led
               domain: button
+    min_interval:
+      name: 最短间隔（秒）/ Min interval (s)
+      default: 20
+      selector:
+        number:
+          min: 3
+          max: 600
+          unit_of_measurement: s
+    max_interval:
+      name: 最长间隔（秒）/ Max interval (s)
+      default: 90
+      selector:
+        number:
+          min: 3
+          max: 600
+          unit_of_measurement: s
     storm_states:
-      name: Weather states that count as a storm
+      name: 算作雷暴的天气状态 / Storm weather states
       default:
         - lightning
         - lightning-rainy
@@ -34,20 +52,28 @@ blueprint:
             - pouring
             - hail
 
-mode: single
+mode: restart
 
 variables:
   storm: !input storm_states
+  weather: !input weather_entity
+  lo: !input min_interval
+  hi: !input max_interval
 
 trigger:
   - platform: state
     entity_id: !input weather_entity
 
 condition:
-  - condition: template
-    value_template: "{{ trigger.to_state.state in storm }}"
+  - "{{ trigger.to_state.state in storm }}"
 
 action:
-  - service: button.press
-    target:
-      entity_id: !input lightning_button
+  - repeat:
+      while:
+        - "{{ states(weather) in storm }}"
+      sequence:
+        - service: button.press
+          target:
+            entity_id: !input lightning_button
+        - delay:
+            seconds: "{{ range(lo | int, (hi | int) + 1) | random }}"

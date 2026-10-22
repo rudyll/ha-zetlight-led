@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.0 — 2026-10-22
+
+Blueprints: Chinese, repeating storms, and one-click import.
+
+- **Storms now repeat with random timing.** `lightning_on_storm` fires lightning
+  at a random interval the whole time the weather is stormy (not once). The new
+  `whole_tank_storm` loops "lightning + a pump big-wave burst" then a calm gap,
+  at random intervals, until the weather clears — all intervals/intensities are
+  settable.
+- **Bilingual blueprints:** every blueprint's name, description and field labels
+  are now 中文 / English.
+- **One-click import:** `docs/blueprints.md` has My-Home-Assistant import links
+  for each blueprint, and explains that HACS installs the integration only —
+  blueprints are imported separately.
+
 ## 0.10.1 — 2026-10-21
 
 - **Whole-tank blueprints tailored to the GTS pump:** its control is a `fan`

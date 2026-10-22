@@ -1,74 +1,87 @@
 blueprint:
-  name: Zetlight whole-tank — storm (lightning + flow surge)
+  name: 积光整缸 — 风暴（闪电 + 随机大浪） / Whole-tank storm
   description: >-
-    On stormy weather, fire the light's lightning effect, switch the wave pump to
-    a surge/turbulence wave and raise its intensity for a while, then restore the
-    normal wave and intensity. Weather comes from a HA weather integration.
+    天气报雷暴时，循环制造风暴：每一阵 = 放闪电 + 把造浪泵切到浪涌/乱流并拉满打一阵
+    大浪（随机时长），然后回落到平缓流一段（随机间隔）；如此反复，天气转好后把泵恢复
+    到常态波形和强度。天气来自 HA 天气集成。GTS 泵的开/停与强度是 fan 实体。
+
+    While stormy, loop: fire lightning + surge the pump for a random burst, then
+    drop to a calm flow for a random gap. Restores the pump when the storm clears.
   domain: automation
   input:
     weather_entity:
-      name: Weather entity
+      name: 天气实体 / Weather entity
       selector:
         entity:
           filter:
             - domain: weather
     lightning_button:
-      name: Light lightning button
+      name: 闪电按钮 / Lightning button
       selector:
         entity:
           filter:
             - integration: zetlight_led
               domain: button
     pump_fan:
-      name: Wave pump (fan)
+      name: 造浪泵（fan 实体） / Wave pump (fan)
       selector:
         entity:
           filter:
             - domain: fan
     pump_wave_mode:
-      name: Wave pump wave-mode select
+      name: 泵波形选择器 / Pump wave-mode select
       selector:
         entity:
           filter:
             - integration: gts_wavepump
               domain: select
     surge_percentage:
-      name: Surge intensity
-      default: 90
+      name: 大浪强度 / Surge intensity
+      default: 95
       selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
+        number: { min: 0, max: 100, unit_of_measurement: "%" }
     surge_wave:
-      name: Surge wave mode
+      name: 大浪波形 / Surge wave mode
       default: surge
       selector:
-        select:
-          custom_value: true
-          options: [surge, turbulence, pulse]
+        select: { custom_value: true, options: [surge, turbulence, pulse] }
+    calm_percentage:
+      name: 平缓强度（两阵之间） / Calm intensity (between bursts)
+      default: 40
+      selector:
+        number: { min: 0, max: 100, unit_of_measurement: "%" }
     normal_percentage:
-      name: Normal intensity (restored)
+      name: 常态强度（风暴结束恢复） / Normal intensity (restored)
       default: 50
       selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
+        number: { min: 0, max: 100, unit_of_measurement: "%" }
     normal_wave:
-      name: Normal wave mode (restored)
+      name: 常态波形（恢复用） / Normal wave mode
       default: sine
       selector:
-        select:
-          custom_value: true
-          options: [constant, pulse, sine, turbulence, surge]
-    surge_duration:
-      name: Surge duration
-      default: "00:02:00"
+        select: { custom_value: true, options: [constant, pulse, sine, turbulence, surge] }
+    burst_min:
+      name: 每阵大浪最短（秒） / Burst min (s)
+      default: 8
       selector:
-        duration:
+        number: { min: 2, max: 120, unit_of_measurement: s }
+    burst_max:
+      name: 每阵大浪最长（秒） / Burst max (s)
+      default: 20
+      selector:
+        number: { min: 2, max: 120, unit_of_measurement: s }
+    gap_min:
+      name: 两阵之间最短（秒） / Gap min (s)
+      default: 30
+      selector:
+        number: { min: 3, max: 600, unit_of_measurement: s }
+    gap_max:
+      name: 两阵之间最长（秒） / Gap max (s)
+      default: 90
+      selector:
+        number: { min: 3, max: 600, unit_of_measurement: s }
     storm_states:
-      name: Weather states that count as a storm
+      name: 算作雷暴的天气状态 / Storm weather states
       default: [lightning, lightning-rainy]
       selector:
         select:
@@ -76,34 +89,58 @@ blueprint:
           custom_value: true
           options: [lightning, lightning-rainy, pouring, hail]
 
-mode: single
+mode: restart
 
 variables:
   storm: !input storm_states
+  weather: !input weather_entity
+  b_lo: !input burst_min
+  b_hi: !input burst_max
+  g_lo: !input gap_min
+  g_hi: !input gap_max
 
 trigger:
   - platform: state
     entity_id: !input weather_entity
 
 condition:
-  - condition: template
-    value_template: "{{ trigger.to_state.state in storm }}"
+  - "{{ trigger.to_state.state in storm }}"
 
 action:
-  - service: button.press
-    target:
-      entity_id: !input lightning_button
-  - service: select.select_option
-    target:
-      entity_id: !input pump_wave_mode
-    data:
-      option: !input surge_wave
-  - service: fan.set_percentage
-    target:
-      entity_id: !input pump_fan
-    data:
-      percentage: !input surge_percentage
-  - delay: !input surge_duration
+  - repeat:
+      while:
+        - "{{ states(weather) in storm }}"
+      sequence:
+        # one storm burst: lightning + a big wave
+        - service: button.press
+          target:
+            entity_id: !input lightning_button
+        - service: select.select_option
+          target:
+            entity_id: !input pump_wave_mode
+          data:
+            option: !input surge_wave
+        - service: fan.set_percentage
+          target:
+            entity_id: !input pump_fan
+          data:
+            percentage: !input surge_percentage
+        - delay:
+            seconds: "{{ range(b_lo | int, (b_hi | int) + 1) | random }}"
+        # calm gap between bursts
+        - service: select.select_option
+          target:
+            entity_id: !input pump_wave_mode
+          data:
+            option: !input normal_wave
+        - service: fan.set_percentage
+          target:
+            entity_id: !input pump_fan
+          data:
+            percentage: !input calm_percentage
+        - delay:
+            seconds: "{{ range(g_lo | int, (g_hi | int) + 1) | random }}"
+  # storm over: restore normal flow
   - service: select.select_option
     target:
       entity_id: !input pump_wave_mode

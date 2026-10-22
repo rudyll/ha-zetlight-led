@@ -1,36 +1,38 @@
 blueprint:
-  name: Zetlight LED — acclimation ramp
+  name: 积光灯 — 驯化渐进 / Acclimation ramp
   description: >-
-    Ease new corals in: each day at a set time, raise the Acclimation % by a step
-    (capped at 100) and re-apply a preset so the device runs at the new level.
-    Set the Acclimation number low to start (e.g. 40), then let this ramp it up.
+    新珊瑚驯化：每天在设定时间把"驯化比例"提高一个步长（最高 100%），并重新应用一个
+    预设，让设备按新比例运行。先把驯化数字设低（如 40），再让它逐日升到 100。
+
+    Each day, raise the Acclimation % by a step (capped at 100) and re-apply a
+    preset, to ease new corals in.
   domain: automation
   input:
     at_time:
-      name: Time of day
+      name: 每天时间 / Time of day
       default: "11:00:00"
       selector:
         time:
     acclimation_number:
-      name: Acclimation number entity
+      name: 驯化比例实体 / Acclimation number entity
       selector:
         entity:
           filter:
             - integration: zetlight_led
               domain: number
     preset_select:
-      name: Preset select entity
+      name: 预设选择器实体 / Preset select entity
       selector:
         entity:
           filter:
             - integration: zetlight_led
               domain: select
     preset_name:
-      name: Preset to re-apply
+      name: 要重新应用的预设名 / Preset to re-apply
       selector:
         text:
     step:
-      name: Daily step (%)
+      name: 每日步长（%） / Daily step (%)
       default: 10
       selector:
         number:

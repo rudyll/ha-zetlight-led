@@ -1,27 +1,29 @@
 blueprint:
-  name: Zetlight whole-tank — maintenance mode
+  name: 积光整缸 — 维护模式 / Maintenance mode
   description: >-
-    Flip a helper toggle on for water changes / cleaning: the wave pump stops and
-    the light goes full white for visibility. Flip it off to restore: pump on and
-    the light resumes its stored program. Create an input_boolean (helper) first
-    and select it below. (GTS pump control is a fan entity.)
+    换水/清缸时打开一个辅助开关：停泵 + 灯全白（方便看清）。关掉则恢复：泵开 +
+    灯回到存储日程。请先创建一个 input_boolean（辅助元素）再在下面选它。
+    （GTS 泵控制是 fan 实体。）
+
+    Toggle on for water changes: pump stops, light goes full white. Off restores
+    both.
   domain: automation
   input:
     toggle:
-      name: Maintenance toggle (input_boolean helper)
+      name: 维护开关（input_boolean 辅助元素） / Maintenance toggle
       selector:
         entity:
           filter:
             - domain: input_boolean
     light_entity:
-      name: Light
+      name: 灯 / Light
       selector:
         entity:
           filter:
             - integration: zetlight_led
               domain: light
     pump_fan:
-      name: Wave pump (fan)
+      name: 造浪泵（fan 实体） / Wave pump (fan)
       selector:
         entity:
           filter:

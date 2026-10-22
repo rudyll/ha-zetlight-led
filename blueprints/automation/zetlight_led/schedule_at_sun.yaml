@@ -1,14 +1,15 @@
 blueprint:
-  name: Zetlight LED — apply schedule at sunrise/sunset
+  name: 积光灯 — 日程跟随日出/日落 / Schedule at sunrise/sunset
   description: >-
-    Write a Zetlight daily schedule whose start time follows the real sun.
-    Triggers on a sun event (with an optional offset) and calls
-    zetlight_led.set_schedule with start = the trigger time, so the curve shifts
-    with the seasons. Edit the durations/brightness to taste.
+    在日出或日落（可带偏移）时写入一套日程，起始时间 = 触发时刻，让曲线随季节的
+    日出日落移动。时段分钟数和各时段亮度可自行修改。
+
+    Write a daily schedule whose start follows sunrise/sunset. Edit the durations
+    and brightness to taste.
   domain: automation
   input:
     sun_event:
-      name: Sun event
+      name: 太阳事件 / Sun event
       default: sunrise
       selector:
         select:
@@ -16,18 +17,18 @@ blueprint:
             - sunrise
             - sunset
     offset:
-      name: Offset
-      description: Time offset from the sun event (e.g. -00:30:00 for 30 min before).
+      name: 偏移 / Offset
+      description: 相对太阳事件的偏移（如 -00:30:00 表示提前 30 分钟）。
       default: "00:00:00"
       selector:
         time:
     durations:
-      name: Slot durations (minutes)
-      description: The 5 slot lengths in minutes.
+      name: 各时段分钟数 / Slot durations (minutes)
+      description: 5 个时段的长度（分钟）。
       default: [60, 120, 480, 120, 120]
     brightness:
-      name: Per-slot brightness
-      description: 5 slots, each [A, B, C, D] 0-100.
+      name: 各时段亮度 / Per-slot brightness
+      description: 5 个时段，每段 [A, B, C, D]，0-100。
       default:
         - [10, 40, 30, 10]
         - [20, 60, 45, 20]
