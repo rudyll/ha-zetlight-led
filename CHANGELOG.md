@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.12.0 — 2026-10-22
+
+**Acclimation reworked into a non-destructive global scale.** Previously it
+scaled every schedule write, which overwrote your configured program. Now the
+`Acclimation` number is a single percent that scales your existing schedule's
+output while preserving its shape:
+
+- The first time you lower it, your current schedule is snapshotted as the base
+  and remembered; every change rescales from that base, and **100% restores the
+  base** exactly.
+- It is **persistent** — it stays until you change it; it does **not** auto-time
+  out (that is feeding mode). Set up your normal full-brightness schedule first,
+  then lower Acclimation to ease new corals in; the ramp blueprint raises it
+  daily.
+- The acclimation-ramp blueprint is simplified (just raises the number; no
+  preset re-apply needed).
+- Note: the wave pump already has a single global intensity (`fan.set_percentage`)
+  and a `tide` run-mode, so it needs no per-channel/per-hour tweaking for the
+  same effect.
+
 ## 0.11.0 — 2026-10-22
 
 Blueprints: Chinese, repeating storms, and one-click import.

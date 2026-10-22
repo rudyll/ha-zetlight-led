@@ -66,10 +66,7 @@ async def async_setup_entry(
                 "Feeding duration", 1, 120, 1, UnitOfTime.MINUTES,
                 FEEDING_DEFAULT_MINUTES, "mdi:timer-sand",
             ),
-            ZetlightLightningParam(
-                coordinator, entry.entry_id, "acclimation_scale",
-                "Acclimation", 10, 100, 1, PERCENTAGE, 100, "mdi:sprout",
-            ),
+            ZetlightAcclimationNumber(coordinator, entry.entry_id),
         ]
     )
     async_add_entities(entities)
@@ -161,4 +158,47 @@ class ZetlightLightningParam(CoordinatorEntity[ZetlightCoordinator], RestoreNumb
     async def async_set_native_value(self, value: float) -> None:
         self._value = value
         setattr(self.coordinator, self._coord_attr, int(value))
+        self.async_write_ha_state()
+
+
+class ZetlightAcclimationNumber(CoordinatorEntity[ZetlightCoordinator], RestoreNumber):
+    """Acclimation: one percent that scales all channels of the stored schedule.
+
+    Non-destructive (the configured curve is snapshotted as the base and
+    restored at 100%) and persistent — it stays until you change it, it does not
+    auto-restore (that is feeding mode). Set up your normal full-brightness
+    schedule first, then lower this to ease new corals in.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "acclimation_scale"
+    _attr_mode = NumberMode.SLIDER
+    _attr_native_min_value = 10
+    _attr_native_max_value = 100
+    _attr_native_step = 1
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_icon = "mdi:sprout"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_acclimation_scale"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+        self._value: float = 100.0
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last = await self.async_get_last_number_data()
+        if last is not None and last.native_value is not None:
+            self._value = last.native_value
+        # Restore the displayed value only; the device already holds the last
+        # scaled schedule, so don't re-write on startup.
+        self.coordinator.acclimation_scale = int(self._value)
+
+    @property
+    def native_value(self) -> float:
+        return self._value
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self.coordinator.async_apply_acclimation(int(value))
+        self._value = value
         self.async_write_ha_state()

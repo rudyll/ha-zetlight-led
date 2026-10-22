@@ -78,8 +78,9 @@ Shipped (v0.8.0):
 
 Shipped (v0.9.0):
 
-- ✅ **Acclimation mode** — `Acclimation` number scales schedule writes; the
-  `acclimation_ramp` blueprint raises it daily.
+- ✅ **Acclimation mode** — `Acclimation` number scales the stored schedule's
+  output non-destructively (snapshots a base, restores at 100%, persists until
+  changed); the `acclimation_ramp` blueprint raises it daily.
 - ✅ **Entity-name translations** (English + 简体中文).
 - ✅ **Lightning-on-storm blueprint** — fire lightning from a HA weather entity.
 

@@ -19,6 +19,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -238,6 +239,19 @@ class ZetlightClient:
             expect_reply=False,
         )
 
+    async def async_write_brightness(
+        self, slots: list[tuple[int, int, int, int]]
+    ) -> None:
+        """Write only the schedule brightness (0x1C) and apply, keeping times."""
+        await self._request(
+            protocol.build_schedule_brightness(slots, device_code=self.device_code),
+            expect_reply=False,
+        )
+        await asyncio.sleep(0.1)
+        await self._request(
+            protocol.build_on(device_code=self.device_code), expect_reply=False
+        )
+
     async def async_read_config(self) -> bytes:
         """Send 0x10 and return the raw reply (schedule config)."""
         reply = await self._request(
@@ -289,6 +303,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self,
         hass: HomeAssistant,
         client: ZetlightClient,
+        entry_id: str,
         update_interval=SCAN_INTERVAL,  # noqa: ANN001
     ) -> None:
         super().__init__(
@@ -298,6 +313,9 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             update_interval=update_interval,
         )
         self.client = client
+        self._acclimation_store = Store(hass, 1, f"{DOMAIN}.{entry_id}.acclimation")
+        self._acclimation_base: list[tuple] | None = None
+        self._acclimation_loaded = False
         self.channels: list[int] = [0] * protocol.NUM_CHANNELS
         self._channels_seeded = False
         # Tunable custom-lightning parameters (set by number entities).
@@ -440,19 +458,53 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         start_minute: int,
         durations: list[int],
     ) -> None:
-        """Write the daily schedule, scaled by the acclimation percent.
-
-        With acclimation < 100 (e.g. for new corals) every brightness value is
-        reduced; a daily ramp back to 100 restores full intensity. Overwrites
-        the device's stored program.
-        """
-        scale = max(0, min(100, int(self.acclimation_scale)))
-        if scale != 100:
-            slots = [
-                tuple(min(255, round(c * scale / 100)) for c in slot)
-                for slot in slots
-            ]
+        """Write the daily schedule exactly as given (overwrites stored program)."""
         await self.client.async_write_schedule(slots, start_minute, durations)
+
+    async def async_apply_acclimation(self, value: int) -> None:
+        """Scale the stored schedule's brightness to ``value`` percent.
+
+        Non-destructive to the user's configured curve: the first time it is
+        engaged (below 100), the current schedule is snapshotted as the base and
+        remembered; every change rescales from that base, and 100% writes the
+        base back (full restore). It is persistent — it stays until changed, not
+        auto-timed (that is feeding mode).
+        """
+        value = max(10, min(100, int(value)))
+        self.acclimation_scale = value
+        await self._load_acclimation_base()
+        if value == 100 and self._acclimation_base is None:
+            # already at full and nothing was scaled — nothing to do
+            self.async_update_listeners()
+            return
+        if self._acclimation_base is None:
+            if not self.schedule:
+                raise HomeAssistantError(
+                    "cannot read the current schedule to acclimate from"
+                )
+            self._acclimation_base = [tuple(s) for s in self.schedule]
+            await self._acclimation_store.async_save(
+                {"base": [list(s) for s in self._acclimation_base]}
+            )
+        base = self._acclimation_base
+        scaled = [
+            tuple(min(255, round(c * value / 100)) for c in slot) for slot in base
+        ]
+        await self.client.async_write_brightness(scaled)
+        if value == 100:
+            # fully restored — forget the base so a later lowering re-snapshots
+            # the (possibly updated) configured schedule.
+            self._acclimation_base = None
+            await self._acclimation_store.async_remove()
+        self.async_update_listeners()
+
+    async def _load_acclimation_base(self) -> None:
+        if self._acclimation_loaded:
+            return
+        data = await self._acclimation_store.async_load()
+        if data and data.get("base"):
+            self._acclimation_base = [tuple(s) for s in data["base"]]
+        self._acclimation_loaded = True
 
     async def async_read_config(self) -> bytes:
         """Read the raw 0x10 config reply and cache it."""
@@ -475,7 +527,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) -> 
     interval = timedelta(
         seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_SECONDS)
     )
-    coordinator = ZetlightCoordinator(hass, client, interval)
+    coordinator = ZetlightCoordinator(hass, client, entry.entry_id, interval)
     try:
         await coordinator.async_config_entry_first_refresh()
     except ConfigEntryNotReady:

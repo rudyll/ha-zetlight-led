@@ -1,11 +1,12 @@
 blueprint:
   name: 积光灯 — 驯化渐进 / Acclimation ramp
   description: >-
-    新珊瑚驯化：每天在设定时间把"驯化比例"提高一个步长（最高 100%），并重新应用一个
-    预设，让设备按新比例运行。先把驯化数字设低（如 40），再让它逐日升到 100。
+    新珊瑚驯化：每天在设定时间把"驯化比例"提高一个步长（最高 100%）。驯化比例会按比例
+    缩放你现有日程的输出（保留曲线），到 100% 自动还原为你配置的日程。先把驯化比例手动
+    设低（如 40），再让它逐日升到 100。
 
-    Each day, raise the Acclimation % by a step (capped at 100) and re-apply a
-    preset, to ease new corals in.
+    Each day, raise the Acclimation % by a step (capped at 100). It scales your
+    existing schedule's output and restores it fully at 100%.
   domain: automation
   input:
     at_time:
@@ -20,17 +21,6 @@ blueprint:
           filter:
             - integration: zetlight_led
               domain: number
-    preset_select:
-      name: 预设选择器实体 / Preset select entity
-      selector:
-        entity:
-          filter:
-            - integration: zetlight_led
-              domain: select
-    preset_name:
-      name: 要重新应用的预设名 / Preset to re-apply
-      selector:
-        text:
     step:
       name: 每日步长（%） / Daily step (%)
       default: 10
@@ -56,9 +46,3 @@ action:
       entity_id: "{{ accl_entity }}"
     data:
       value: "{{ [100, (states(accl_entity) | float(100)) + day_step] | min }}"
-  - delay: "00:00:02"
-  - service: select.select_option
-    target:
-      entity_id: !input preset_select
-    data:
-      option: !input preset_name
