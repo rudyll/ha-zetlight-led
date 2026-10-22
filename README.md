@@ -7,8 +7,11 @@
 <p align="center">
   Local-LAN control of Zetlight reef / coral lights (the ones driven by the
   <b>Horizon Aqua</b> app) over UDP — <b>no vendor cloud, no Bluetooth</b>.<br>
-  Developed and verified on the <b>M5-80M</b>; other Zetlight LED models using the
-  same local UDP protocol may also work (untested — reports welcome).
+  Developed and verified on the <b>M5-80M</b>; other Zetlight LED models driven by
+  the same Horizon Aqua local-UDP protocol should also work — the channel count
+  is auto-detected, and setup uses each light's own device code. (Only the M5-80M
+  is hardware-tested, and the daily schedule assumes 5 time slots. Reports from
+  other models welcome.)
 </p>
 
 <p align="center">
@@ -162,7 +165,7 @@ open-source.
 <p align="center">
   通过本地局域网 <b>UDP</b> 控制积光 Zetlight 珊瑚灯（即 <b>Horizon Aqua</b> App 控制的那些灯）——
   <b>不走厂家云、不依赖蓝牙</b>。<br>
-  在 <b>M5-80M</b> 上开发并实测；其他使用相同本地 UDP 协议的积光 LED 型号可能也能用（未实测，欢迎反馈）。
+  在 <b>M5-80M</b> 上开发并实测；其他走同一套 Horizon Aqua 本地 UDP 协议的积光 LED 型号应该也能用——通道数自动识别、配置时用各自的设备码。（仅 M5-80M 做过真机测试,日程假设 5 时段;欢迎其他型号反馈。）
 </p>
 
 本集成直接在局域网里和灯通信，用的就是 *Horizon Aqua* App 那条本地 UDP 通道：

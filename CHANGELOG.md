@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.15.0 — 2026-10-22
+
+**Broader model support.** The integration speaks the shared Horizon Aqua
+protocol, not just the M5's, so other Zetlight lights should work:
+
+- **Channel count is auto-detected** from the `0x0C` status reply (not hardcoded
+  to 4), so 3-, 5-, 6-channel lights get the right number of channel sliders and
+  raw sensors. Brightness, per-channel, lightning, cloud and feeding all adapt.
+- **Setup uses each light's own device code** (discovery already reads it), so a
+  non-M5 light connects with its real code instead of the M5's.
+- Only the M5-80M is hardware-tested, and the daily schedule still assumes 5 time
+  slots; other models welcome — please report issues.
+
 ## 0.14.0 — 2026-10-22
 
 - **Auto-clouds and moon-phase switches** (decoded and verified on-device):

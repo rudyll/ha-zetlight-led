@@ -12,7 +12,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import ZetlightConfigEntry, ZetlightCoordinator
 from .const import DOMAIN
 from .number import CHANNEL_LABELS
-from .protocol import NUM_CHANNELS
 
 
 async def async_setup_entry(
@@ -27,7 +26,7 @@ async def async_setup_entry(
     ]
     entities.extend(
         ZetlightRawChannelSensor(coordinator, entry.entry_id, i)
-        for i in range(NUM_CHANNELS)
+        for i in range(coordinator.channel_count)
     )
     entities.append(ZetlightAcclimationDaySensor(coordinator, entry.entry_id))
     async_add_entities(entities)

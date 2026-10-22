@@ -22,10 +22,8 @@ from .const import (
     LIGHTNING_DEFAULT_INTENSITY,
     LIGHTNING_DEFAULT_ON_MS,
 )
-from .protocol import NUM_CHANNELS
-
-# App labels the four channels A/B/C/D.
-CHANNEL_LABELS = ("A", "B", "C", "D")
+# Channel labels A, B, C, ... (count detected per device).
+CHANNEL_LABELS = tuple("ABCDEFGH")
 
 
 async def async_setup_entry(
@@ -37,7 +35,7 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     entities: list[NumberEntity] = [
         ZetlightChannelNumber(coordinator, entry.entry_id, index)
-        for index in range(NUM_CHANNELS)
+        for index in range(coordinator.channel_count)
     ]
     entities.extend(
         [

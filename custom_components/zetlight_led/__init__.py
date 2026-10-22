@@ -361,6 +361,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             update_interval=update_interval,
         )
         self.client = client
+        self.channel_count = protocol.NUM_CHANNELS  # detected from 0x0C
         self._acclimation_store = Store(hass, 1, f"{DOMAIN}.{entry_id}.acclimation")
         self._acclimation_base: list[tuple] | None = None
         self._acclimation_loaded = False
@@ -394,6 +395,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         # Seed the channel state once from the device's reported setpoints so
         # the sliders start at sensible values. These are the current program
         # setpoints, not live on/off state (see docs §6).
+        self.channel_count = len(status.setpoints) or protocol.NUM_CHANNELS
         if not self._channels_seeded:
             self.channels = [max(0, min(100, s)) for s in status.setpoints]
             self._channels_seeded = True
@@ -445,7 +447,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
 
     async def async_set_all(self, level: int) -> None:
         """Set all channels to the same level (0-100) and apply."""
-        self.channels = [max(0, min(100, level))] * protocol.NUM_CHANNELS
+        self.channels = [max(0, min(100, level))] * self.channel_count
         await self.async_apply_channels()
 
     async def async_lightning(self) -> None:
@@ -461,13 +463,16 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             count = max(1, int(self.lightning_flashes))
             peak = max(1, min(100, int(self.lightning_intensity)))
             on_s = max(0.02, int(self.lightning_on_ms) / 1000)
+            nch = len(saved)
+            # white + blue (first two channels) bright, the rest off
+            flash = tuple(peak if i < 2 else 0 for i in range(nch))
+            dark = tuple(0 for _ in range(nch))
             try:
                 for n in range(count):
-                    # white + blue bright, color + purple off
-                    await self.client.async_set_brightness((peak, peak, 0, 0))
+                    await self.client.async_set_brightness(flash)
                     await asyncio.sleep(on_s * random.uniform(0.8, 1.0))
                     if n < count - 1:
-                        await self.client.async_set_brightness((0, 0, 0, 0))
+                        await self.client.async_set_brightness(dark)
                         await asyncio.sleep(random.uniform(0.03, 0.12))
             finally:
                 # restore the integration's last known levels
@@ -481,12 +486,13 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         async with self._lightning_lock:
             saved = tuple(self.channels)
             target = tuple(int(c * 0.4) for c in saved)
+            nch = len(saved)
             steps = 8
             try:
                 for i in range(1, steps + 1):
                     vals = tuple(
                         int(saved[j] + (target[j] - saved[j]) * i / steps)
-                        for j in range(protocol.NUM_CHANNELS)
+                        for j in range(nch)
                     )
                     await self.client.async_set_brightness(vals)
                     await asyncio.sleep(0.18)
@@ -494,7 +500,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                 for i in range(1, steps + 1):
                     vals = tuple(
                         int(target[j] + (saved[j] - target[j]) * i / steps)
-                        for j in range(protocol.NUM_CHANNELS)
+                        for j in range(nch)
                     )
                     await self.client.async_set_brightness(vals)
                     await asyncio.sleep(0.18)
@@ -511,7 +517,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                 self._feeding_saved = list(self.channels)
             self.feeding_on = True
             level = max(0, min(100, int(self.feeding_level)))
-            self.channels = [level] * protocol.NUM_CHANNELS
+            self.channels = [level] * self.channel_count
             await self.async_apply_channels()
             self._feeding_unsub = async_call_later(
                 self.hass, max(1, int(self.feeding_minutes)) * 60, self._feeding_timeout

@@ -122,9 +122,11 @@ def build_brightness(
 
     * all 10% -> ``EE000C01023A011300101010100027CC``
     * all 100% -> ``EE000C01023A011300AAAAAAAA0027CC``
+
+    Accepts any channel count (detected per device), not just 4.
     """
-    if len(channels) != NUM_CHANNELS:
-        raise ValueError(f"expected {NUM_CHANNELS} channel values")
+    if not channels:
+        raise ValueError("need at least one channel value")
     payload = (
         bytes([SET_LIGHT_PREFIX])
         + bytes(_to_bcd(c) for c in channels)
@@ -343,22 +345,25 @@ def parse_beacon(frame: bytes) -> tuple[bytes, str]:
 
 
 def parse_status(frame: bytes) -> DeviceStatus:
-    """Parse a 0x0C read-status reply into a :class:`DeviceStatus`."""
+    """Parse a 0x0C read-status reply into a :class:`DeviceStatus`.
+
+    The channel count is detected from the payload length (not hardcoded), so
+    non-M5 Horizon Aqua lights with a different number of channels parse too.
+    payload = name(6) + N x setpoint (2B) + N x raw (2B), so N = (len-6)/4.
+    """
     device_code, cmd, payload = parse_frame(frame)
     if cmd != CMD_READ_STATUS:
         raise ValueError(f"not a status reply (cmd 0x{cmd:02X})")
-    # payload = name(6) + 4x setpoint (2B each) + 4x raw (2B each) = 22 bytes
-    if len(payload) < 6 + NUM_CHANNELS * 2 * 2:
+    if len(payload) < 6 + 4:
         raise ValueError("status payload too short")
+    n = (len(payload) - 6) // 4  # channels
     name = payload[0:6].decode("ascii", errors="replace").strip("\x00")
     pos = 6
     setpoints = tuple(
-        int.from_bytes(payload[pos + i * 2 : pos + i * 2 + 2], "big")
-        for i in range(NUM_CHANNELS)
+        int.from_bytes(payload[pos + i * 2 : pos + i * 2 + 2], "big") for i in range(n)
     )
-    pos += NUM_CHANNELS * 2
+    pos += n * 2
     raw = tuple(
-        int.from_bytes(payload[pos + i * 2 : pos + i * 2 + 2], "big")
-        for i in range(NUM_CHANNELS)
+        int.from_bytes(payload[pos + i * 2 : pos + i * 2 + 2], "big") for i in range(n)
     )
     return DeviceStatus(device_code=device_code, name=name, setpoints=setpoints, raw=raw)

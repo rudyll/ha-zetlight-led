@@ -52,7 +52,15 @@ class ZetlightConfigFlow(ConfigFlow, domain=DOMAIN):
             choice = user_input["device"]
             if choice == _MANUAL:
                 return await self.async_step_manual()
-            return await self._async_create(choice)
+            code = next(
+                (
+                    bytes.fromhex(d["device_code"])
+                    for d in self._discovered
+                    if d["host"] == choice
+                ),
+                protocol.DEFAULT_DEVICE_CODE,
+            )
+            return await self._async_create(choice, device_code=code)
 
         self._discovered = await async_discover(self.hass)
         if not self._discovered:
@@ -88,10 +96,14 @@ class ZetlightConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def _async_create(
-        self, host: str, port: int = DEFAULT_PORT, errors: dict | None = None
+        self,
+        host: str,
+        port: int = DEFAULT_PORT,
+        errors: dict | None = None,
+        device_code: bytes = protocol.DEFAULT_DEVICE_CODE,
     ) -> ConfigFlowResult | None:
         """Probe the host and create the entry; returns None on failure (manual)."""
-        client = ZetlightClient(self.hass, host, port, protocol.DEFAULT_DEVICE_CODE)
+        client = ZetlightClient(self.hass, host, port, device_code)
         try:
             await client.async_connect()
             status = await client.async_read_status()

@@ -48,6 +48,10 @@
       "channel_b": { "name": "通道 B（蓝）" },
       "channel_c": { "name": "通道 C（色）" },
       "channel_d": { "name": "通道 D（紫）" },
+      "channel_e": { "name": "通道 E" },
+      "channel_f": { "name": "通道 F" },
+      "channel_g": { "name": "通道 G" },
+      "channel_h": { "name": "通道 H" },
       "lightning_flashes": { "name": "闪电次数" },
       "lightning_intensity": { "name": "闪电强度" },
       "lightning_on_ms": { "name": "单次闪电时长" },
@@ -67,6 +71,10 @@
       "channel_b_raw": { "name": "通道 B 原始值" },
       "channel_c_raw": { "name": "通道 C 原始值" },
       "channel_d_raw": { "name": "通道 D 原始值" },
+      "channel_e_raw": { "name": "通道 E 原始值" },
+      "channel_f_raw": { "name": "通道 F 原始值" },
+      "channel_g_raw": { "name": "通道 G 原始值" },
+      "channel_h_raw": { "name": "通道 H 原始值" },
       "acclimation_day": { "name": "驯化天数" }
     },
     "select": {

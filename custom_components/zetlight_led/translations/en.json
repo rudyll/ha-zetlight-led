@@ -48,6 +48,10 @@
       "channel_b": { "name": "Channel B" },
       "channel_c": { "name": "Channel C" },
       "channel_d": { "name": "Channel D" },
+      "channel_e": { "name": "Channel E" },
+      "channel_f": { "name": "Channel F" },
+      "channel_g": { "name": "Channel G" },
+      "channel_h": { "name": "Channel H" },
       "lightning_flashes": { "name": "Lightning flashes" },
       "lightning_intensity": { "name": "Lightning intensity" },
       "lightning_on_ms": { "name": "Lightning flash duration" },
@@ -67,6 +71,10 @@
       "channel_b_raw": { "name": "Channel B raw" },
       "channel_c_raw": { "name": "Channel C raw" },
       "channel_d_raw": { "name": "Channel D raw" },
+      "channel_e_raw": { "name": "Channel E raw" },
+      "channel_f_raw": { "name": "Channel F raw" },
+      "channel_g_raw": { "name": "Channel G raw" },
+      "channel_h_raw": { "name": "Channel H raw" },
       "acclimation_day": { "name": "Acclimation day" }
     },
     "select": {

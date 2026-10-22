@@ -126,9 +126,36 @@ def test_build_brightness_mixed_channels():
     assert frame[-1] == protocol.TRAILER
 
 
-def test_build_brightness_rejects_wrong_channel_count():
+def _status_reply(setpoints, raw):
+    """Build a synthetic 0x0C reply with N channels (for the parser test)."""
+    code = protocol.DEFAULT_DEVICE_CODE
+    payload = (
+        b"AEDC45"
+        + b"".join(s.to_bytes(2, "big") for s in setpoints)
+        + b"".join(r.to_bytes(2, "big") for r in raw)
+    )
+    length = 4 + 1 + len(payload) + 1
+    middle = bytes([0x00, length]) + code + bytes([protocol.CMD_READ_STATUS]) + payload
+    x = 0
+    for b in middle:
+        x ^= b
+    return bytes([0xDD]) + middle + bytes([x & 0xFF, 0xCC])
+
+
+def test_parse_status_detects_channel_count():
+    # A 6-channel model parses to 6 setpoints/raw (not hardcoded to 4).
+    frame = _status_reply([10, 20, 30, 40, 50, 60], [1, 2, 3, 4, 5, 6])
+    st = protocol.parse_status(frame)
+    assert st.setpoints == (10, 20, 30, 40, 50, 60)
+    assert st.raw == (1, 2, 3, 4, 5, 6)
+
+
+def test_build_brightness_accepts_any_channel_count():
+    # Non-4-channel models are supported; empty is rejected.
+    assert protocol.build_brightness((50, 50, 50))[7] == protocol.CMD_SET_LIGHT
+    assert protocol.build_brightness((10,) * 6)[7] == protocol.CMD_SET_LIGHT
     with pytest.raises(ValueError):
-        protocol.build_brightness((50, 50, 50))  # type: ignore[arg-type]
+        protocol.build_brightness(())
 
 
 def _assert_request(frame: bytes, cmd: int, payload: bytes) -> None:
