@@ -57,7 +57,8 @@
       "lightning_on_ms": { "name": "Lightning flash duration" },
       "feeding_level": { "name": "Feeding level" },
       "feeding_minutes": { "name": "Feeding duration" },
-      "acclimation_scale": { "name": "Dimming" }
+      "acclimation_scale": { "name": "Dimming" },
+      "fade_minutes": { "name": "Fade minutes" }
     },
     "button": {
       "lightning": { "name": "Lightning" },
@@ -84,7 +85,8 @@
       "feeding_mode": { "name": "Feeding mode" },
       "coral_acclimation": { "name": "Coral acclimation (native)" },
       "auto_cloud": { "name": "Auto clouds" },
-      "moon_phase": { "name": "Moon phase" }
+      "moon_phase": { "name": "Moon phase" },
+      "fade": { "name": "Fade (smooth transitions)" }
     }
   }
 }

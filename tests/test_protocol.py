@@ -220,11 +220,17 @@ def test_build_set_moon():
     _assert_request(protocol.build_set_moon(False), protocol.CMD_SET_MOON, bytes([0]))
 
 
+def test_build_set_fade():
+    _assert_request(protocol.build_set_fade(True, 15), protocol.CMD_SET_FADE, bytes([1, 15]))
+    _assert_request(protocol.build_set_fade(False, 3), protocol.CMD_SET_FADE, bytes([0, 3]))
+
+
 def test_parse_options_from_captured_reply():
-    # Captured 0x20 reply: moon on, coral off.
+    # Captured 0x20 reply: moon on, coral off, fade on 15 min.
     reply = bytes.fromhex("DD001701023A0120414544433435000000010000000000010F02CC")
     opts = protocol.parse_options(reply)
     assert (opts.auto_cloud, opts.phase, opts.coral, opts.moon) == (0, 0, 0, 1)
+    assert (opts.fade_enable, opts.fade_minutes) == (1, 15)
 
     # And the enabled-coral reply.
     reply_on = bytes.fromhex("DD001701023A0120414544433435000001010000000000010F03CC")

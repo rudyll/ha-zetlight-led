@@ -310,6 +310,13 @@ class ZetlightClient:
             expect_reply=False,
         )
 
+    async def async_set_fade(self, on: bool, minutes: int) -> None:
+        """Set the gradient/fade time (0x22): [enable, minutes]."""
+        await self._request(
+            protocol.build_set_fade(on, minutes, device_code=self.device_code),
+            expect_reply=False,
+        )
+
     async def async_write_schedule(
         self,
         slots: list[tuple[int, int, int, int]],
@@ -427,6 +434,11 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         await self.client.async_set_moon(on)
         await self._refresh_options()
 
+    async def async_set_fade(self, on: bool, minutes: int) -> None:
+        """Set the gradient/fade time and refresh."""
+        await self.client.async_set_fade(on, minutes)
+        await self._refresh_options()
+
     async def _refresh_options(self) -> None:
         await asyncio.sleep(0.2)
         try:
@@ -464,37 +476,83 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             peak = max(1, min(100, int(self.lightning_intensity)))
             on_s = max(0.02, int(self.lightning_on_ms) / 1000)
             nch = len(saved)
+            ru = random.uniform
+            rnd = random.random
 
-            def vec(level: int) -> tuple[int, ...]:
+            def vec(level: float) -> tuple[int, ...]:
                 # white + blue (first two channels) only; the rest off
                 lvl = max(0, min(100, int(level)))
                 return tuple(lvl if i < 2 else 0 for i in range(nch))
 
             dark = tuple(0 for _ in range(nch))
-            try:
-                # a brief dark dip first makes the strike pop
+
+            async def flash(level: float) -> None:
+                await self.client.async_set_brightness(vec(level))
+
+            async def strike(lo: float, hi: float) -> None:
+                await flash(peak)
+                await asyncio.sleep(on_s * ru(lo, hi))
                 await self.client.async_set_brightness(dark)
-                await asyncio.sleep(random.uniform(0.02, 0.05))
-                for n in range(strokes):
-                    # the first (main) stroke is full; later flickers vary
-                    level = peak if n == 0 else int(peak * random.uniform(0.35, 1.0))
-                    await self.client.async_set_brightness(vec(level))
-                    await asyncio.sleep(on_s * random.uniform(0.5, 1.1))
+                await asyncio.sleep(ru(0.015, 0.035))
+
+            # Disable fade so the strikes are sharp, then restore the user's
+            # setting afterwards (a long fade would otherwise smear the flash).
+            fade = None
+            try:
+                fade = await self.client.async_read_options()
+                if fade.fade_enable:
+                    await self.client.async_set_fade(False, fade.fade_minutes)
+            except (ZetlightUDPError, ValueError):
+                fade = None
+
+            try:
+                # faint pre-flash + short tense pause (sometimes skipped)
+                if rnd() < 0.8:
+                    await flash(ru(12, 28))
+                    await asyncio.sleep(ru(0.02, 0.04))
                     await self.client.async_set_brightness(dark)
-                    await asyncio.sleep(random.uniform(0.02, 0.09))
-                # afterglow: fade the glow smoothly back to normal
-                glow = vec(int(peak * 0.4))
-                steps = 6
-                for i in range(1, steps + 1):
-                    frac = i / steps
+                    await asyncio.sleep(ru(0.08, 0.18))
+                # blinding main, then 1-2 hard extra hits (random)
+                await strike(1.5, 2.1)
+                for _ in range(random.randint(1, 2)):
+                    await strike(0.6, 1.0)
+                # irregular machine-gun flicker burst
+                for _ in range(max(2, strokes) + random.randint(0, 2)):
+                    await flash(peak if rnd() < 0.6 else ru(55, 95))
+                    await asyncio.sleep(on_s * ru(0.3, 0.6))
+                    await self.client.async_set_brightness(dark)
+                    await asyncio.sleep(ru(0.015, 0.05))
+                # occasional sustained "sheet" flash
+                if rnd() < 0.4:
+                    await flash(peak)
+                    await asyncio.sleep(ru(0.15, 0.28))
+                    await self.client.async_set_brightness(dark)
+                    await asyncio.sleep(ru(0.03, 0.07))
+                # random second wave (keeps repeats from feeling mechanical)
+                if rnd() < 0.45:
+                    await asyncio.sleep(ru(0.12, 0.28))
+                    await strike(1.0, 1.5)
+                    for _ in range(random.randint(1, 3)):
+                        await flash(ru(50, 95))
+                        await asyncio.sleep(on_s * ru(0.3, 0.6))
+                        await self.client.async_set_brightness(dark)
+                        await asyncio.sleep(ru(0.02, 0.06))
+                # short afterglow fade back to normal
+                glow = vec(int(peak * 0.45))
+                for i in (1, 2, 3):
+                    frac = i / 3
                     vals = tuple(
                         round(glow[j] + (saved[j] - glow[j]) * frac) for j in range(nch)
                     )
                     await self.client.async_set_brightness(vals)
-                    await asyncio.sleep(0.07)
+                    await asyncio.sleep(0.05)
             finally:
-                # ensure we end exactly at the normal levels
                 await self.client.async_set_brightness(saved)
+                if fade is not None and fade.fade_enable:
+                    try:
+                        await self.client.async_set_fade(True, fade.fade_minutes)
+                    except ZetlightUDPError:
+                        pass
 
     async def async_cloud(self) -> None:
         """Custom passing-cloud effect: ramp all channels down, hold, ramp up.

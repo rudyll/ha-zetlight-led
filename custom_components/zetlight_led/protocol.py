@@ -38,6 +38,7 @@ CMD_SAVE_TIMES = 0x11    # save the 5 time-slot boundaries
 CMD_SAVE_SCHEDULE = 0x1C # save the 5-slot x 4-channel brightness curve
 CMD_SET_OPTIONS = 0x14   # set option switches [auto_cloud, phase, coral]
 CMD_SET_MOON = 0x19      # set moon-phase mode on/off (1 byte)
+CMD_SET_FADE = 0x22      # set gradient/fade time: [enable, minutes]
 CMD_START = 0x1E         # turn on / resume (device-verified)
 CMD_OFF = 0x1F           # turn off (device-verified)
 CMD_READ_OPTIONS = 0x20  # read option/mode state
@@ -48,6 +49,9 @@ NUM_SLOTS = 5  # the device's daily schedule has 5 time slots
 # [auto_cloud, phase, coral, moon]. The coral byte is 0 (off) or 1-10 (the
 # acclimation day while running). Device-verified 2026-10-22.
 OPTIONS_OFFSET = 14
+# Fade (gradient) enable/minutes live further along the same 0x20 reply.
+FADE_ENABLE_OFFSET = 23
+FADE_MINUTES_OFFSET = 24
 
 # New-protocol discovery probe broadcast to :8855; devices answer with a
 # ``DD...CC`` beacon that carries their device code and name.
@@ -313,6 +317,14 @@ def build_set_moon(on: bool, *, device_code: bytes = DEFAULT_DEVICE_CODE) -> byt
     return build_frame(CMD_SET_MOON, bytes([1 if on else 0]), device_code=device_code)
 
 
+def build_set_fade(
+    on: bool, minutes: int, *, device_code: bytes = DEFAULT_DEVICE_CODE
+) -> bytes:
+    """Build the set-fade frame (CMD 0x22): [enable, minutes]."""
+    payload = bytes([1 if on else 0, max(0, min(255, int(minutes)))])
+    return build_frame(CMD_SET_FADE, payload, device_code=device_code)
+
+
 @dataclass(frozen=True)
 class OptionState:
     """Parsed option switches from a 0x20 reply."""
@@ -321,6 +333,8 @@ class OptionState:
     phase: int
     coral: int  # 0 = off; 1-10 = acclimation day while running
     moon: int
+    fade_enable: int = 0
+    fade_minutes: int = 0
 
 
 def parse_options(frame: bytes) -> OptionState:
@@ -331,7 +345,11 @@ def parse_options(frame: bytes) -> OptionState:
     o = OPTIONS_OFFSET
     if len(frame) < o + 4:
         raise ValueError("option reply too short")
-    return OptionState(frame[o], frame[o + 1], frame[o + 2], frame[o + 3])
+    fade_en = frame[FADE_ENABLE_OFFSET] if len(frame) > FADE_ENABLE_OFFSET else 0
+    fade_min = frame[FADE_MINUTES_OFFSET] if len(frame) > FADE_MINUTES_OFFSET else 0
+    return OptionState(
+        frame[o], frame[o + 1], frame[o + 2], frame[o + 3], fade_en, fade_min
+    )
 
 
 def parse_beacon(frame: bytes) -> tuple[bytes, str]:

@@ -57,7 +57,8 @@
       "lightning_on_ms": { "name": "单次闪电时长" },
       "feeding_level": { "name": "喂食亮度" },
       "feeding_minutes": { "name": "喂食时长" },
-      "acclimation_scale": { "name": "调光比例" }
+      "acclimation_scale": { "name": "调光比例" },
+      "fade_minutes": { "name": "渐变分钟" }
     },
     "button": {
       "lightning": { "name": "闪电" },
@@ -84,7 +85,8 @@
       "feeding_mode": { "name": "喂食模式" },
       "coral_acclimation": { "name": "珊瑚驯化（原生）" },
       "auto_cloud": { "name": "自动云彩" },
-      "moon_phase": { "name": "月相模式" }
+      "moon_phase": { "name": "月相模式" },
+      "fade": { "name": "渐变时长" }
     }
   }
 }

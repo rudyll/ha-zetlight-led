@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.17.0 — 2026-10-22
+
+- **Fiercer, non-repeating lightning that beats the fade.** The culprit behind
+  soft/regular flashes was the device's gradient/fade smoothing every change.
+  Lightning now reads your fade setting, turns it off for the strike, and
+  restores it exactly afterwards — so each bolt is sharp while smooth schedule
+  transitions are kept. The bolt itself is a fierce, randomized storm (blinding
+  main, hard multi-strikes, a machine-gun burst, an occasional sheet flash, and
+  a random second wave) so repeats don't feel mechanical.
+- **Fade control exposed:** `switch.fade` (on/off) and `number.fade_minutes`
+  (decoded from the `0x22` command and the `0x20` reply), added to the dashboard.
+
 ## 0.16.0 — 2026-10-22
 
 - **More dramatic, realistic lightning.** Each press is now a storm bolt: a brief

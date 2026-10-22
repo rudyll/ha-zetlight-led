@@ -65,6 +65,7 @@ async def async_setup_entry(
                 FEEDING_DEFAULT_MINUTES, "mdi:timer-sand",
             ),
             ZetlightAcclimationNumber(coordinator, entry.entry_id),
+            ZetlightFadeMinutes(coordinator, entry.entry_id),
         ]
     )
     async_add_entities(entities)
@@ -203,3 +204,31 @@ class ZetlightAcclimationNumber(CoordinatorEntity[ZetlightCoordinator], RestoreN
         await self.coordinator.async_apply_acclimation(int(value))
         self._value = value
         self.async_write_ha_state()
+
+
+class ZetlightFadeMinutes(CoordinatorEntity[ZetlightCoordinator], NumberEntity):
+    """Gradient/fade duration in minutes (0x22), reflecting the device state."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "fade_minutes"
+    _attr_native_min_value = 1
+    _attr_native_max_value = 60
+    _attr_native_step = 1
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_icon = "mdi:transition"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_fade_minutes"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def native_value(self) -> float | None:
+        opts = self.coordinator.options
+        return None if opts is None else opts.fade_minutes
+
+    async def async_set_native_value(self, value: float) -> None:
+        opts = self.coordinator.options
+        enabled = bool(opts.fade_enable) if opts else True
+        await self.coordinator.async_set_fade(enabled, int(value))
