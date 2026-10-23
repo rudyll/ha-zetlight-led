@@ -44,6 +44,23 @@
 | whole_tank_acclimation | **整缸驯化**:每天同时升灯「调光比例」+泵「潮汐强度」 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_acclimation.yaml) |
 | whole_tank_weather_dimming | **整缸天气调暗**:按天气同时调灯+泵强度 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_weather_dimming.yaml) |
 
+## 整缸蓝图是"开放模板"，别被字段框死
+
+- **造浪泵(fan) 是可选的**：`whole_tank_feed` / `whole_tank_maintenance` / `whole_tank_storm`
+  里的"造浪泵(fan)"都可留空。没有能 BLE/WiFi 调速的造浪泵也能用这些蓝图
+  （storm 留空就是"纯闪电"风暴）。
+- **"额外断电设备"槽位**（feed / maintenance）：可留空、**可多选、不限类型**。用来接
+  那些**不能蓝牙/WiFi 控、只能切总电源**的设备——最典型的就是**回水泵**（正常海缸
+  一定有），还有加热棒等，插在智能插座/继电器上即可。喂食/维护开始时它们一起断电、
+  结束再上电（走 `homeassistant.turn_off/on`，所以 switch、光、泵……哪种域都行）。
+  > 注意：我们**不按名字猜设备**——"造浪泵"≠"回水泵"，一切都由你在下拉里自己选。
+- **导入后还能自己改**：蓝图只是模板。导入后在 **设置 → 自动化 → 用蓝图创建** 建出
+  自动化，再点右上角"**编辑为 YAML / Edit in YAML**"，就能继续往里加我们没预设的
+  设备、开关或步骤。字段只是常用项，不是上限。
+- `whole_tank_day_night_flow` / `whole_tank_acclimation` 调的是**强度**（百分比曲线），
+  哑开关做不了强度，所以这两个**不提供**电源断电槽位——要联动回水泵这类设备，用
+  feed/maintenance 的"额外断电设备"。
+
 ## 驯化的两种方式
 
 - **「调光比例」number(我们的方案,推荐、透明可控)**:一个 0–100% 旋钮,在你现有

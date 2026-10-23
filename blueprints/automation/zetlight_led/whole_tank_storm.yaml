@@ -3,10 +3,13 @@ blueprint:
   description: >-
     天气报雷暴时，循环制造风暴：每一阵 = 放闪电 + 把造浪泵切到浪涌/乱流并拉满打一阵
     大浪（随机时长），然后回落到平缓流一段（随机间隔）；如此反复，天气转好后把泵恢复
-    到常态波形和强度。天气来自 HA 天气集成。GTS 泵的开/停与强度是 fan 实体。
+    到常态波形和强度。天气来自 HA 天气集成。造浪泵(fan)和波形选择器都可留空——留空
+    就是"纯闪电"风暴，只有灯闪、不动泵。GTS 泵的开/停与强度是 fan 实体。
 
     While stormy, loop: fire lightning + surge the pump for a random burst, then
     drop to a calm flow for a random gap. Restores the pump when the storm clears.
+    The fan pump and wave-mode select are optional — leave both empty for a
+    lightning-only storm.
   domain: automation
   input:
     weather_entity:
@@ -23,13 +26,16 @@ blueprint:
             - integration: zetlight_led
               domain: button
     pump_fan:
-      name: 造浪泵（fan 实体） / Wave pump (fan)
+      name: 造浪泵（fan 实体，可留空） / Wave pump (fan, optional)
+      description: 留空则只放闪电、不动泵。
+      default:
       selector:
         entity:
           filter:
             - domain: fan
     pump_wave_mode:
-      name: 泵波形选择器 / Pump wave-mode select
+      name: 泵波形选择器（可留空） / Pump wave-mode select (optional)
+      default:
       selector:
         entity:
           filter:
@@ -98,6 +104,13 @@ variables:
   b_hi: !input burst_max
   g_lo: !input gap_min
   g_hi: !input gap_max
+  pump: !input pump_fan
+  wave: !input pump_wave_mode
+  surge_pct: !input surge_percentage
+  calm_pct: !input calm_percentage
+  normal_pct: !input normal_percentage
+  surge_wv: !input surge_wave
+  normal_wv: !input normal_wave
 
 trigger:
   - platform: state
@@ -111,43 +124,43 @@ action:
       while:
         - "{{ states(weather) in storm }}"
       sequence:
-        # one storm burst: lightning + a big wave
+        # one storm burst: lightning + (optionally) a big wave
         - service: button.press
           target:
             entity_id: !input lightning_button
-        - service: select.select_option
-          target:
-            entity_id: !input pump_wave_mode
-          data:
-            option: !input surge_wave
-        - service: fan.set_percentage
-          target:
-            entity_id: !input pump_fan
-          data:
-            percentage: !input surge_percentage
+        - if: "{{ wave not in [none, '', []] }}"
+          then:
+            - service: select.select_option
+              target: { entity_id: "{{ wave }}" }
+              data: { option: "{{ surge_wv }}" }
+        - if: "{{ pump not in [none, '', []] }}"
+          then:
+            - service: fan.set_percentage
+              target: { entity_id: "{{ pump }}" }
+              data: { percentage: "{{ surge_pct }}" }
         - delay:
             seconds: "{{ range(b_lo | int, (b_hi | int) + 1) | random }}"
         # calm gap between bursts
-        - service: select.select_option
-          target:
-            entity_id: !input pump_wave_mode
-          data:
-            option: !input normal_wave
-        - service: fan.set_percentage
-          target:
-            entity_id: !input pump_fan
-          data:
-            percentage: !input calm_percentage
+        - if: "{{ wave not in [none, '', []] }}"
+          then:
+            - service: select.select_option
+              target: { entity_id: "{{ wave }}" }
+              data: { option: "{{ normal_wv }}" }
+        - if: "{{ pump not in [none, '', []] }}"
+          then:
+            - service: fan.set_percentage
+              target: { entity_id: "{{ pump }}" }
+              data: { percentage: "{{ calm_pct }}" }
         - delay:
             seconds: "{{ range(g_lo | int, (g_hi | int) + 1) | random }}"
   # storm over: restore normal flow
-  - service: select.select_option
-    target:
-      entity_id: !input pump_wave_mode
-    data:
-      option: !input normal_wave
-  - service: fan.set_percentage
-    target:
-      entity_id: !input pump_fan
-    data:
-      percentage: !input normal_percentage
+  - if: "{{ wave not in [none, '', []] }}"
+    then:
+      - service: select.select_option
+        target: { entity_id: "{{ wave }}" }
+        data: { option: "{{ normal_wv }}" }
+  - if: "{{ pump not in [none, '', []] }}"
+    then:
+      - service: fan.set_percentage
+        target: { entity_id: "{{ pump }}" }
+        data: { percentage: "{{ normal_pct }}" }

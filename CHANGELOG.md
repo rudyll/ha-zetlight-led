@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased (blueprints only — ship from `main`, no integration release needed)
+
+- **Whole-tank blueprints are now open templates.** `whole_tank_feed`,
+  `whole_tank_maintenance` and `whole_tank_storm` no longer force a wave pump —
+  the `fan` pump is optional (storm with it empty = lightning-only). Feed and
+  maintenance gain an optional, **multi-select, any-domain** "extra devices to
+  power off" slot for gear that can only be cut at mains — a return pump, heater,
+  etc. on a smart plug — switched off during the event and back on after
+  (`homeassistant.turn_off/on`). Nothing is auto-matched by name; you pick every
+  entity yourself, and can keep editing the automation as YAML after import.
+
 ## 0.19.0 — 2026-10-23
 
 - **Better cloud effect, and a fade fix for cloud + feeding.** The custom cloud

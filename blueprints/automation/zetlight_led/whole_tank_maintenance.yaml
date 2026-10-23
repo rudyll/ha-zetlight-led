@@ -1,12 +1,14 @@
 blueprint:
   name: 积光整缸 — 维护模式 / Maintenance mode
   description: >-
-    换水/清缸时打开一个辅助开关：停泵 + 灯全白（方便看清）。关掉则恢复：泵开 +
-    灯回到存储日程。请先创建一个 input_boolean（辅助元素）再在下面选它。
-    （GTS 泵控制是 fan 实体。）
+    换水/清缸时打开一个辅助开关：停泵 + 切断额外设备 + 灯全白（方便看清）。关掉则
+    全部恢复：泵开、额外设备上电、灯回到存储日程。请先创建一个 input_boolean（辅助
+    元素）再在下面选它。造浪泵(fan)和"额外断电设备"都可留空——后者用来接回水泵、
+    加热棒等插在智能插座/继电器上、只能切电源的设备。
 
-    Toggle on for water changes: pump stops, light goes full white. Off restores
-    both.
+    Toggle on for water changes: pump stops, extra devices power off, light goes
+    full white. Off restores everything. Both the fan pump and the extra devices
+    are optional.
   domain: automation
   input:
     toggle:
@@ -23,11 +25,24 @@ blueprint:
             - integration: zetlight_led
               domain: light
     pump_fan:
-      name: 造浪泵（fan 实体） / Wave pump (fan)
+      name: 造浪泵（fan 实体，可留空） / Wave pump (fan, optional)
+      description: 能 BLE/WiFi 控的造浪泵；没有就留空。
+      default:
       selector:
         entity:
           filter:
             - domain: fan
+    extra_off:
+      name: 额外断电设备（可留空、可多选） / Extra devices to power off (optional, multiple)
+      description: >-
+        维护时一起断电、结束再上电的设备——比如插在智能插座/继电器上的回水泵、加热棒
+        （换水时常要停回水泵、关加热）。可多选，导入后也能再加。
+        Devices cut during maintenance and restored after — e.g. a return pump or
+        heater on a smart plug. Any domain; leave empty if none.
+      default: []
+      selector:
+        entity:
+          multiple: true
 
 mode: queued
 
@@ -42,12 +57,20 @@ trigger:
     id: end
 
 action:
+  - variables:
+      pump: !input pump_fan
+      extras: !input extra_off
   - choose:
       - conditions: "{{ trigger.id == 'start' }}"
         sequence:
-          - service: fan.turn_off
-            target:
-              entity_id: !input pump_fan
+          - if: "{{ pump not in [none, '', []] }}"
+            then:
+              - service: fan.turn_off
+                target: { entity_id: "{{ pump }}" }
+          - if: "{{ extras | count > 0 }}"
+            then:
+              - service: homeassistant.turn_off
+                target: { entity_id: "{{ extras }}" }
           - service: light.turn_on
             target:
               entity_id: !input light_entity
@@ -55,9 +78,14 @@ action:
               brightness: 255
       - conditions: "{{ trigger.id == 'end' }}"
         sequence:
-          - service: fan.turn_on
-            target:
-              entity_id: !input pump_fan
+          - if: "{{ pump not in [none, '', []] }}"
+            then:
+              - service: fan.turn_on
+                target: { entity_id: "{{ pump }}" }
+          - if: "{{ extras | count > 0 }}"
+            then:
+              - service: homeassistant.turn_on
+                target: { entity_id: "{{ extras }}" }
           - service: light.turn_on
             target:
               entity_id: !input light_entity
