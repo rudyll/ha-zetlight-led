@@ -385,12 +385,10 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.feeding_level = FEEDING_DEFAULT_LEVEL
         self.feeding_minutes = FEEDING_DEFAULT_MINUTES
         self.feeding_on = False
-        self._feeding_saved: list[int] | None = None
         self._feeding_unsub = None
         # Viewing / photo mode state.
         self.viewing_on = False
         self.viewing_levels: dict[int, int] = {}
-        self._viewing_saved: list[int] | None = None
         # Raw bytes of the last 0x10 config reply (for schedule decoding work).
         self.last_config: bytes | None = None
         # Parsed per-slot brightness from the last 0x10 reply (raw %), or None.
@@ -551,12 +549,14 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                     await self.client.async_set_brightness(vals)
                     await asyncio.sleep(0.05)
             finally:
-                await self.client.async_set_brightness(saved)
                 if fade is not None and fade.fade_enable:
                     try:
                         await self.client.async_set_fade(True, fade.fade_minutes)
                     except ZetlightUDPError:
                         pass
+                # Re-arm the schedule so the light follows the preset again
+                # (the afterglow above already landed near the pre-strike levels).
+                await self.async_resume_schedule()
 
     async def _fade_suspend(self) -> "protocol.OptionState | None":
         """Read and temporarily disable the device fade (so live effects aren't
@@ -575,6 +575,25 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                 await self.client.async_set_fade(True, fade.fade_minutes)
             except ZetlightUDPError:
                 pass
+
+    async def async_resume_schedule(self) -> None:
+        """Hand control back to the device's stored schedule program (0x1E START).
+
+        A live 0x13 dim is a temporary preview that holds — it does NOT expire on
+        its own, so after an effect the device would otherwise stay stuck at that
+        level and never hit the schedule's next boundary (e.g. the nightly off).
+        START re-arms the time-based program from the current clock, so the light
+        follows the preset again — including turning off if the current slot is an
+        off/sleep period. Then read the setpoints so the HA entities stay in sync.
+        """
+        await self.client.async_turn_on()  # 0x1E START = resume the program
+        await asyncio.sleep(0.3)
+        try:
+            status = await self.client.async_read_status()
+            self.channels = [max(0, min(100, s)) for s in status.setpoints]
+        except (ZetlightUDPError, ValueError):
+            pass
+        self.async_update_listeners()
 
     async def _ramp(self, start, end, steps: int, total: float) -> None:  # noqa: ANN001
         """Smoothly interpolate channel levels from start to end (ease in/out)."""
@@ -605,8 +624,8 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                     await self._ramp(target, saved, 12, random.uniform(2.0, 4.0))
                     await asyncio.sleep(random.uniform(0.6, 2.0))  # gap between clouds
             finally:
-                await self.client.async_set_brightness(saved)
                 await self._fade_resume(fade)
+                await self.async_resume_schedule()
 
     async def async_feeding_set(self, on: bool) -> None:
         """Toggle feeding mode: dim to the feeding level, auto-restore on timeout."""
@@ -616,8 +635,6 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         fade = await self._fade_suspend()
         try:
             if on:
-                if not self.feeding_on:
-                    self._feeding_saved = list(self.channels)
                 self.feeding_on = True
                 level = max(0, min(100, int(self.feeding_level)))
                 self.channels = [level] * self.channel_count
@@ -629,10 +646,9 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                 )
             else:
                 self.feeding_on = False
-                if self._feeding_saved is not None:
-                    self.channels = self._feeding_saved
-                    self._feeding_saved = None
-                await self.async_apply_channels()
+                # Hand back to the schedule instead of freezing on the old levels,
+                # so the preset (incl. the nightly off) takes over again.
+                await self.async_resume_schedule()
         finally:
             await self._fade_resume(fade)
         self.async_update_listeners()
@@ -669,16 +685,13 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             fade = None
         try:
             if on:
-                if not self.viewing_on:
-                    self._viewing_saved = list(self.channels)
                 self.viewing_on = True
                 self.channels = self.viewing_target()
+                await self.async_apply_channels()
             else:
                 self.viewing_on = False
-                if self._viewing_saved is not None:
-                    self.channels = self._viewing_saved
-                    self._viewing_saved = None
-            await self.async_apply_channels()
+                # Return to the schedule rather than a stale snapshot.
+                await self.async_resume_schedule()
         finally:
             if fade is not None and fade.fade_enable:
                 try:

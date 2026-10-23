@@ -1,7 +1,17 @@
 # Changelog
 
-## Unreleased (blueprints only — ship from `main`, no integration release needed)
+## 0.20.0 — 2026-10-24
 
+- **Effects now hand control back to the schedule when they end.** A live dim
+  (`0x13`) is a *preview that holds* — it never expires on its own, so after an
+  effect the device would stay stuck at that level and miss the schedule's next
+  boundary (e.g. the nightly off — the light could be found still on in the
+  morning). Lightning, cloud, and turning **feeding** or **viewing** mode off now
+  send `START` (`0x1E`) to re-arm the stored program from the current time, so
+  the light follows the preset again — including switching off if the current
+  slot is an off/sleep period. Confirmed against the app's own "resume program"
+  flow. (The HA sliders may briefly show the slot's configured level rather than
+  0 during an off period; the device still physically turns off.)
 - **Whole-tank blueprints are now open templates.** `whole_tank_feed`,
   `whole_tank_maintenance` and `whole_tank_storm` no longer force a wave pump —
   the `fan` pump is optional (storm with it empty = lightning-only). Feed and
