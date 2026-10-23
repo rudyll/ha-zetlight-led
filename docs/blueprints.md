@@ -26,6 +26,7 @@
 | acclimation_ramp | 每天抬高驯化比例并重应用预设 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Facclimation_ramp.yaml) |
 | lightning_on_storm | 雷暴天**按随机间隔反复**放闪电 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Flightning_on_storm.yaml) |
 | weather_dimming | **阴雨天自动调暗**灯(按天气设「调光比例」,每级可自定义) | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fweather_dimming.yaml) |
+| moon_phase | 夜间**月光随真实月相**强弱(很微妙,图自然感) | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fmoon_phase.yaml) |
 
 ## 整缸（灯 + 造浪泵） / Whole-tank
 

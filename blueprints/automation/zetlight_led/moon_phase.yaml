@@ -1,0 +1,98 @@
+blueprint:
+  name: 积光灯 — 月光随月相 / Moonlight by lunar phase
+  description: >-
+    夜间给蓝通道一个微弱月光,亮度随真实月相变化(满月更亮、新月几乎无),早上恢复日程。
+    月光本就很暗、相邻月相差别细微——这是"自然感"点缀,别指望戏剧效果。需要 HA 的
+    Moon 集成(实体一般是 sensor.moon)。
+
+    At night, set a faint blue moonlight scaled by the real lunar phase (brighter
+    near full moon), and resume the schedule in the morning. Subtle by nature.
+  domain: automation
+  input:
+    moon_sensor:
+      name: 月相传感器 / Moon phase sensor
+      default: sensor.moon
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    light_entity:
+      name: 灯(早上恢复用) / Light (to resume in the morning)
+      selector:
+        entity:
+          filter:
+            - integration: zetlight_led
+              domain: light
+    ch_white:
+      name: 白通道 A / White channel A
+      selector:
+        entity: { filter: [{ integration: zetlight_led, domain: number }] }
+    ch_blue:
+      name: 蓝通道 B / Blue channel B
+      selector:
+        entity: { filter: [{ integration: zetlight_led, domain: number }] }
+    ch_color:
+      name: 色通道 C / Color channel C
+      selector:
+        entity: { filter: [{ integration: zetlight_led, domain: number }] }
+    ch_purple:
+      name: 紫通道 D / Purple channel D
+      selector:
+        entity: { filter: [{ integration: zetlight_led, domain: number }] }
+    max_blue:
+      name: 满月蓝光强度 / Full-moon blue level
+      default: 10
+      selector:
+        number: { min: 1, max: 40, unit_of_measurement: "%" }
+    evening_time:
+      name: 入夜时间 / Evening time
+      default: "22:30:00"
+      selector: { time: {} }
+    morning_time:
+      name: 早晨恢复时间 / Morning resume time
+      default: "07:00:00"
+      selector: { time: {} }
+
+mode: single
+
+variables:
+  moon_ent: !input moon_sensor
+  peak_blue: !input max_blue
+
+trigger:
+  - platform: time
+    at: !input evening_time
+    id: night
+  - platform: time
+    at: !input morning_time
+    id: morning
+
+action:
+  - choose:
+      - conditions: "{{ trigger.id == 'night' }}"
+        sequence:
+          - variables:
+              factor: >-
+                {% set s = states(moon_ent) %}
+                {% if s == 'full_moon' %}1.0
+                {% elif s in ['waxing_gibbous','waning_gibbous'] %}0.75
+                {% elif s in ['first_quarter','last_quarter'] %}0.5
+                {% elif s in ['waxing_crescent','waning_crescent'] %}0.25
+                {% else %}0.05{% endif %}
+              blue: "{{ (peak_blue | float * factor) | round | int }}"
+          - action: number.set_value
+            target: { entity_id: !input ch_white }
+            data: { value: 0 }
+          - action: number.set_value
+            target: { entity_id: !input ch_color }
+            data: { value: 0 }
+          - action: number.set_value
+            target: { entity_id: !input ch_purple }
+            data: { value: 0 }
+          - action: number.set_value
+            target: { entity_id: !input ch_blue }
+            data: { value: "{{ blue }}" }
+      - conditions: "{{ trigger.id == 'morning' }}"
+        sequence:
+          - action: light.turn_on
+            target: { entity_id: !input light_entity }

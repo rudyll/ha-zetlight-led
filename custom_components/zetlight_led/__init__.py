@@ -558,56 +558,83 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                     except ZetlightUDPError:
                         pass
 
-    async def async_cloud(self) -> None:
-        """Custom passing-cloud effect: ramp all channels down, hold, ramp up.
+    async def _fade_suspend(self) -> "protocol.OptionState | None":
+        """Read and temporarily disable the device fade (so live effects aren't
+        smeared by a long gradient). Returns the state for _fade_resume."""
+        try:
+            fade = await self.client.async_read_options()
+            if fade.fade_enable:
+                await self.client.async_set_fade(False, fade.fade_minutes)
+            return fade
+        except (ZetlightUDPError, ValueError):
+            return None
 
-        Built from live 0x13 frames; restores the previous levels afterwards.
+    async def _fade_resume(self, fade) -> None:  # noqa: ANN001
+        if fade is not None and fade.fade_enable:
+            try:
+                await self.client.async_set_fade(True, fade.fade_minutes)
+            except ZetlightUDPError:
+                pass
+
+    async def _ramp(self, start, end, steps: int, total: float) -> None:  # noqa: ANN001
+        """Smoothly interpolate channel levels from start to end (ease in/out)."""
+        nch = len(start)
+        for i in range(1, steps + 1):
+            t = i / steps
+            e = t * t * (3 - 2 * t)  # smoothstep
+            vals = tuple(round(start[j] + (end[j] - start[j]) * e) for j in range(nch))
+            await self.client.async_set_brightness(vals)
+            await asyncio.sleep(total / steps)
+
+    async def async_cloud(self) -> None:
+        """Custom passing-cloud effect: one or two clouds drift over, dimming to
+        a random depth with a smooth ease, holding, then clearing.
+
+        Built from live 0x13 frames; disables fade for the duration (a long fade
+        would smear it) and restores the previous levels + fade afterwards.
         """
         async with self._lightning_lock:
             saved = tuple(self.channels)
-            target = tuple(int(c * 0.4) for c in saved)
-            nch = len(saved)
-            steps = 8
+            fade = await self._fade_suspend()
             try:
-                for i in range(1, steps + 1):
-                    vals = tuple(
-                        int(saved[j] + (target[j] - saved[j]) * i / steps)
-                        for j in range(nch)
-                    )
-                    await self.client.async_set_brightness(vals)
-                    await asyncio.sleep(0.18)
-                await asyncio.sleep(2.0)
-                for i in range(1, steps + 1):
-                    vals = tuple(
-                        int(target[j] + (saved[j] - target[j]) * i / steps)
-                        for j in range(nch)
-                    )
-                    await self.client.async_set_brightness(vals)
-                    await asyncio.sleep(0.18)
+                for _ in range(random.randint(1, 2)):
+                    depth = random.uniform(0.25, 0.7)  # dim to 25-70% of current
+                    target = tuple(int(c * depth) for c in saved)
+                    await self._ramp(saved, target, 12, random.uniform(2.0, 4.0))
+                    await asyncio.sleep(random.uniform(2.0, 5.0))  # overcast
+                    await self._ramp(target, saved, 12, random.uniform(2.0, 4.0))
+                    await asyncio.sleep(random.uniform(0.6, 2.0))  # gap between clouds
             finally:
                 await self.client.async_set_brightness(saved)
+                await self._fade_resume(fade)
 
     async def async_feeding_set(self, on: bool) -> None:
         """Toggle feeding mode: dim to the feeding level, auto-restore on timeout."""
         if self._feeding_unsub is not None:
             self._feeding_unsub()
             self._feeding_unsub = None
-        if on:
-            if not self.feeding_on:
-                self._feeding_saved = list(self.channels)
-            self.feeding_on = True
-            level = max(0, min(100, int(self.feeding_level)))
-            self.channels = [level] * self.channel_count
-            await self.async_apply_channels()
-            self._feeding_unsub = async_call_later(
-                self.hass, max(1, int(self.feeding_minutes)) * 60, self._feeding_timeout
-            )
-        else:
-            self.feeding_on = False
-            if self._feeding_saved is not None:
-                self.channels = self._feeding_saved
-                self._feeding_saved = None
-            await self.async_apply_channels()
+        fade = await self._fade_suspend()
+        try:
+            if on:
+                if not self.feeding_on:
+                    self._feeding_saved = list(self.channels)
+                self.feeding_on = True
+                level = max(0, min(100, int(self.feeding_level)))
+                self.channels = [level] * self.channel_count
+                await self.async_apply_channels()
+                self._feeding_unsub = async_call_later(
+                    self.hass,
+                    max(1, int(self.feeding_minutes)) * 60,
+                    self._feeding_timeout,
+                )
+            else:
+                self.feeding_on = False
+                if self._feeding_saved is not None:
+                    self.channels = self._feeding_saved
+                    self._feeding_saved = None
+                await self.async_apply_channels()
+        finally:
+            await self._fade_resume(fade)
         self.async_update_listeners()
 
     @callback

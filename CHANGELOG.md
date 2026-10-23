@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.19.0 — 2026-10-23
+
+- **Better cloud effect, and a fade fix for cloud + feeding.** The custom cloud
+  is now a realistic passing cloud — one or two clouds dim to a random depth with
+  a smooth ease, hold, then clear. Crucially, the cloud and feeding effects now
+  disable the device fade for their duration and restore it afterwards (a long
+  gradient was otherwise smearing them, same issue lightning had).
+- **Moonlight blueprint:** `moon_phase` sets a faint blue night light scaled by
+  the real lunar phase (brighter near full moon), resuming the schedule in the
+  morning. Subtle by nature — a natural touch, not a dramatic effect.
+
 ## 0.18.0 — 2026-10-23
 
 - **Viewing / photo mode** (`switch.viewing_mode`): a white-balanced mix that is
