@@ -129,11 +129,6 @@ schedules, acclimation, storm lightning + pump waves, feeding and more — with
 one-click import links — are in [`docs/blueprints.md`](docs/blueprints.md).
 (HACS installs the integration only; blueprints are imported separately.)
 
-**Physical controller (optional):** an ESPHome config to turn an M5Stack Chain
-DualKey into a reef button + status‑LED controller (feeding/viewing/maintenance
-from the keys, severity colors on the LEDs) is in
-[`docs/dualkey-controller.md`](docs/dualkey-controller.md).
-
 > **Tip:** give the light a **DHCP reservation** so its IP doesn't change. If
 > Home Assistant and the light are on different VLANs, allow UDP to the light on
 > port `8855`.
