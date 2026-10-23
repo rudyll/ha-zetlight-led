@@ -58,7 +58,15 @@
       "feeding_level": { "name": "Feeding level" },
       "feeding_minutes": { "name": "Feeding duration" },
       "acclimation_scale": { "name": "Dimming" },
-      "fade_minutes": { "name": "Fade minutes" }
+      "fade_minutes": { "name": "Fade minutes" },
+      "viewing_a": { "name": "Viewing A" },
+      "viewing_b": { "name": "Viewing B" },
+      "viewing_c": { "name": "Viewing C" },
+      "viewing_d": { "name": "Viewing D" },
+      "viewing_e": { "name": "Viewing E" },
+      "viewing_f": { "name": "Viewing F" },
+      "viewing_g": { "name": "Viewing G" },
+      "viewing_h": { "name": "Viewing H" }
     },
     "button": {
       "lightning": { "name": "Lightning" },
@@ -86,7 +94,8 @@
       "coral_acclimation": { "name": "Coral acclimation (native)" },
       "auto_cloud": { "name": "Auto clouds" },
       "moon_phase": { "name": "Moon phase" },
-      "fade": { "name": "Fade (smooth transitions)" }
+      "fade": { "name": "Fade (smooth transitions)" },
+      "viewing_mode": { "name": "Viewing mode" }
     }
   }
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0 — 2026-10-23
+
+- **Viewing / photo mode** (`switch.viewing_mode`): a white-balanced mix that is
+  easy on the eye and the camera while corals still fluoresce — more white,
+  moderate blue (keeps fluorescence), damped violet (the most camera-polluting).
+  It snaps quickly (temporarily bypassing fade) and restores the previous levels
+  when turned off. Tune the per-channel targets with the `Viewing A/B/C/D…`
+  config numbers (default white-heavy).
+
 ## 0.17.0 — 2026-10-22
 
 - **Fiercer, non-repeating lightning that beats the fade.** The culprit behind

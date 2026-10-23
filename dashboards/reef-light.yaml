@@ -95,6 +95,8 @@ views:
           - type: entities
             title: Modes
             entities:
+              - entity: switch.aedc45_viewing_mode
+                name: Viewing / photo mode
               - entity: number.aedc45_acclimation
                 name: Dimming
               - entity: switch.aedc45_coral_acclimation

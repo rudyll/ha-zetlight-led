@@ -68,6 +68,10 @@ async def async_setup_entry(
             ZetlightFadeMinutes(coordinator, entry.entry_id),
         ]
     )
+    entities.extend(
+        ZetlightViewingLevel(coordinator, entry.entry_id, i)
+        for i in range(coordinator.channel_count)
+    )
     async_add_entities(entities)
 
 
@@ -232,3 +236,48 @@ class ZetlightFadeMinutes(CoordinatorEntity[ZetlightCoordinator], NumberEntity):
         opts = self.coordinator.options
         enabled = bool(opts.fade_enable) if opts else True
         await self.coordinator.async_set_fade(enabled, int(value))
+
+
+# Default viewing mix per channel: white high, blue moderate, violet damped.
+_VIEWING_DEFAULTS = (90, 50, 60, 25)
+
+
+class ZetlightViewingLevel(CoordinatorEntity[ZetlightCoordinator], RestoreNumber):
+    """One channel's target level in viewing/photo mode (0-100%)."""
+
+    _attr_has_entity_name = True
+    _attr_mode = NumberMode.SLIDER
+    _attr_native_min_value = 0
+    _attr_native_max_value = 100
+    _attr_native_step = 1
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_icon = "mdi:camera-iris"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(
+        self, coordinator: ZetlightCoordinator, entry_id: str, index: int
+    ) -> None:
+        super().__init__(coordinator)
+        self._index = index
+        label = CHANNEL_LABELS[index]
+        self._attr_translation_key = f"viewing_{label.lower()}"
+        self._attr_unique_id = f"{entry_id}_viewing_{label.lower()}"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+        self._default = _VIEWING_DEFAULTS[index] if index < len(_VIEWING_DEFAULTS) else 40
+        self._value: float = float(self._default)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last = await self.async_get_last_number_data()
+        if last is not None and last.native_value is not None:
+            self._value = last.native_value
+        self.coordinator.viewing_levels[self._index] = int(self._value)
+
+    @property
+    def native_value(self) -> float:
+        return self._value
+
+    async def async_set_native_value(self, value: float) -> None:
+        self._value = value
+        await self.coordinator.async_set_viewing_level(self._index, int(value))
+        self.async_write_ha_state()

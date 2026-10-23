@@ -27,6 +27,7 @@ async def async_setup_entry(
             ZetlightAutoCloudSwitch(coordinator, entry.entry_id),
             ZetlightMoonSwitch(coordinator, entry.entry_id),
             ZetlightFadeSwitch(coordinator, entry.entry_id),
+            ZetlightViewingSwitch(coordinator, entry.entry_id),
         ]
     )
 
@@ -170,3 +171,33 @@ class ZetlightFadeSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_fade(False, self._minutes())
+
+
+class ZetlightViewingSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
+    """Viewing / photo mode: a white-balanced mix that is easy on the eye and the
+    camera while corals still fluoresce.
+
+    More white, moderate blue (keeps fluorescence), damped violet (the most
+    camera-polluting). Live-only; restores the previous levels when switched off,
+    and stays on until you turn it off. Tune the per-channel targets with the
+    'Viewing …' config numbers.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "viewing_mode"
+    _attr_icon = "mdi:camera-iris"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_viewing_mode"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.viewing_on
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_viewing_set(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_viewing_set(False)

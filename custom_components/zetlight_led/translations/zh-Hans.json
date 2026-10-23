@@ -58,7 +58,15 @@
       "feeding_level": { "name": "喂食亮度" },
       "feeding_minutes": { "name": "喂食时长" },
       "acclimation_scale": { "name": "调光比例" },
-      "fade_minutes": { "name": "渐变分钟" }
+      "fade_minutes": { "name": "渐变分钟" },
+      "viewing_a": { "name": "观赏 A（白）" },
+      "viewing_b": { "name": "观赏 B（蓝）" },
+      "viewing_c": { "name": "观赏 C（色）" },
+      "viewing_d": { "name": "观赏 D（紫）" },
+      "viewing_e": { "name": "观赏 E" },
+      "viewing_f": { "name": "观赏 F" },
+      "viewing_g": { "name": "观赏 G" },
+      "viewing_h": { "name": "观赏 H" }
     },
     "button": {
       "lightning": { "name": "闪电" },
@@ -86,7 +94,8 @@
       "coral_acclimation": { "name": "珊瑚驯化（原生）" },
       "auto_cloud": { "name": "自动云彩" },
       "moon_phase": { "name": "月相模式" },
-      "fade": { "name": "渐变时长" }
+      "fade": { "name": "渐变时长" },
+      "viewing_mode": { "name": "观赏模式" }
     }
   }
 }

@@ -387,6 +387,10 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.feeding_on = False
         self._feeding_saved: list[int] | None = None
         self._feeding_unsub = None
+        # Viewing / photo mode state.
+        self.viewing_on = False
+        self.viewing_levels: dict[int, int] = {}
+        self._viewing_saved: list[int] | None = None
         # Raw bytes of the last 0x10 config reply (for schedule decoding work).
         self.last_config: bytes | None = None
         # Parsed per-slot brightness from the last 0x10 reply (raw %), or None.
@@ -610,6 +614,58 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
     def _feeding_timeout(self, _now) -> None:  # noqa: ANN001
         self._feeding_unsub = None
         self.hass.async_create_task(self.async_feeding_set(False))
+
+    def viewing_target(self) -> list[int]:
+        """The per-channel viewing-mode mix (white-heavy, violet damped)."""
+        defaults = [90, 50, 60, 25]  # white, blue, color, purple
+        return [
+            self.viewing_levels.get(
+                i, defaults[i] if i < len(defaults) else 40
+            )
+            for i in range(self.channel_count)
+        ]
+
+    async def async_viewing_set(self, on: bool) -> None:
+        """Toggle viewing/photo mode: a white-balanced mix that is easy on the
+        eye and the camera while corals still fluoresce. Live-only; restores the
+        previous levels when switched off. Stays on until turned off.
+
+        Snaps quickly by disabling fade for the transition (a long fade would
+        otherwise take minutes), then restores the fade setting.
+        """
+        fade = None
+        try:
+            fade = await self.client.async_read_options()
+            if fade.fade_enable:
+                await self.client.async_set_fade(False, fade.fade_minutes)
+        except (ZetlightUDPError, ValueError):
+            fade = None
+        try:
+            if on:
+                if not self.viewing_on:
+                    self._viewing_saved = list(self.channels)
+                self.viewing_on = True
+                self.channels = self.viewing_target()
+            else:
+                self.viewing_on = False
+                if self._viewing_saved is not None:
+                    self.channels = self._viewing_saved
+                    self._viewing_saved = None
+            await self.async_apply_channels()
+        finally:
+            if fade is not None and fade.fade_enable:
+                try:
+                    await self.client.async_set_fade(True, fade.fade_minutes)
+                except ZetlightUDPError:
+                    pass
+        self.async_update_listeners()
+
+    async def async_set_viewing_level(self, index: int, value: int) -> None:
+        """Set one channel's viewing target; re-apply if viewing is active."""
+        self.viewing_levels[index] = max(0, min(100, int(value)))
+        if self.viewing_on:
+            self.channels = self.viewing_target()
+            await self.async_apply_channels()
 
     async def async_write_schedule(
         self,
