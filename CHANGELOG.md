@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased (blueprints only — ship from `main`, no integration release needed)
+
+- **`whole_tank_storm`: hand the pump back to its tidal schedule when the storm
+  ends.** Setting a wave mode (surge/turbulence) puts the GTS pump into manual,
+  so the old restore (wave mode + percentage) left it stuck in manual and dropped
+  the tidal program. New optional "pump run-mode select" input; at storm end it is
+  switched back to `tide` (configurable). Without it, the generic wave+percentage
+  restore still applies.
+
 ## 0.21.0 — 2026-10-24
 
 - **New "Resume schedule" button** (`button.*_resume_schedule` / 恢复日程): sends

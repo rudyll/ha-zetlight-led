@@ -2,9 +2,9 @@ blueprint:
   name: 积光整缸 — 风暴（闪电 + 随机大浪） / Whole-tank storm
   description: >-
     天气报雷暴时，循环制造风暴：每一阵 = 放闪电 + 把造浪泵切到浪涌/乱流并拉满打一阵
-    大浪（随机时长），然后回落到平缓流一段（随机间隔）；如此反复，天气转好后把泵恢复
-    到常态波形和强度。天气来自 HA 天气集成。造浪泵(fan)和波形选择器都可留空——留空
-    就是"纯闪电"风暴，只有灯闪、不动泵。GTS 泵的开/停与强度是 fan 实体。
+    大浪（随机时长），然后回落到平缓流一段（随机间隔）；如此反复，天气转好后把泵**切回
+    潮汐排程**（填了运行模式选择器时），否则恢复到常态波形和强度。天气来自 HA 天气集成。
+    造浪泵(fan)和波形/运行模式选择器都可留空——留空就是"纯闪电"风暴，只有灯闪、不动泵。
 
     While stormy, loop: fire lightning + surge the pump for a random burst, then
     drop to a calm flow for a random gap. Restores the pump when the storm clears.
@@ -41,6 +41,24 @@ blueprint:
           filter:
             - integration: gts_wavepump
               domain: select
+    pump_run_mode:
+      name: 泵运行模式选择器（风暴结束切回潮汐，可留空） / Pump run-mode select (optional)
+      description: >-
+        切浪形(surge/turbulence)会把泵打成手动，风暴结束后要切回潮汐排程，否则泵会
+        一直停在手动、丢了潮汐。有这个选择器就填上；GTS 泵填它的"运行模式"select。
+        Setting a wave mode puts the pump in manual; at storm end this is switched
+        back so the pump resumes its tidal schedule.
+      default:
+      selector:
+        entity:
+          filter:
+            - integration: gts_wavepump
+              domain: select
+    restore_mode:
+      name: 风暴结束恢复到的运行模式 / Run mode to restore after the storm
+      default: tide
+      selector:
+        select: { custom_value: true, options: [tide] }
     surge_percentage:
       name: 大浪强度 / Surge intensity
       default: 95
@@ -106,6 +124,8 @@ variables:
   g_hi: !input gap_max
   pump: !input pump_fan
   wave: !input pump_wave_mode
+  run_sel: !input pump_run_mode
+  restore_md: !input restore_mode
   surge_pct: !input surge_percentage
   calm_pct: !input calm_percentage
   normal_pct: !input normal_percentage
@@ -153,14 +173,22 @@ action:
               data: { percentage: "{{ calm_pct }}" }
         - delay:
             seconds: "{{ range(g_lo | int, (g_hi | int) + 1) | random }}"
-  # storm over: restore normal flow
-  - if: "{{ wave not in [none, '', []] }}"
+  # storm over: hand the pump back to its tidal schedule if a run-mode select is
+  # given (setting a wave mode leaves the pump in manual, so this is required to
+  # not lose the tidal program); otherwise restore a steady wave + percentage.
+  - if: "{{ run_sel not in [none, '', []] }}"
     then:
       - service: select.select_option
-        target: { entity_id: "{{ wave }}" }
-        data: { option: "{{ normal_wv }}" }
-  - if: "{{ pump not in [none, '', []] }}"
-    then:
-      - service: fan.set_percentage
-        target: { entity_id: "{{ pump }}" }
-        data: { percentage: "{{ normal_pct }}" }
+        target: { entity_id: "{{ run_sel }}" }
+        data: { option: "{{ restore_md }}" }
+    else:
+      - if: "{{ wave not in [none, '', []] }}"
+        then:
+          - service: select.select_option
+            target: { entity_id: "{{ wave }}" }
+            data: { option: "{{ normal_wv }}" }
+      - if: "{{ pump not in [none, '', []] }}"
+        then:
+          - service: fan.set_percentage
+            target: { entity_id: "{{ pump }}" }
+            data: { percentage: "{{ normal_pct }}" }
