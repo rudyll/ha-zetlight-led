@@ -29,6 +29,7 @@ async def async_setup_entry(
         [
             ZetlightLightningButton(coordinator, entry.entry_id),
             ZetlightCloudButton(coordinator, entry.entry_id),
+            ZetlightResumeScheduleButton(coordinator, entry.entry_id),
             ZetlightSyncClockButton(coordinator, entry.entry_id),
             ZetlightReadConfigButton(coordinator, entry.entry_id),
         ]
@@ -72,6 +73,23 @@ class ZetlightCloudButton(_ZetlightButton):
 
     async def async_press(self) -> None:
         await self.coordinator.async_cloud()
+
+
+class ZetlightResumeScheduleButton(_ZetlightButton):
+    """Hand control back to the device's stored schedule (0x1E START).
+
+    Use after a manual brightness change to snap back to the preset program for
+    the current time (off during an off/sleep slot).
+    """
+
+    _attr_translation_key = "resume_schedule"
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator, entry_id, "resume_schedule")
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_resume_schedule()
 
 
 class ZetlightSyncClockButton(_ZetlightButton):

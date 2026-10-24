@@ -71,6 +71,7 @@
     "button": {
       "lightning": { "name": "闪电" },
       "cloud": { "name": "云彩" },
+      "resume_schedule": { "name": "恢复日程" },
       "sync_clock": { "name": "校时" },
       "read_config": { "name": "读取配置" }
     },

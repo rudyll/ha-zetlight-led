@@ -71,6 +71,7 @@
     "button": {
       "lightning": { "name": "Lightning" },
       "cloud": { "name": "Cloud" },
+      "resume_schedule": { "name": "Resume schedule" },
       "sync_clock": { "name": "Sync clock" },
       "read_config": { "name": "Read config" }
     },

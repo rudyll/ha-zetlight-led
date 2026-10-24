@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.0 — 2026-10-24
+
+- **New "Resume schedule" button** (`button.*_resume_schedule` / 恢复日程): sends
+  `START` (`0x1E`) to snap the light back onto its stored schedule for the current
+  time — handy after a manual brightness change, or from an automation. (Turning
+  the HA light off then on already does the same; this is a one-tap shortcut.)
+
 ## 0.20.0 — 2026-10-24
 
 - **Effects now hand control back to the schedule when they end.** A live dim
