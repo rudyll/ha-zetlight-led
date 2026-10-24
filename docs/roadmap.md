@@ -134,3 +134,14 @@ and line references are in the GTS repository's
 0.22.0 was pushed and formally released; remote manifest, tag6091a09, latest
 non-draft/non-prerelease Release and matching notes were verified. F17's bounded storm condition
 fix/installed configuration evidence does not close F18–F22 or certify all modes.
+
+## Timing clarification / reminder proposal — 2026-10-24
+
+- Current feeding:10min HA-managed persistent deadline; second Key1 single can
+  end early. Current maintenance:manual helper off, no automatic countdown and
+  no DualKey helper binding. Description-only corrections are installed; action
+  semantics were verified unchanged.
+- F23 (proposal, P2, owner unassigned): maintenance timeout reminder only; not
+  authorized for implementation. Needs an actual maintenance helper, duration
+  and notification destination. Success:notify without automatically restarting
+  pumps. Next:wait for an explicit request; no reminder or scheduler created.

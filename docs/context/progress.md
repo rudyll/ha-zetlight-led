@@ -1,3 +1,27 @@
+## Latest clarification: feeding and maintenance timing — 2026-10-24
+
+User asked whether feeding/maintenance automatically restores operation. Live
+Zetlight HA feeding duration10min; GTS native feed duration also10min. Key1 single
+is whole-tank feed toggle; second single ends early. The whole-tank recovery
+clock lives in HA and is persisted, not a timer running inside the lamp. During
+Core downtime outlet recovery cannot execute until HA resumes. Maintenance
+blueprint has no countdown, is manually ended and is not currently bound to
+DualKey. Restore uses normal retained pump/current lamp program logic, rather
+than an arbitrary snapshot of all manual brightness/power states.
+
+Corrected feed description to remove the misleading lamp-internal-timer claim,
+and maintenance description to explicitly say manual end/full brightness.
+Installed metadata updated on HA; source comparison proved descriptions only,
+and HA expanded triggers/actions matched unchanged source after normalizing
+singular/plural keys. An initial whole-dict equality check failed; its pre-edit object was not saved,
+so the exact initial difference is unproved. The description-only source check
+and canonical native semantic comparison both passed. No aquarium
+control actions, timeout settings or maintenance bindings were changed.
+
+Optional maintenance timeout reminder is a proposal only; never automatically
+restart pumps during water change without a separately defined/approved policy.
+No new maintenance helper or scheduled reminder was created.
+
 ## Latest: authorized whole-tank live recovery test completed — 2026-10-24
 
 GTS-R02 linked Zetlight F18/F21: normal feed/end and GTS-unavailable outlet

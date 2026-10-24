@@ -1,13 +1,13 @@
 blueprint:
   name: 积光整缸 — 维护模式 / Maintenance mode
   description: >-
-    换水/清缸时打开一个辅助开关：停泵 + 切断额外设备 + 灯全白（方便看清）。关掉则
+    换水/清缸时打开一个辅助开关：停泵 + 切断额外设备 + 灯各通道全亮（方便看清）。此模板没有自动倒计时，需手动关闭维护开关；关掉则
     全部恢复：泵开、额外设备上电、灯回到存储日程。请先创建一个 input_boolean（辅助
     元素）再在下面选它。造浪泵(fan)和"额外断电设备"都可留空——后者用来接回水泵、
     加热棒等插在智能插座/继电器上、只能切电源的设备。
 
     Toggle on for water changes: pump stops, extra devices power off, light goes
-    full white. Off restores everything. Both the fan pump and the extra devices
+    full brightness. Off restores everything. Both the fan pump and the extra devices
     are optional.
   domain: automation
   input:
