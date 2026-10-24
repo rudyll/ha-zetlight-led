@@ -1,3 +1,39 @@
+## Latest: authorized whole-tank live recovery test completed — 2026-10-24
+
+GTS-R02 linked Zetlight F18/F21: normal feed/end and GTS-unavailable outlet
+recovery both passed. HA outlet history measures normal cuts11.67/11.82s and
+fault-case cuts10.73/10.93s (water pump/skimmer). Earlier3.19/1.07s figures were
+late polling windows and were explicitly corrected; raw evidence is retained.
+
+Zetlight1min feed deadline survived actual entry reload unchanged and recovered
+0.299s after the original deadline. Pumps were kept running during this lamp-only
+phase by temporarily suspending the household power-control automation.
+At12:29:06 all controls were restored: outlets on, GTS running tide/sine55, lamp
+on/schedule, feed/view off, original10min duration and automation enabled.
+No command/recovery flags. GTS/Zetlight/DualKey entries independently read loaded.
+Guard exited without intervening; no scheduler/background observer remains.
+
+User physical flow/skimmer/light appearance confirmation is pending. Control
+acceptance is passed; that human observation layer remains open. No full Core
+restart, real BLE-radio outage, actual thrown service error or generic maintenance
+outlet deployment was tested. Do not expand the bounded acceptance claim.
+Evidence and timing methodology: GTS repository
+`docs/audits/2026-10-24-live-acceptance/README.md`. No runtime source change.
+Next: user visual confirmation for GTS-R02 / normal model; no new test started.
+
+## Current: authorized whole-tank live acceptance — 2026-10-24
+
+Rudy explicitly authorized brief pump power cuts and requested final pump/light
+restoration. Scope: normal feed/end; scoped GTS integration-unavailable recovery;
+one-minute real lamp deadline across entry reload with the household feed
+power-control automation temporarily suspended for that lamp-only phase.
+Independent20s outlet-power guard plus120s stage recovery guard; original10min
+feeding duration and automation enabled state must be restored. No full Core
+restart, stored curve changes, storm flashes or broad network outage injection.
+Physical flow/light appearance still requires user observation.
+Executor: Codex; current GTS-R02, linked Zetlight F18/F21. Evidence goes into
+existing ledgers after observed results; do not mark passed from script design.
+
 ## Publication verified — 2026-10-24
 
 - [rudyll/ha-gts-wavepump 0.6.2](https://github.com/rudyll/ha-gts-wavepump/releases/tag/v0.6.2): remote manifest, annotated tag target, latest release, non-draft/non-prerelease status, and exact changelog notes verified. Release source commit `70a2dec2314f`.
