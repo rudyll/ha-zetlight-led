@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import time
 from datetime import timedelta
 
 import voluptuous as vol
@@ -149,6 +150,7 @@ class ZetlightClient:
         self._transport: asyncio.DatagramTransport | None = None
         self._proto: _ClientProtocol | None = None
         self._lock = asyncio.Lock()
+        self._option_lock = asyncio.Lock()
 
     async def async_connect(self) -> None:
         """Open the UDP endpoint, binding 8855 if free, else an ephemeral port.
@@ -247,10 +249,7 @@ class ZetlightClient:
             protocol.build_schedule_brightness(slots, device_code=self.device_code),
             expect_reply=False,
         )
-        await asyncio.sleep(0.1)
-        await self._request(
-            protocol.build_on(device_code=self.device_code), expect_reply=False
-        )
+        # Applying output belongs to the coordinator's active-mode priority.
 
     async def async_read_config(self) -> bytes:
         """Send 0x10 and return the raw reply (schedule config)."""
@@ -273,35 +272,24 @@ class ZetlightClient:
         return protocol.parse_options(reply)
 
     async def async_set_coral(self, on: bool) -> None:
-        """Enable/disable the device's native coral-acclimation mode (0x14).
-
-        Preserves the auto-cloud and phase switches read from 0x20.
-        """
-        try:
-            current = await self.async_read_options()
-            auto_cloud, phase = current.auto_cloud, current.phase
-        except (ZetlightUDPError, ValueError):
-            auto_cloud = phase = 0
-        await self._request(
-            protocol.build_set_options(
-                auto_cloud, phase, 1 if on else 0, device_code=self.device_code
-            ),
-            expect_reply=False,
-        )
+        """Read-modify-write only from a valid snapshot; serialize sibling edits."""
+        async with self._option_lock:
+            try:
+                current = await self.async_read_options()
+            except (ZetlightUDPError, ValueError) as err:
+                raise ZetlightUDPError("cannot preserve current options; coral unchanged") from err
+            await self._request(protocol.build_set_options(
+                current.auto_cloud, current.phase, 1 if on else 0, device_code=self.device_code), expect_reply=False)
 
     async def async_set_auto_cloud(self, on: bool) -> None:
-        """Enable/disable auto-clouds (0x14), preserving phase and coral."""
-        try:
-            cur = await self.async_read_options()
-            phase, coral = cur.phase, cur.coral
-        except (ZetlightUDPError, ValueError):
-            phase = coral = 0
-        await self._request(
-            protocol.build_set_options(
-                1 if on else 0, phase, coral, device_code=self.device_code
-            ),
-            expect_reply=False,
-        )
+        """Read-modify-write only from a valid snapshot; serialize sibling edits."""
+        async with self._option_lock:
+            try:
+                current = await self.async_read_options()
+            except (ZetlightUDPError, ValueError) as err:
+                raise ZetlightUDPError("cannot preserve current options; auto-cloud unchanged") from err
+            await self._request(protocol.build_set_options(
+                1 if on else 0, current.phase, current.coral, device_code=self.device_code), expect_reply=False)
 
     async def async_set_moon(self, on: bool) -> None:
         """Enable/disable moon-phase mode (0x19)."""
@@ -338,12 +326,12 @@ class ZetlightClient:
             protocol.build_schedule_brightness(slots, device_code=self.device_code),
             expect_reply=False,
         )
-        # Apply the saved program (0x1C alone does not refresh live output; the
-        # vendor app does save -> start).
-        await asyncio.sleep(0.1)
-        await self._request(
-            protocol.build_on(device_code=self.device_code), expect_reply=False
-        )
+        # The coordinator verifies the curve, then applies the active intent.
+        # START here would briefly override off/feeding/viewing modes.
+
+
+class _EffectInterrupted(Exception):
+    pass
 
 
 class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
@@ -368,10 +356,22 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             update_interval=update_interval,
         )
         self.client = client
+        self._mode_lock = asyncio.Lock()
+        self._generation = 0
+        self._fade_generation = 0
+        self._power_off = False
+        self._manual_channels = None
+        self._closed = False
+        self.command_error = None
+        self._feeding_deadline = None
+        self._feeding_store = Store(hass, 1, f"{DOMAIN}.{entry_id}.feeding")
+        self._pending_schedule = None
+        self._pending_scale = None
         self.channel_count = protocol.NUM_CHANNELS  # detected from 0x0C
         self._acclimation_store = Store(hass, 1, f"{DOMAIN}.{entry_id}.acclimation")
         self._acclimation_base: list[tuple] | None = None
         self._acclimation_loaded = False
+        self._acclimation_has_scale = False
         self.channels: list[int] = [0] * protocol.NUM_CHANNELS
         self._channels_seeded = False
         # Tunable custom-lightning parameters (set by number entities).
@@ -438,7 +438,9 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
 
     async def async_set_fade(self, on: bool, minutes: int) -> None:
         """Set the gradient/fade time and refresh."""
-        await self.client.async_set_fade(on, minutes)
+        self._fade_generation += 1
+        async with self._mode_lock:
+            await self.client.async_set_fade(on, minutes)
         await self._refresh_options()
 
     async def _refresh_options(self) -> None:
@@ -455,14 +457,20 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.async_update_listeners()
 
     async def async_set_channel(self, index: int, value: int) -> None:
-        """Set one channel (0-100) and apply."""
-        self.channels[index] = max(0, min(100, value))
-        await self.async_apply_channels()
+        self._generation += 1
+        async with self._mode_lock:
+            channels = list(self._manual_channels or self.channels)
+            channels[index] = max(0, min(100, value))
+            self._manual_channels = channels
+            self._power_off = False
+            await self._apply_and_save_control()
 
     async def async_set_all(self, level: int) -> None:
-        """Set all channels to the same level (0-100) and apply."""
-        self.channels = [max(0, min(100, level))] * self.channel_count
-        await self.async_apply_channels()
+        self._generation += 1
+        async with self._mode_lock:
+            self._manual_channels = [max(0, min(100, level))] * self.channel_count
+            self._power_off = False
+            await self._apply_and_save_control()
 
     async def async_lightning(self) -> None:
         """Run a custom lightning effect using live 0x13 frames.
@@ -473,6 +481,10 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         come from the tunable number entities.
         """
         async with self._lightning_lock:
+            generation = self._generation
+            fade_generation = self._fade_generation
+            if self._closed or self.active_mode not in ["schedule", "manual"]:
+                return
             saved = tuple(self.channels)
             strokes = max(1, int(self.lightning_flashes))
             peak = max(1, min(100, int(self.lightning_intensity)))
@@ -489,30 +501,27 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             dark = tuple(0 for _ in range(nch))
 
             async def flash(level: float) -> None:
-                await self.client.async_set_brightness(vec(level))
+                await self._effect_set_brightness(vec(level), generation)
 
             async def strike(lo: float, hi: float) -> None:
                 await flash(peak)
                 await asyncio.sleep(on_s * ru(lo, hi))
-                await self.client.async_set_brightness(dark)
+                await self._effect_set_brightness(dark, generation)
                 await asyncio.sleep(ru(0.015, 0.035))
 
             # Disable fade so the strikes are sharp, then restore the user's
             # setting afterwards (a long fade would otherwise smear the flash).
-            fade = None
             try:
-                fade = await self.client.async_read_options()
-                if fade.fade_enable:
-                    await self.client.async_set_fade(False, fade.fade_minutes)
-            except (ZetlightUDPError, ValueError):
-                fade = None
+                fade = await self._begin_effect(generation)
+            except _EffectInterrupted:
+                return
 
             try:
                 # faint pre-flash + short tense pause (sometimes skipped)
                 if rnd() < 0.8:
                     await flash(ru(12, 28))
                     await asyncio.sleep(ru(0.02, 0.04))
-                    await self.client.async_set_brightness(dark)
+                    await self._effect_set_brightness(dark, generation)
                     await asyncio.sleep(ru(0.08, 0.18))
                 # blinding main, then 1-2 hard extra hits (random)
                 await strike(1.5, 2.1)
@@ -522,13 +531,13 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                 for _ in range(max(2, strokes) + random.randint(0, 2)):
                     await flash(peak if rnd() < 0.6 else ru(55, 95))
                     await asyncio.sleep(on_s * ru(0.3, 0.6))
-                    await self.client.async_set_brightness(dark)
+                    await self._effect_set_brightness(dark, generation)
                     await asyncio.sleep(ru(0.015, 0.05))
                 # occasional sustained "sheet" flash
                 if rnd() < 0.4:
                     await flash(peak)
                     await asyncio.sleep(ru(0.15, 0.28))
-                    await self.client.async_set_brightness(dark)
+                    await self._effect_set_brightness(dark, generation)
                     await asyncio.sleep(ru(0.03, 0.07))
                 # random second wave (keeps repeats from feeling mechanical)
                 if rnd() < 0.45:
@@ -537,7 +546,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                     for _ in range(random.randint(1, 3)):
                         await flash(ru(50, 95))
                         await asyncio.sleep(on_s * ru(0.3, 0.6))
-                        await self.client.async_set_brightness(dark)
+                        await self._effect_set_brightness(dark, generation)
                         await asyncio.sleep(ru(0.02, 0.06))
                 # short afterglow fade back to normal
                 glow = vec(int(peak * 0.45))
@@ -546,17 +555,12 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                     vals = tuple(
                         round(glow[j] + (saved[j] - glow[j]) * frac) for j in range(nch)
                     )
-                    await self.client.async_set_brightness(vals)
+                    await self._effect_set_brightness(vals, generation)
                     await asyncio.sleep(0.05)
+            except _EffectInterrupted:
+                pass
             finally:
-                if fade is not None and fade.fade_enable:
-                    try:
-                        await self.client.async_set_fade(True, fade.fade_minutes)
-                    except ZetlightUDPError:
-                        pass
-                # Re-arm the schedule so the light follows the preset again
-                # (the afterglow above already landed near the pre-strike levels).
-                await self.async_resume_schedule()
+                await self._finish_effect(generation, fade, fade_generation)
 
     async def _fade_suspend(self) -> "protocol.OptionState | None":
         """Read and temporarily disable the device fade (so live effects aren't
@@ -576,7 +580,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             except ZetlightUDPError:
                 pass
 
-    async def async_resume_schedule(self) -> None:
+    async def _resume_program(self) -> None:
         """Hand control back to the device's stored schedule program (0x1E START).
 
         A live 0x13 dim is a temporary preview that holds — it does NOT expire on
@@ -595,14 +599,14 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             pass
         self.async_update_listeners()
 
-    async def _ramp(self, start, end, steps: int, total: float) -> None:  # noqa: ANN001
+    async def _ramp(self, start, end, steps: int, total: float, generation) -> None:  # noqa: ANN001
         """Smoothly interpolate channel levels from start to end (ease in/out)."""
         nch = len(start)
         for i in range(1, steps + 1):
             t = i / steps
             e = t * t * (3 - 2 * t)  # smoothstep
             vals = tuple(round(start[j] + (end[j] - start[j]) * e) for j in range(nch))
-            await self.client.async_set_brightness(vals)
+            await self._effect_set_brightness(vals, generation)
             await asyncio.sleep(total / steps)
 
     async def async_cloud(self) -> None:
@@ -613,50 +617,58 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         would smear it) and restores the previous levels + fade afterwards.
         """
         async with self._lightning_lock:
+            generation = self._generation
+            fade_generation = self._fade_generation
+            if self._closed or self.active_mode not in ["schedule", "manual"]:
+                return
             saved = tuple(self.channels)
-            fade = await self._fade_suspend()
+            try:
+                fade = await self._begin_effect(generation)
+            except _EffectInterrupted:
+                return
             try:
                 for _ in range(random.randint(1, 2)):
                     depth = random.uniform(0.25, 0.7)  # dim to 25-70% of current
                     target = tuple(int(c * depth) for c in saved)
-                    await self._ramp(saved, target, 12, random.uniform(2.0, 4.0))
+                    await self._ramp(saved, target, 12, random.uniform(2.0, 4.0), generation)
                     await asyncio.sleep(random.uniform(2.0, 5.0))  # overcast
-                    await self._ramp(target, saved, 12, random.uniform(2.0, 4.0))
+                    await self._ramp(target, saved, 12, random.uniform(2.0, 4.0), generation)
                     await asyncio.sleep(random.uniform(0.6, 2.0))  # gap between clouds
+            except _EffectInterrupted:
+                pass
             finally:
-                await self._fade_resume(fade)
-                await self.async_resume_schedule()
+                await self._finish_effect(generation, fade, fade_generation)
 
     async def async_feeding_set(self, on: bool) -> None:
-        """Toggle feeding mode: dim to the feeding level, auto-restore on timeout."""
-        if self._feeding_unsub is not None:
-            self._feeding_unsub()
-            self._feeding_unsub = None
-        fade = await self._fade_suspend()
-        try:
-            if on:
-                self.feeding_on = True
-                level = max(0, min(100, int(self.feeding_level)))
-                self.channels = [level] * self.channel_count
-                await self.async_apply_channels()
-                self._feeding_unsub = async_call_later(
-                    self.hass,
-                    max(1, int(self.feeding_minutes)) * 60,
-                    self._feeding_timeout,
-                )
+        self._generation += 1
+        async with self._mode_lock:
+            if self._closed:
+                raise HomeAssistantError("integration unloaded")
+            deadline = time.time() + max(1, int(self.feeding_minutes)) * 60 if on else None
+            # Save the obligation before changing hardware or losing the timer.
+            await self._save_control(deadline, True)
+            self.feeding_on = on
+            self._feeding_deadline = deadline
+            self._arm_feeding_timer()
+            self.async_update_listeners()
+            try:
+                await self._restore_current_intent()
+            except Exception:
+                self.command_error = "feeding transition unconfirmed; recovery pending"
+                if not on:
+                    self._feeding_unsub = async_call_later(self.hass, 30, self._feeding_timeout)
+                raise
             else:
-                self.feeding_on = False
-                # Hand back to the schedule instead of freezing on the old levels,
-                # so the preset (incl. the nightly off) takes over again.
-                await self.async_resume_schedule()
-        finally:
-            await self._fade_resume(fade)
-        self.async_update_listeners()
+                await self._save_control(deadline, False)
+                self.command_error = None
+            finally:
+                self.async_update_listeners()
 
     @callback
     def _feeding_timeout(self, _now) -> None:  # noqa: ANN001
         self._feeding_unsub = None
-        self.hass.async_create_task(self.async_feeding_set(False))
+        if not self._closed:
+            self.hass.async_create_task(self.async_feeding_set(False))
 
     def viewing_target(self) -> list[int]:
         """The per-channel viewing-mode mix (white-heavy, violet damped)."""
@@ -669,102 +681,217 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         ]
 
     async def async_viewing_set(self, on: bool) -> None:
-        """Toggle viewing/photo mode: a white-balanced mix that is easy on the
-        eye and the camera while corals still fluoresce. Live-only; restores the
-        previous levels when switched off. Stays on until turned off.
-
-        Snaps quickly by disabling fade for the transition (a long fade would
-        otherwise take minutes), then restores the fade setting.
-        """
-        fade = None
-        try:
-            fade = await self.client.async_read_options()
-            if fade.fade_enable:
-                await self.client.async_set_fade(False, fade.fade_minutes)
-        except (ZetlightUDPError, ValueError):
-            fade = None
-        try:
-            if on:
-                self.viewing_on = True
-                self.channels = self.viewing_target()
-                await self.async_apply_channels()
-            else:
-                self.viewing_on = False
-                # Return to the schedule rather than a stale snapshot.
-                await self.async_resume_schedule()
-        finally:
-            if fade is not None and fade.fade_enable:
-                try:
-                    await self.client.async_set_fade(True, fade.fade_minutes)
-                except ZetlightUDPError:
-                    pass
-        self.async_update_listeners()
+        self._generation += 1
+        async with self._mode_lock:
+            self.viewing_on = on
+            await self._apply_and_save_control()
 
     async def async_set_viewing_level(self, index: int, value: int) -> None:
-        """Set one channel's viewing target; re-apply if viewing is active."""
-        self.viewing_levels[index] = max(0, min(100, int(value)))
-        if self.viewing_on:
-            self.channels = self.viewing_target()
-            await self.async_apply_channels()
+        self._generation += 1
+        async with self._mode_lock:
+            self.viewing_levels[index] = max(0, min(100, int(value)))
+            if self.viewing_on:
+                await self._restore_current_intent()
 
-    async def async_write_schedule(
-        self,
-        slots: list[tuple[int, int, int, int]],
-        start_minute: int,
-        durations: list[int],
-    ) -> None:
-        """Write the daily schedule exactly as given (overwrites stored program)."""
-        await self.client.async_write_schedule(slots, start_minute, durations)
+    async def async_write_schedule(self, slots, start_minute, durations) -> None:
+        self._generation += 1
+        async with self._mode_lock:
+            await self._load_acclimation_base()
+            base = [tuple(slot) for slot in slots]
+            protocol.build_schedule_times(start_minute, durations)
+            protocol.build_schedule_brightness(base)
+            scale = self.acclimation_scale
+            target = [tuple(round(c * scale / 100) for c in slot) for slot in base]
+            pending = {"base": base, "start": start_minute, "durations": durations}
+            await self._acclimation_store.async_save({"base": self._acclimation_base,
+                "pending_schedule": pending, "scale": scale})
+            self._pending_schedule = pending
+            await self.client.async_write_schedule(target, start_minute, durations)
+            await self._verify_curve(target)
+            next_base = base if scale != 100 else None
+            await self._acclimation_store.async_save({"base": next_base, "scale": scale})
+            self._acclimation_base = next_base
+            self._pending_schedule = None
+            self.schedule = target
+            await self._restore_current_intent()
 
     async def async_apply_acclimation(self, value: int) -> None:
-        """Scale the stored schedule's brightness to ``value`` percent.
-
-        Non-destructive to the user's configured curve: the first time it is
-        engaged (below 100), the current schedule is snapshotted as the base and
-        remembered; every change rescales from that base, and 100% writes the
-        base back (full restore). It is persistent — it stays until changed, not
-        auto-timed (that is feeding mode).
-        """
-        value = max(10, min(100, int(value)))
-        self.acclimation_scale = value
-        await self._load_acclimation_base()
-        if value == 100 and self._acclimation_base is None:
-            # already at full and nothing was scaled — nothing to do
-            self.async_update_listeners()
-            return
-        if self._acclimation_base is None:
-            if not self.schedule:
-                raise HomeAssistantError(
-                    "cannot read the current schedule to acclimate from"
-                )
-            self._acclimation_base = [tuple(s) for s in self.schedule]
-            await self._acclimation_store.async_save(
-                {"base": [list(s) for s in self._acclimation_base]}
-            )
-        base = self._acclimation_base
-        scaled = [
-            tuple(min(255, round(c * value / 100)) for c in slot) for slot in base
-        ]
-        await self.client.async_write_brightness(scaled)
-        if value == 100:
-            # fully restored — forget the base so a later lowering re-snapshots
-            # the (possibly updated) configured schedule.
-            self._acclimation_base = None
-            await self._acclimation_store.async_remove()
-        self.async_update_listeners()
+        if not 10 <= value <= 100:
+            raise HomeAssistantError("dimming must be between 10 and 100")
+        self._generation += 1
+        async with self._mode_lock:
+            await self._load_acclimation_base()
+            if self._pending_schedule is not None:
+                raise HomeAssistantError("retry the pending schedule before changing dimming")
+            if self._acclimation_base is None:
+                if not self.schedule:
+                    raise HomeAssistantError("complete current schedule required")
+                self._acclimation_base = [tuple(slot) for slot in self.schedule]
+            base = self._acclimation_base
+            target = [tuple(round(c * value / 100) for c in slot) for slot in base]
+            await self._acclimation_store.async_save({"base": base,
+                "scale": self.acclimation_scale, "pending_scale": value})
+            self._pending_scale = value
+            await self.client.async_write_brightness(target)
+            await self._verify_curve(target)
+            next_base = None if value == 100 else base
+            await self._acclimation_store.async_save({"base": next_base, "scale": value})
+            self._acclimation_base = next_base
+            self.acclimation_scale = value
+            self._pending_scale = None
+            self.schedule = target
+            await self._restore_current_intent()
 
     async def _load_acclimation_base(self) -> None:
         if self._acclimation_loaded:
             return
         data = await self._acclimation_store.async_load()
-        if data and data.get("base"):
-            self._acclimation_base = [tuple(s) for s in data["base"]]
+        if data:
+            self._acclimation_base = [tuple(s) for s in data["base"]] if data.get("base") else None
+            self._pending_schedule = data.get("pending_schedule")
+            self._pending_scale = data.get("pending_scale")
+            if "scale" in data:
+                scale = data["scale"]
+                if not isinstance(scale, int) or not 10 <= scale <= 100:
+                    raise HomeAssistantError("invalid saved dimming scale; recovery required")
+                self.acclimation_scale = scale
+                self._acclimation_has_scale = True
         self._acclimation_loaded = True
 
     async def async_read_config(self) -> bytes:
         """Read the raw 0x10 config reply and cache it."""
         self.last_config = await self.client.async_read_config()
         return self.last_config
+
+
+    @property
+    def active_mode(self):
+        if self._power_off: return "off"
+        if self.feeding_on: return "feeding"
+        if self.viewing_on: return "viewing"
+        if self._manual_channels is not None: return "manual"
+        return "schedule"
+
+    async def _restore_current_intent(self):
+        if self._closed:
+            return
+        mode = self.active_mode
+        if mode == "off":
+            await self.client.async_turn_off()
+        elif mode == "schedule":
+            await self._resume_program()
+        else:
+            self.channels = ([self.feeding_level] * self.channel_count if mode == "feeding"
+                             else self.viewing_target() if mode == "viewing" else list(self._manual_channels))
+            fade = await self._fade_suspend()
+            try:
+                await self.async_apply_channels()
+            finally:
+                await self._fade_resume(fade)
+        self.async_update_listeners()
+
+    async def async_user_off(self):
+        self._generation += 1
+        async with self._mode_lock:
+            self._power_off = True
+            await self._apply_and_save_control()
+
+    async def async_resume_schedule(self):
+        """Explicitly drop preview, preserving higher-priority active modes."""
+        self._generation += 1
+        async with self._mode_lock:
+            self._power_off = False
+            self._manual_channels = None
+            await self._apply_and_save_control()
+
+    async def _apply_and_save_control(self):
+        await self._save_control(self._feeding_deadline, True)
+        try:
+            await self._restore_current_intent()
+        except (Exception, asyncio.CancelledError):
+            self.command_error = "lighting transition unconfirmed; recovery pending"
+            if self._feeding_deadline is None:
+                if self._feeding_unsub is not None:
+                    self._feeding_unsub()
+                self._feeding_unsub = async_call_later(self.hass, 30, self._feeding_timeout)
+            raise
+        else:
+            await self._save_control(self._feeding_deadline, False)
+            self.command_error = None
+
+    async def _save_control(self, deadline, pending):
+        await self._feeding_store.async_save({"deadline": deadline,
+            "recovery_pending": pending, "level": self.feeding_level,
+            "power_off": self._power_off, "viewing": self.viewing_on,
+            "manual_channels": self._manual_channels})
+
+    def _arm_feeding_timer(self):
+        if self._feeding_unsub is not None:
+            self._feeding_unsub()
+            self._feeding_unsub = None
+        if self._feeding_deadline is not None:
+            self._feeding_unsub = async_call_later(self.hass,
+                max(0, self._feeding_deadline - time.time()), self._feeding_timeout)
+
+    async def async_restore_feeding(self):
+        saved = await self._feeding_store.async_load()
+        if not saved:
+            return
+        self._power_off = bool(saved.get("power_off", False))
+        self.viewing_on = bool(saved.get("viewing", False))
+        self._manual_channels = saved.get("manual_channels")
+        self._feeding_deadline = saved.get("deadline")
+        self.feeding_level = saved.get("level", self.feeding_level)
+        if self._feeding_deadline is not None:
+            # Keep the real deadline, even if it expires while HA is starting.
+            self.feeding_on = True
+            self._arm_feeding_timer()
+        elif saved.get("recovery_pending"):
+            await self.async_feeding_set(False)
+
+    async def async_shutdown(self):
+        self._closed = True
+        self._generation += 1
+        if self._feeding_unsub is not None:
+            self._feeding_unsub()
+            self._feeding_unsub = None
+
+    async def _verify_curve(self, target):
+        raw = await self.client.async_read_config()
+        observed = protocol.parse_schedule_brightness(raw)
+        if observed != target:
+            self.command_error = "schedule write unconfirmed; original and pending target retained"
+            raise HomeAssistantError(self.command_error)
+        self.command_error = None
+
+    async def _begin_effect(self, generation):
+        async with self._mode_lock:
+            if self._closed or generation != self._generation:
+                raise _EffectInterrupted()
+            try:
+                fade = await self.client.async_read_options()
+            except (ZetlightUDPError, ValueError):
+                return None
+            if generation != self._generation:
+                raise _EffectInterrupted()
+            if fade.fade_enable:
+                await self.client.async_set_fade(False, fade.fade_minutes)
+            return fade
+
+    async def _effect_set_brightness(self, values, generation):
+        async with self._mode_lock:
+            if self._closed or generation != self._generation:
+                raise _EffectInterrupted()
+            await self.client.async_set_brightness(values)
+
+    async def _finish_effect(self, generation, fade, fade_generation):
+        async with self._mode_lock:
+            if self._closed:
+                return
+            if fade_generation == self._fade_generation:
+                await self._fade_resume(fade)
+            if generation == self._generation:
+                await self._restore_current_intent()
 
 
 type ZetlightConfigEntry = ConfigEntry[ZetlightCoordinator]
@@ -789,6 +916,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) -> 
         client.close()
         raise
 
+    try:
+        await coordinator.async_restore_feeding()
+    except (ZetlightUDPError, HomeAssistantError) as err:
+        await coordinator.async_shutdown()
+        client.close()
+        raise ConfigEntryNotReady("pending lighting recovery could not finish") from err
     entry.runtime_data = coordinator
 
     # Best-effort: sync the device clock to Home Assistant's local time.
@@ -815,6 +948,7 @@ SERVICE_SYNC_CLOCK = "sync_clock"
 
 _SET_SCHEDULE_SCHEMA = vol.Schema(
     {
+        vol.Optional("entry_ids"): vol.All(cv.ensure_list, [cv.string]),
         vol.Required("start"): cv.string,  # "HH:MM"
         vol.Required("durations"): vol.All(
             cv.ensure_list,
@@ -844,7 +978,7 @@ def _parse_hhmm(value: str) -> int:
         minutes = int(hh) * 60 + int(mm)
     except (ValueError, AttributeError) as err:
         raise HomeAssistantError(f"invalid time '{value}', expected HH:MM") from err
-    if not 0 <= minutes < 1440:
+    if not (0 <= int(hh) <= 23 and 0 <= int(mm) <= 59):
         raise HomeAssistantError(f"time out of range: {value}")
     return minutes
 
@@ -865,6 +999,10 @@ def preset_to_args(preset: dict) -> tuple[list[tuple], int, list[int]]:
     for slot in slots:
         if len(slot) != protocol.NUM_CHANNELS:
             raise HomeAssistantError(f"each slot needs {protocol.NUM_CHANNELS} values")
+    if any(not 0 <= duration <= 1439 for duration in durations):
+        raise HomeAssistantError("slot duration out of range")
+    if any(not 0 <= value <= 200 for slot in slots for value in slot):
+        raise HomeAssistantError("preset brightness must be 0-200")
     return slots, start, durations
 
 
@@ -882,11 +1020,24 @@ def _async_register_services(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, SERVICE_SET_SCHEDULE):
         return
 
+    def selected(call):
+        available = {entry.entry_id: entry.runtime_data for entry in
+                     hass.config_entries.async_entries(DOMAIN)
+                     if entry.state is ConfigEntryState.LOADED}
+        ids = call.data.get("entry_ids")
+        if ids is None:
+            if len(available) != 1:
+                raise HomeAssistantError("select explicit entry_ids when zero or multiple lights are loaded")
+            return list(available.values())
+        if not ids or any(key not in available for key in ids):
+            raise HomeAssistantError("every selected entry_id must be a loaded Zetlight light")
+        return [available[key] for key in dict.fromkeys(ids)]
+
     async def handle_set_schedule(call: ServiceCall) -> None:
         start = _parse_hhmm(call.data["start"])
         durations = list(call.data["durations"])
         slots = [tuple(slot) for slot in call.data["brightness"]]
-        coordinators = _loaded_coordinators(hass)
+        coordinators = selected(call)
         if not coordinators:
             raise HomeAssistantError("no Zetlight device is loaded")
         for coordinator in coordinators:
@@ -915,6 +1066,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) ->
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
+        await entry.runtime_data.async_shutdown()
         entry.runtime_data.client.close()
         # Drop the shared services once the last entry is gone.
         loaded = [

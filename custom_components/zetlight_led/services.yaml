@@ -4,6 +4,11 @@ set_schedule:
     Write the device's daily lighting schedule (5 time slots x 4 channels).
     WARNING: this overwrites the light's stored time-curve program.
   fields:
+    entry_ids:
+      name: Target config entry IDs
+      description: Optional for one loaded light; required when multiple lights are loaded. Only explicitly selected lights are changed.
+      selector:
+        object:
     start:
       name: Start time
       description: Start time of the first slot, as HH:MM (24h).

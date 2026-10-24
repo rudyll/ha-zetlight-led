@@ -39,9 +39,15 @@ blueprint:
         entity:
           multiple: true
 
-mode: queued
+mode: restart
+
+variables:
+  source_mode: !input feeding_switch
 
 trigger:
+  - platform: homeassistant
+    event: start
+    id: reconcile
   - platform: state
     entity_id: !input feeding_switch
     to: "on"
@@ -52,11 +58,14 @@ trigger:
     id: end
 
 action:
+  - wait_template: "{{ states(source_mode) in ['on', 'off'] }}"
+    timeout: "00:02:00"
+    continue_on_timeout: false
   - variables:
       pump: !input pump_fan
       extras: !input extra_off
   - choose:
-      - conditions: "{{ trigger.id == 'start' }}"
+      - conditions: "{{ is_state(source_mode, 'on') }}"
         sequence:
           - if: "{{ pump not in [none, '', []] }}"
             then:
@@ -66,13 +75,16 @@ action:
             then:
               - service: homeassistant.turn_off
                 target: { entity_id: "{{ extras }}" }
-      - conditions: "{{ trigger.id == 'end' }}"
+      - conditions: "{{ is_state(source_mode, 'off') }}"
         sequence:
+          - repeat:
+              for_each: "{{ extras }}"
+              sequence:
+                - service: homeassistant.turn_on
+                  continue_on_error: true
+                  target: { entity_id: "{{ repeat.item }}" }
           - if: "{{ pump not in [none, '', []] }}"
             then:
               - service: fan.turn_on
+                continue_on_error: true
                 target: { entity_id: "{{ pump }}" }
-          - if: "{{ extras | count > 0 }}"
-            then:
-              - service: homeassistant.turn_on
-                target: { entity_id: "{{ extras }}" }

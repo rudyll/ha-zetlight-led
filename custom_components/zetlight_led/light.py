@@ -71,7 +71,16 @@ class ZetlightLight(CoordinatorEntity[ZetlightCoordinator], LightEntity):
     @property
     def is_on(self) -> bool | None:
         """Optimistic on/off state; None until a command is sent."""
+        if self.coordinator.active_mode == "off":
+            return False
         return self._is_on
+
+    @property
+    def extra_state_attributes(self):
+        return {"active_mode": self.coordinator.active_mode,
+                "command_error": self.coordinator.command_error,
+                "schedule_recovery_required": self.coordinator._pending_schedule is not None or self.coordinator._pending_scale is not None,
+                "state_confirmation": "optimistic"}
 
     @property
     def brightness(self) -> int:
@@ -84,11 +93,11 @@ class ZetlightLight(CoordinatorEntity[ZetlightCoordinator], LightEntity):
             await self.coordinator.async_set_all(level)
         else:
             # No brightness requested: resume the device's stored program.
-            await self.coordinator.client.async_turn_on()
+            await self.coordinator.async_resume_schedule()
         self._is_on = True
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self.coordinator.client.async_turn_off()
+        await self.coordinator.async_user_off()
         self._is_on = False
         self.async_write_ha_state()

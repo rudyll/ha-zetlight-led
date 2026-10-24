@@ -196,9 +196,12 @@ class ZetlightAcclimationNumber(CoordinatorEntity[ZetlightCoordinator], RestoreN
         last = await self.async_get_last_number_data()
         if last is not None and last.native_value is not None:
             self._value = last.native_value
-        # Restore the displayed value only; the device already holds the last
-        # scaled schedule, so don't re-write on startup.
-        self.coordinator.acclimation_scale = int(self._value)
+        # The write-ahead store is authoritative after interrupted writes.
+        await self.coordinator._load_acclimation_base()
+        if self.coordinator._acclimation_has_scale:
+            self._value = self.coordinator.acclimation_scale
+        else:
+            self.coordinator.acclimation_scale = int(self._value)
 
     @property
     def native_value(self) -> float:

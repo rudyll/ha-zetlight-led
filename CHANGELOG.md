@@ -1,6 +1,26 @@
 # Changelog
 
-## Unreleased (blueprints only — ship from `main`, no integration release needed)
+## 0.22.0 — 2026-10-24
+
+- Persist the real feeding deadline and unfinished recovery across HA restarts;
+  cancel timers on unload and retry failed recovery. Off, feeding, viewing,
+  manual preview and schedule now share one explicit priority order.
+- Prevent old cloud/lightning frames and cleanup from overriding newer user
+  choices. Schedule writes no longer briefly resume an explicitly stopped lamp.
+- Persist curve-write recovery state. Applying a new preset while dimmed rebases
+  the overlay to that preset; 100% restores the new curve, including after restart.
+  Require schedule-brightness readback before committing the new baseline.
+- Refuse option edits when the existing options cannot be read; serialize sibling
+  read/modify/write edits to preserve unrelated bits.
+- Feed/maintenance templates reconcile on startup and restore each extra outlet
+  independently before BLE recovery, so one BLE failure cannot skip power restore.
+- `set_schedule` supports explicit `entry_ids`; installations with multiple lamps
+  must select targets, avoiding accidental writes to every lamp.
+- Upgrade: restart HA; reimport updated blueprints separately. Retry a failed
+  preset before changing dimming. Device live brightness/on-off remains optimistic
+  (UDP has no proven acknowledgement); brightness-curve readback does not verify
+  stored schedule times. Hardware effects/outlet-cycle acceptance remains separate.
+
 
 - Storm blueprint: admit the clear-weather replacement run in restart mode,
   so it actually restores the pump when leaving a storm (including weather

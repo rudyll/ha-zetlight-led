@@ -119,17 +119,17 @@ tracks the last command it sent.
 ## Cross-integration audit — 2026-10-24
 
 Rudy requested a read-only audit after authorizing publication. The following
-are implementation proposals, not completed fixes. Owner unassigned; evidence
+were subsequently approved for implementation by Rudy: fix all problems. Evidence
 and line references are in the GTS repository's
 `docs/audits/2026-10-24-cross-integration-review.md`.
 
 | ID | Priority | Finding / scope | State / success criteria | Next action |
 | --- | --- | --- | --- | --- |
-| F18 | P0 | A04: feeding deadline and recovery obligations across HA restart/unload | Memory-only deadline confirmed; persist/reconcile obligations, cancel old callbacks, verify outlet recovery | Strong reasoning: reboot/reload/expiry tests and durable recovery design |
-| F19 | P1 | A05: preset changes while dimming retains old baseline | Simulated new-preset→100% reverts to old curve; define baseline replacement and readback | Unify preset/service writes with dimming baseline ownership |
-| F20 | P1 | A06: effects/feeding/viewing/off have no shared owner/priority | Simulated schedule resume overrides active feeding; later intent must survive effect cleanup | Define priority and generation-aware restoration, then cross-mode tests |
-| F21 | P0 | A07: public feed/maintenance blueprint BLE error skips outlet power restore | Sequential actions abort on real service errors; each required recovery must remain independent | Fix recovery ordering/error visibility and supervise synthetic-target acceptance |
-| F22 | P1 | A12: failed read-modify-write defaults unrelated mode fields to zero | Simulated read failure still writes [0,0,1]; unknown must not be treated as off | Refuse unsafe write on missing snapshot; serialize valid option updates |
+| F18 | P0 | A04 durable feeding deadline/recovery; Rudy fix-all approval, Codex | Implemented/tested/deployed: deadline survives restart, unload cancels callback, pending recovery retries | Whole-tank timer/outlet cycle still requires supervised acceptance |
+| F19 | P1 | A05 preset/dimming baseline; Rudy fix-all approval, Codex | Implemented/tested/deployed: new preset rebases immutable baseline, saved scale restores, partial write retained/readback required | Live destructive preset/failure injection not performed |
+| F20 | P1 | A06 priority/generation ownership; Rudy fix-all approval, Codex | Implemented/tested/deployed: off > feed > view > manual > schedule; stale effects/cleanup cannot resume old intent | Physical cross-mode light acceptance remains separate; UDP output optimistic |
+| F21 | P0 | A07 independent outlet recovery; Rudy fix-all approval, Codex | Implemented and native-validated/deployed: startup reconciliation, per-outlet continue-on-error before BLE recovery | Current outlet targets preserved; whole-tank power cycling not tested |
+| F22 | P1 | A12 preserve unrelated option bits; Rudy fix-all approval, Codex | Implemented/tested/deployed: refuse failed reads, serialize sibling edits | Device transport remains unacknowledged UDP; no artificial failed-read live injection |
 
 Public push remains authorized but not executed. F17's bounded storm condition
 fix/installed configuration evidence does not close F18–F22 or certify all modes.
