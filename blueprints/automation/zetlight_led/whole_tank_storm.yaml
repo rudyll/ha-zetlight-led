@@ -137,7 +137,12 @@ trigger:
     entity_id: !input weather_entity
 
 condition:
-  - "{{ trigger.to_state.state in storm }}"
+  # mode: restart cancels the running loop when the weather changes. Allow the
+  # replacement run to execute restoration when leaving a storm, including an
+  # unavailable weather feed; ignore unrelated calm-weather changes.
+  - >-
+      {{ (trigger.to_state is not none and trigger.to_state.state in storm) or
+         (trigger.from_state is not none and trigger.from_state.state in storm) }}
 
 action:
   - repeat:

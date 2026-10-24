@@ -43,6 +43,12 @@ See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 | F15 | Schedule presets | named schedules | built on F14 | ✅ Shipped (v0.7.0) | `select.preset` applies named presets defined in the options flow (YAML) |
 | F16 | Config-flow auto-discovery | — | broadcast `C9000000000A021D` | ✅ Shipped (v0.7.0) | Config flow broadcasts and lists responding lights; manual entry remains |
 
+## Recovery follow-up (2026-10-24)
+
+| ID | Source / authorization | Owner / priority | Scope / dependencies | State | Acceptance / evidence | Next action |
+| --- | --- | --- | --- | --- | --- | --- |
+| F17 | Rudy requested completing interrupted GTS/DualKey work, 2026-10-24 | Codex / P0 | Storm clear-weather recovery; existing GTS run-mode input | Software passed; installed and HA-expanded config verified | Seven transition cases; old condition fails clear/unavailable transitions and removal, revised condition passes. No live lightning or wave surge tested. | Current HA expansion includes the clear-weather condition and GTS tide selector. No real storm test. Public push separately authorized. |
+
 ## Capture findings (2026-10-20)
 
 A local capture (phone on the light's subnet, proxy off) while tapping several

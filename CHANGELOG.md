@@ -2,6 +2,11 @@
 
 ## Unreleased (blueprints only — ship from `main`, no integration release needed)
 
+- Storm blueprint: admit the clear-weather replacement run in restart mode,
+  so it actually restores the pump when leaving a storm (including weather
+  becoming unavailable). Ignore unrelated calm-weather transitions.
+- Add seven weather-transition regression cases.
+
 - **`whole_tank_storm`: hand the pump back to its tidal schedule when the storm
   ends.** Setting a wave mode (surge/turbulence) puts the GTS pump into manual,
   so the old restore (wave mode + percentage) left it stuck in manual and dropped
