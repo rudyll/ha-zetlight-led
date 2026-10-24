@@ -115,3 +115,21 @@ persist requires F14 (write schedule).
 On/off and brightness states are **optimistic** — the device's read command
 (`0x0C`) reports program setpoints, not live on/off state, so the integration
 tracks the last command it sent.
+
+## Cross-integration audit — 2026-10-24
+
+Rudy requested a read-only audit after authorizing publication. The following
+are implementation proposals, not completed fixes. Owner unassigned; evidence
+and line references are in the GTS repository's
+`docs/audits/2026-10-24-cross-integration-review.md`.
+
+| ID | Priority | Finding / scope | State / success criteria | Next action |
+| --- | --- | --- | --- | --- |
+| F18 | P0 | A04: feeding deadline and recovery obligations across HA restart/unload | Memory-only deadline confirmed; persist/reconcile obligations, cancel old callbacks, verify outlet recovery | Strong reasoning: reboot/reload/expiry tests and durable recovery design |
+| F19 | P1 | A05: preset changes while dimming retains old baseline | Simulated new-preset→100% reverts to old curve; define baseline replacement and readback | Unify preset/service writes with dimming baseline ownership |
+| F20 | P1 | A06: effects/feeding/viewing/off have no shared owner/priority | Simulated schedule resume overrides active feeding; later intent must survive effect cleanup | Define priority and generation-aware restoration, then cross-mode tests |
+| F21 | P0 | A07: public feed/maintenance blueprint BLE error skips outlet power restore | Sequential actions abort on real service errors; each required recovery must remain independent | Fix recovery ordering/error visibility and supervise synthetic-target acceptance |
+| F22 | P1 | A12: failed read-modify-write defaults unrelated mode fields to zero | Simulated read failure still writes [0,0,1]; unknown must not be treated as off | Refuse unsafe write on missing snapshot; serialize valid option updates |
+
+Public push remains authorized but not executed. F17's bounded storm condition
+fix/installed configuration evidence does not close F18–F22 or certify all modes.
