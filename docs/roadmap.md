@@ -131,5 +131,6 @@ and line references are in the GTS repository's
 | F21 | P0 | A07 independent outlet recovery; Rudy fix-all approval, Codex | Implemented and native-validated/deployed: startup reconciliation, per-outlet continue-on-error before BLE recovery | Current outlet targets preserved; whole-tank power cycling not tested |
 | F22 | P1 | A12 preserve unrelated option bits; Rudy fix-all approval, Codex | Implemented/tested/deployed: refuse failed reads, serialize sibling edits | Device transport remains unacknowledged UDP; no artificial failed-read live injection |
 
-Public push remains authorized but not executed. F17's bounded storm condition
+0.22.0 was pushed and formally released; remote manifest, tag6091a09, latest
+non-draft/non-prerelease Release and matching notes were verified. F17's bounded storm condition
 fix/installed configuration evidence does not close F18–F22 or certify all modes.
