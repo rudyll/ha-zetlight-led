@@ -89,3 +89,29 @@
 
 > 天气数据来自 HA 的天气集成(Met.no / 和风等),本集成没有自己的天气源。灯的
 > 闪电/云彩是手动按钮,这些蓝图才是把它们接到天气、太阳和泵上的东西。
+
+## Unified feeding and maintenance v2 (opt-in, current household staged OFF)
+
+`whole_tank_modes_v2.yaml` coordinates native feed and maintenance through one
+owner. Select an input_boolean maintenance helper, a separate persistent lamp
+restore marker, explicit native feed button/flow sensor, and confirmed supply
+entities. A DualKey raw button is a momentary event source, not the persistent
+maintenance switch for this dropdown. Do not enable this together with the old
+feeding/maintenance owners; keep original configs for rollback.
+
+Maintenance: stop wave/lamp, stop skimmer, confirm reported off (10s timeout),
+then cut return. Normal restore: return first; confirm reported on (10s timeout),
+wait selected settle duration (this household30s), recheck modes and return, then
+start skimmer. Unknown modes do not restore supplies. Both modes off are required
+for normal restoration; maintenance wins over feeding. If a related acknowledgement
+fails, leave the dependent action undone and raise an automation trace error.
+
+HA relay state is not measured water level/flow. There is no level sensor and
+no automatic maintenance expiry. A restart can restart the conservative wait.
+Only lamp power ownership is retained; normal supply restoration assumes wave,
+skimmer and return should be on, not arbitrary manual-off snapshots. A lamp off
+before maintenance stays off; owned restoration uses retained mode/current program,
+not a saved manual-slider brightness. Heater/master/unknown endpoints are unbound.
+
+Local17 template tests and HA schema checks are software evidence only; household
+configuration is still staged off. No live maintenance or supply-cycle acceptance.

@@ -145,3 +145,9 @@ fix/installed configuration evidence does not close F18–F22 or certify all mod
   authorized for implementation. Needs an actual maintenance helper, duration
   and notification destination. Success:notify without automatically restarting
   pumps. Next:wait for an explicit request; no reminder or scheduler created.
+
+## Unified feeding/maintenance v2 — 2026-10-24
+
+| ID | Priority | Source / scope | State / evidence | Next action |
+| --- | --- | --- | --- | --- |
+| F23 | P0 | Rudy requests maintenance stops wave/lamp/skimmer/return, confirms supply roles, specifies30s return-before-skimmer recovery and cancel-only keys; heater later | New opt-in whole_tank_modes_v2,17 actual-template tests and HA native validation pass; saved on HA but staged OFF. Native feed retained, maintenance wins, sequential acknowledgement guards, cancellation during settle and durable lamp restore marker. No physical actuation tested; legacy feed still ON | User control-first choice/USB v2 firmware gate DK-R10/DK-R12; one-owner enablement only. Remove staging initial_state=false before final activation. Pump/light live test requires separate authorization; strong reasoning |

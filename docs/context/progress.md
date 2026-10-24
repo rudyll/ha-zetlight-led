@@ -1,3 +1,29 @@
+## Latest: F23 unified maintenance/native-feed control staged, not active — 2026-10-24
+
+Rudy defines maintenance: stop wave and coral lamp, then skimmer before return;
+heater not arrived/unbound. Confirms actual two supply roles and30s delay after
+return starts before skimmer. Implemented opt-in whole_tank_modes_v2 with native
+GTS feed preserved and one recovery owner. Mode/return rechecked after30s; no
+skimmer if return is not confirmed on, no return cut if skimmer not confirmed off.
+Unrelated stop failures continue; related failures stop with an HA trace error.
+No water-level sensing or physical-flow guarantee is invented. Initially-off
+lamp stays off via restore marker, user light commands cancel stale ownership.
+
+17 real-template/action tests pass, including simultaneous modes/unknown inputs,
+failed acknowledgement/partial targets/30s mode change and error recovery.
+Actual HA blueprint substitution/schema validation passed; helpers created off,
+coordinator/key staged OFF, existing feed owner remains ON. No device action test.
+M5 source38 tests pass; strict mode-key cancellation/queued decisions implemented.
+Successful firmware OTA is NOT a verified v2 runtime: actual controller remains
+old16:43:40/no new effect; USB startup evidence unavailable at user request.
+
+Only blueprint/tests/docs changed; no integration code/version/release or public
+push, no consumer interface, scheduler, pump/lamp command. Next F23 enablement
+per user control-first choice (single-owner handover) or wait DK-R10 USB resolution;
+strong reasoning. Actuation acceptance stays separate. Authoritative state F23.
+
+---
+
 ## Latest clarification: feeding and maintenance timing — 2026-10-24
 
 User asked whether feeding/maintenance automatically restores operation. Live

@@ -1,0 +1,266 @@
+blueprint:
+  name: 整缸喂食与维护 — 单一恢复控制 v2
+  description: 维护优先于喂食。维护开始依次停造浪、关珊瑚灯、关蛋分、关回水； 无自动结束时限。两个模式都结束后，按回水、蛋分、造浪恢复正常供电/运行。 喂食使用所选原生按钮，保留已有喂食开关的倒计时。维护结束若仍在喂食，供电保持关闭。
+    灯只在维护开始前有开启意图时恢复当前日程/仍有效模式，不保存手动亮度快照。 请创建两个input_boolean：用户维护开关和自动管理的灯光恢复标记。 所有设备必须明确选择，不按名称猜；未到货恒温机不绑定。 启用前停用原有整缸喂食/维护自动化，避免多套规则操作同一设备。
+    正常恢复假设回水、蛋分及造浪平时开启，不恢复任意手动断电状态。 回水开关报告开启后等待设定秒数再开蛋分；没有水位传感器，不等于测得水位稳定。回水未确认开启不启动蛋分，蛋分未确认关闭不切断回水。
+  domain: automation
+  input:
+    feeding_switch:
+      name: 喂食开关
+      selector:
+        entity:
+          domain: switch
+    maintenance_toggle:
+      name: 维护开关（input_boolean）
+      selector:
+        entity:
+          domain: input_boolean
+    light_restore_marker:
+      name: 维护灯光恢复标记（辅助开关，自动管理）
+      selector:
+        entity:
+          domain: input_boolean
+    light_entity:
+      name: 珊瑚灯
+      selector:
+        entity:
+          domain: light
+    pump_fan:
+      name: 造浪泵
+      default: []
+      selector:
+        entity:
+          domain: fan
+    pump_feed_button:
+      name: 造浪泵原生喂食按钮
+      default: []
+      selector:
+        entity:
+          domain: button
+    pump_flow_mode:
+      name: 造浪泵水流模式
+      default: []
+      selector:
+        entity:
+          domain: sensor
+    skimmer_supply:
+      name: 蛋分供电
+      default: []
+      selector:
+        entity:
+          domain: switch
+    return_supply:
+      name: 回水泵供电
+      default: []
+      selector:
+        entity:
+          domain: switch
+    skimmer_settle_seconds:
+      name: 回水开启后蛋分等待（秒）
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 600
+          step: 1
+          mode: box
+          unit_of_measurement: s
+mode: restart
+variables:
+  feeding: !input 'feeding_switch'
+  maintenance: !input 'maintenance_toggle'
+  marker: !input 'light_restore_marker'
+  lamp: !input 'light_entity'
+  pump: !input 'pump_fan'
+  feed_button: !input 'pump_feed_button'
+  flow: !input 'pump_flow_mode'
+  skimmer: !input 'skimmer_supply'
+  return_pump: !input 'return_supply'
+trigger:
+- platform: homeassistant
+  event: start
+  id: reconcile
+- platform: state
+  entity_id: !input 'feeding_switch'
+  id: mode
+- platform: state
+  entity_id: !input 'maintenance_toggle'
+  id: mode
+- platform: state
+  entity_id: !input 'pump_fan'
+  from: unavailable
+  id: reconcile
+- platform: state
+  entity_id: !input 'pump_fan'
+  from: unknown
+  id: reconcile
+- platform: state
+  entity_id: !input 'skimmer_supply'
+  from: unavailable
+  id: reconcile
+- platform: state
+  entity_id: !input 'skimmer_supply'
+  from: unknown
+  id: reconcile
+- platform: state
+  entity_id: !input 'return_supply'
+  from: unavailable
+  id: reconcile
+- platform: state
+  entity_id: !input 'return_supply'
+  from: unknown
+  id: reconcile
+- platform: state
+  entity_id: !input 'light_entity'
+  from: unavailable
+  id: reconcile
+- platform: state
+  entity_id: !input 'light_entity'
+  from: unknown
+  id: reconcile
+- platform: state
+  entity_id: !input 'light_entity'
+  attribute: active_mode
+  id: lamp_change
+- platform: state
+  entity_id: !input 'light_entity'
+  attribute: command_error
+  id: lamp_change
+- platform: state
+  entity_id: !input 'pump_flow_mode'
+  from: unavailable
+  id: reconcile
+- platform: state
+  entity_id: !input 'pump_flow_mode'
+  from: unknown
+  id: reconcile
+condition:
+- condition: template
+  value_template: '{{ trigger.id != ''lamp_change'' or is_state(maintenance, ''on'') or is_state(marker, ''on'')
+    }}'
+action:
+- wait_template: "{{ states(maintenance) in ['on', 'off'] and\n   (is_state(maintenance, 'on') or states(feeding)\
+    \ in ['on', 'off']) }}"
+  timeout: 00:02:00
+  continue_on_timeout: false
+- choose:
+  - conditions: '{{ is_state(maintenance, ''on'') }}'
+    sequence:
+    - if: "{{ not is_state(marker, 'on') and\n   (state_attr(lamp, 'active_mode') in ['schedule', 'manual', 'feeding',\
+        \ 'viewing'] or is_state(lamp, 'on')) }}"
+      then:
+      - action: input_boolean.turn_on
+        continue_on_error: true
+        target:
+          entity_id: !input 'light_restore_marker'
+    - if: '{{ pump not in [none, '''', []] and not is_state(pump, ''off'') }}'
+      then:
+      - action: fan.turn_off
+        continue_on_error: true
+        target:
+          entity_id: !input 'pump_fan'
+    - if: '{{ state_attr(lamp, ''active_mode'') in [''schedule'', ''manual'', ''feeding'', ''viewing''] or (state_attr(lamp,
+        ''active_mode'') not in [''off''] and not is_state(lamp, ''off'')) }}'
+      then:
+      - action: light.turn_off
+        continue_on_error: true
+        target:
+          entity_id: !input 'light_entity'
+    - if: '{{ skimmer not in [none, '''', []] and not is_state(skimmer, ''off'') }}'
+      then:
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: !input 'skimmer_supply'
+    - wait_template: '{{ skimmer in [none, '''', []] or is_state(skimmer, ''off'') }}'
+      timeout: 00:00:10
+      continue_on_timeout: true
+    - if: '{{ skimmer not in [none, '''', []] and not is_state(skimmer, ''off'') }}'
+      then:
+      - stop: 蛋分未确认关闭；保留回水供电，维护/喂食停止未完成。
+        error: true
+    - if: '{{ return_pump not in [none, '''', []] and not is_state(return_pump, ''off'') }}'
+      then:
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: !input 'return_supply'
+  default:
+  - choose:
+    - conditions: '{{ is_state(feeding, ''on'') }}'
+      sequence:
+      - if: "{{ feed_button not in [none, '', []] and\n   (flow in [none, '', []] or states(flow) != 'feed' or (pump\
+          \ not in [none, '', []] and is_state(pump, 'off'))) }}"
+        then:
+        - action: button.press
+          continue_on_error: true
+          target:
+            entity_id: !input 'pump_feed_button'
+      - if: '{{ skimmer not in [none, '''', []] and not is_state(skimmer, ''off'') }}'
+        then:
+        - action: switch.turn_off
+          continue_on_error: true
+          target:
+            entity_id: !input 'skimmer_supply'
+      - wait_template: '{{ skimmer in [none, '''', []] or is_state(skimmer, ''off'') }}'
+        timeout: 00:00:10
+        continue_on_timeout: true
+      - if: '{{ skimmer not in [none, '''', []] and not is_state(skimmer, ''off'') }}'
+        then:
+        - stop: 蛋分未确认关闭；保留回水供电，维护/喂食停止未完成。
+          error: true
+      - if: '{{ return_pump not in [none, '''', []] and not is_state(return_pump, ''off'') }}'
+        then:
+        - action: switch.turn_off
+          continue_on_error: true
+          target:
+            entity_id: !input 'return_supply'
+    - conditions: '{{ is_state(feeding, ''off'') }}'
+      sequence:
+      - if: '{{ return_pump not in [none, '''', []] and not is_state(return_pump, ''on'') }}'
+        then:
+        - action: switch.turn_on
+          continue_on_error: true
+          target:
+            entity_id: !input 'return_supply'
+      - if: '{{ skimmer not in [none, '''', []] and not is_state(skimmer, ''on'') }}'
+        then:
+        - wait_template: '{{ return_pump in [none, '''', []] or is_state(return_pump, ''on'') }}'
+          timeout: 00:00:10
+          continue_on_timeout: true
+        - if: '{{ return_pump not in [none, '''', []] and not is_state(return_pump, ''on'') }}'
+          then:
+          - stop: 回水未确认开启；不启动蛋分。
+            error: true
+        - delay:
+            seconds: !input 'skimmer_settle_seconds'
+        - if: '{{ not is_state(maintenance, ''off'') or not is_state(feeding, ''off'') or (return_pump not in [none,
+            '''', []] and not is_state(return_pump, ''on'')) }}'
+          then:
+          - stop: 等待期间模式或回水状态改变；不启动蛋分。
+            error: true
+        - action: switch.turn_on
+          continue_on_error: true
+          target:
+            entity_id: !input 'skimmer_supply'
+      - if: '{{ pump not in [none, '''', []] and (not is_state(pump, ''on'') or (flow not in [none, '''', []] and
+          states(flow) == ''feed'') or trigger.id == ''mode'') }}'
+        then:
+        - action: fan.turn_on
+          continue_on_error: true
+          target:
+            entity_id: !input 'pump_fan'
+  - if: '{{ is_state(marker, ''on'') }}'
+    then:
+    - if: '{{ state_attr(lamp, ''active_mode'') == ''off'' or is_state(lamp, ''off'') }}'
+      then:
+      - action: light.turn_on
+        continue_on_error: true
+        target:
+          entity_id: !input 'light_entity'
+    - if: "{{ state_attr(lamp, 'command_error') in [none, ''] and\n   (state_attr(lamp, 'active_mode') in ['schedule',\
+        \ 'manual', 'feeding', 'viewing'] or is_state(lamp, 'on')) }}"
+      then:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: !input 'light_restore_marker'
