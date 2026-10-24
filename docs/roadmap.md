@@ -125,10 +125,10 @@ and line references are in the GTS repository's
 
 | ID | Priority | Finding / scope | State / success criteria | Next action |
 | --- | --- | --- | --- | --- |
-| F18 | P0 | A04 durable deadline/recovery; Rudy authorized live acceptance | Actual1min deadline unchanged across Zetlight entry reload; auto recovery0.299s after original deadline. Original10min restored | User light appearance confirmation pending; active-feed full Core restart not tested |
+| F18 | P0 | A04 durable deadline/recovery; Rudy authorized live acceptance | Actual1min deadline unchanged across Zetlight entry reload; auto recovery0.299s after original deadline. Original10min restored | Rudy confirmed normal lighting after test; active-feed full Core restart not tested |
 | F19 | P1 | A05 preset/dimming baseline; Rudy fix-all approval, Codex | Implemented/tested/deployed: new preset rebases immutable baseline, saved scale restores, partial write retained/readback required | Live destructive preset/failure injection not performed |
 | F20 | P1 | A06 priority/generation ownership; Rudy fix-all approval, Codex | Implemented/tested/deployed: off > feed > view > manual > schedule; stale effects/cleanup cannot resume old intent | Physical cross-mode light acceptance remains separate; UDP output optimistic |
-| F21 | P0 | A07 independent outlet recovery; Rudy authorized brief cuts | Household normal/end and GTS-unavailable end passed; actual outlet cuts max11.82s/10.93s; both outlets restored without guard | Await user water-flow/skimmer observation; generic maintenance template remains native-validated, not physically instantiated here |
+| F21 | P0 | A07 independent outlet recovery; Rudy authorized brief cuts | Household normal/end and GTS-unavailable end passed; actual outlet cuts max11.82s/10.93s; both outlets restored without guard | Rudy confirmed all normal; generic maintenance template remains native-validated, not physically instantiated here |
 | F22 | P1 | A12 preserve unrelated option bits; Rudy fix-all approval, Codex | Implemented/tested/deployed: refuse failed reads, serialize sibling edits | Device transport remains unacknowledged UDP; no artificial failed-read live injection |
 
 0.22.0 was pushed and formally released; remote manifest, tag6091a09, latest

@@ -13,13 +13,15 @@ on/schedule, feed/view off, original10min duration and automation enabled.
 No command/recovery flags. GTS/Zetlight/DualKey entries independently read loaded.
 Guard exited without intervening; no scheduler/background observer remains.
 
-User physical flow/skimmer/light appearance confirmation is pending. Control
-acceptance is passed; that human observation layer remains open. No full Core
+Rudy subsequently confirmed “看了都正常”. Control acceptance and the requested
+user visual flow/skimmer/light restoration acceptance are passed for this test. No full Core
 restart, real BLE-radio outage, actual thrown service error or generic maintenance
 outlet deployment was tested. Do not expand the bounded acceptance claim.
 Evidence and timing methodology: GTS repository
 `docs/audits/2026-10-24-live-acceptance/README.md`. No runtime source change.
-Next: user visual confirmation for GTS-R02 / normal model; no new test started.
+GTS-R02 is closed for this bounded acceptance. Latest user question concerns
+DualKey status colour/effects and whether another LED ring is worthwhile;
+that discussion is a design proposal, not permission to change live LED rules.
 
 ## Current: authorized whole-tank live acceptance — 2026-10-24
 
