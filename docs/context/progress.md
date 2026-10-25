@@ -1,3 +1,20 @@
+## Latest: F23 control coordinator enabled; physical acceptance pending — 2026-10-25
+
+User requests enabling controls and confirms independent DualKey supply, unaffected
+by skimmer switching. Actual HA blueprint substitution/validation passes. Legacy
+feeding owner OFF, unified coordinator and DualKey mapping ON; persistent initial
+states saved/read back. Before/after seven mode/actuator entities unchanged, no
+synthetic events or real device tests. Controller unavailable11:29:57, recurring
+DK-R11 fault remains; activation is not connectivity or physical acceptance.
+
+Evidence/backup: HA private /config/.reef-controls-20261025; detailed source hashes
+and boundaries in M5Stack docs/context/session-notes/2026-10-25-controls-activated.md.
+No integration/source/firmware change, HA restart or new monitoring task. Next F23
+physical acceptance requires online controller and separately authorized test;
+DK-R11 diagnosis first, strong reasoning.
+
+---
+
 ## Latest: F23 unified maintenance/native-feed control staged, not active — 2026-10-24
 
 Rudy defines maintenance: stop wave and coral lamp, then skimmer before return;
