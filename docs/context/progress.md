@@ -1,3 +1,28 @@
+## Latest:0.24.0 formally released, HA upgraded, identity verified — 2026-10-26
+
+F30-R01 DONE, readback2026-10-26T14:35:11+08:00. Official latestv0.24.0 on3801a8ef; remote main/tag
+versions, tag target and exact release notes verified. HACS15files match tag,
+syntax/native core check PASS. One approved guarded restart completed after
+response timeout/initial502, no second restart. Actual new Lunar Phase registration
+required before restoring guards. Runtime0.24.0 and HACS installed/latest confirmed.
+
+Old entity ID/registry/UID/custom name preserved, default name月光开关; distinct
+new月相模式 entity verified. Native0x20flags and pump/lamp curves unchanged; no
+setter/toggle/brightness/feed/outlet command used. Startup clock sync was approved.
+Two temporarily paused control rules restored without execution after264.5s; exact
+automation file restored, blueprints unchanged. Weather/storm disabled; baseline
+state drift corrected under the standing requirement, historical trigger retained.
+No new trigger during upgrade; do not claim historically never triggered.
+
+Safe report docs/zetlight-024-deployment-20261026.md. Actual IDs/options/backup and
+drift details ignored.private/moon-controls-deploy-20261026 and private tmp evidence.
+GTS unchanged0.7.0. Lamp unknown on/off/schedule intent remains readback limitation,
+no physical night-effect test. No new monitor/export. Local receipt not pushed.
+Next possible physical acceptance/F30-P02 proposal needs scoped authorization,
+strong reasoning; no ready authorized live action remains.
+
+---
+
 ## Latest: F30-R01 formal release + HA upgrade explicitly authorized — 2026-10-26
 
 Rudy approves publishing0.24.0 and upgrading HA with previous guarded single

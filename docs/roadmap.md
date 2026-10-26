@@ -367,3 +367,19 @@ disclosed prior plan. Weather/storm stayOFF. No GTS upgrade or blueprint activat
 Success: release proven, runtime0.24.0, old ID/registry/custom name retained, new
 phase entity independent, native option values/curves unchanged, rules restored.
 Next complete authorized publication/deployment readback, strong reasoning.
+
+### F30-R01 closure — official release and actual HA identity acceptance (2026-10-26)
+
+Codex/P1; DONE for explicit publication/installation/restart/readback scope.
+Official latestv0.24.0(3801a8ef), remote versions/tag/exact notes verified. HACS15
+files exact, core check PASS; one authorized guarded restart, runtime0.24.0 and
+actual new entity registered. Old entity ID/registry/UID/custom name preserved;
+correctedMoonlight default plus separateLunar Phase default visible. Native flags/
+stored curves unchanged, no mode/device control test. Paused rules restored without
+execution (264.5s), exact automation bytes and blueprints unchanged. Weather/storm
+state drift observed at baseline and corrected per standing OFF requirement;
+historical trigger retained and no new trigger, not “never triggered”. Raw details
+private. Report docs/zetlight-024-deployment-20261026.md. No new monitor/export.
+F30-P01 deployed/identity-accepted; physical night effects NOT tested. F30-P02
+remains an unused-blueprint proposal. No further ready authorized device work;
+next scoped acceptance or proposal prioritization, strong reasoning.
