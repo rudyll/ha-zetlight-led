@@ -180,3 +180,14 @@ Strong reasoning.
 F24-P01 draft-creation/source-publication scope now authorized and completed via
 F25; real limits/physical activation remains proposal F25-P01, not silently closed.
 Evidence: docs/context/session-notes/2026-10-26-weather-drafts.md.
+
+## F26 — daily baseline plus positive weather gain (2026-10-26)
+
+| ID | Source / authorization | Owner / priority | State and evidence | Next action |
+| --- | --- | --- | --- | --- |
+| F26 | Rudy corrects the model: existing daily curve is100, adverse weather adds gain; local implementation/testing only | Codex / P1, depends GTS-R10 | Local weather candidate normal100/rain110/wind115/pouring120/storm130, independent gain cap and live entity-max guard; GTS counterpart10–200 retains raw99 ceiling and immutable baseline.57GTS +92Zetlight tests pass; joint fake-transport5step sequence and native template validation pass. HA drafts remainOFF/untriggered; no HA edit/deploy/push/release | F26-P01 manual storm must also become baseline-relative; then coordinated review/release/deployment proposal, strong reasoning |
+
+F25-P01's previous80..100 tidal profile is superseded as a design, preserved in
+actual disabled HA drafts/history. Fixed65/45 storm draft is not final gain policy.
+No activation authority inferred; prior GitHub push remains4570ae9, local gain
+changes are unpublished until the paired capability/policy is ready.

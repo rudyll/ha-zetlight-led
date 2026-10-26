@@ -1,3 +1,23 @@
+## Latest: F26 corrects weather to positive daily-baseline gain — 2026-10-26
+
+User clarifies daily tidal curve is already tuned; normal must100, bad weather
+adds gain. Old80→100 plan superseded in design, retained in actualOFF drafts.
+Local weather candidate100/100/100/110/115/120/130, ceiling130/max200, live entity
+max guard prevents unsupported>100 writes on releasedGTS0.6.2. GTS-R10 counterpart
+10–200/raw99 limit, immutable baseline/retry/restart/exact100 restoration; localonly.
+
+57GTS tests/28subtests;92Zet tests/38subtests (one pytest-cache permission warning,
+test run itself passed). Joint actual-template→fake-GTS five steps rain/wind/storm/
+repeatstorm/clear preserve original20/40/60 fixture. Native trigger/condition/action
+syntax valid. Readback confirms both HA draftsOFF,last_triggerednull. No HA edit,
+config save/reload, device action, push, version/tag/release in this correction.
+Next F26-P01 fixed65/45 manual storm must become baseline-relative before joint
+activation; paired release/deployment remains unapproved, strong reasoning.
+Private evidence /private/tmp/reef-weather-gain-20261026; existing.private guide
+now flags the actualdraft policy superseded, candidate not installed.
+
+---
+
 ## Latest: GitHub source pushed; two weather/storm drafts OFF — 2026-10-26
 
 User requests concrete automations/tuning explanation and authorizes GitHub push.

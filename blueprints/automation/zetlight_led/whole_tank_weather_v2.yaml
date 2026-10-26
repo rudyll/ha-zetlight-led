@@ -1,18 +1,15 @@
 blueprint:
   name: 整缸联动 — 天气（灯光与造浪独立）v2 / Whole-tank weather v2
   description: |-
-    灯光、GTS造浪分别配置晴天、多云、阴天、雨雪、大风、暴雨和雷暴百分比。
-    默认值是待确认的模板示例：灯100/90/75/60/75/50/50；潮汐80/80/80/90/90/95/100，不能当成任何缸的实测安全配置。
-    潮汐百分比只缩放已确认的曲线，天气变晴恢复所配晴天档；不会开灯、开泵或切运行模式。
-    喂食、维护、维护恢复及其状态缺测时不写入。灯只在日程模式下调节；泵只在已开启的tide模式且非喂食流态下调节。
-    手动风暴仍由另一条蓝图负责，本蓝图在其手动模式期间让出泵控制；回到tide后重新按天气应用。
-    天气缺测或未识别时保持现状，不冒充晴天。每个目标独立容错，同值不重复写。
-    替换旧天气调暗自动化，不能与旧整缸／只灯天气调暗、驯化共用同一比例实体。
-    不包含闪电／大浪执行器，也不保证另一条风暴蓝图的喂食维护互锁。停用本自动化不会自动还原比例，需先选定恢复值。
+    本地增益修正候选，尚未发布／部署。灯光和造浪分别配置七档天气；晴天造浪100保留既有日常曲线，雨天110、大风115、暴雨120、雷暴130为待核定示例。
+    造浪只从保存的日常基线计算，100恢复原曲线；设备端各时段仍受原始功率上限约束，削顶时不能保证比例或实际流量同比变化。
+    依赖同批未发布GTS增益候选（上限200%）；旧版上限100时，超出实体能力的泵写入跳过，灯光分支独立执行。不能仅更改蓝图数字就宣称增益已生效。
+    喂食、维护、恢复及缺测时不写入。灯须已开且按日程运行；泵须已开、tide且非喂食。天气不明保持现状，不开泵、开灯或强切模式。
+    原固定百分比手动风暴与相对基线增益尚未统一，现有风暴草稿不得视为已经符合该修正规则；启用前需一起核定。
+    替换旧天气／驯化控制者，不能同时占用同一比例实体。示例值不是任何缸的实测安全配置。停用不会自动还原比例。
 
-    Independent light and GTS tidal-scale weather settings. No power/mode commands.
-    Unknown weather is skipped; feed, maintenance and restore block writes. Template
-    percentages need tank-specific acceptance. One weather/acclimation owner per number.
+    Local candidate:100% preserves the tuned daily tidal baseline, above100 adds bounded weather gain. Requires the matching unreleased GTS gain implementation.
+    Targets above the live entity maximum are skipped. Existing HA drafts are not changed by this source edit.
   domain: automation
   input:
     weather_entity:
@@ -46,13 +43,13 @@ blueprint:
             integration: gts_wavepump
       description: 只在泵已经开启时调整；不会启动泵。
     pump_tidal:
-      name: 造浪潮汐强度 / Tidal scale
+      name: 造浪潮汐增益 / Tidal gain
       selector:
         entity:
           filter:
           - domain: number
             integration: gts_wavepump
-      description: 100% 是既有潮汐曲线，不是泵每小时满功率；不支持超过100%。
+      description: 100%是日常曲线，110%从日常基线增加10%。需要支持200%范围的GTS增益候选；旧版仍最多100%。
     pump_run_mode:
       name: 造浪运行模式 / Pump run mode
       selector:
@@ -153,75 +150,75 @@ blueprint:
           unit_of_measurement: '%'
     pump_sunny_pct:
       name: 造浪 · 晴天／晴夜 / pump sunny
-      default: 80
+      default: 100
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
     pump_partly_pct:
       name: 造浪 · 多云 / pump partly
-      default: 80
+      default: 100
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
     pump_cloudy_pct:
       name: 造浪 · 阴天／雾 / pump cloudy
-      default: 80
+      default: 100
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
     pump_rainy_pct:
       name: 造浪 · 雨／雪 / pump rainy
-      default: 90
+      default: 110
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
     pump_windy_pct:
       name: 造浪 · 大风 / pump windy
-      default: 90
+      default: 115
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
     pump_pouring_pct:
       name: 造浪 · 暴雨／冰雹 / pump pouring
-      default: 95
+      default: 120
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
     pump_storm_pct:
       name: 造浪 · 雷暴 / pump storm
-      default: 100
+      default: 130
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
     pump_ceiling:
-      name: 造浪天气缩放上限 / Tidal scale ceiling
-      description: 所有天气档位都受此上限约束；不会限制另一条风暴蓝图的手动大浪，后者需单独核定。
-      default: 100
+      name: 造浪天气增益上限 / Tidal gain ceiling
+      description: 限制天气增益倍率，不改变设备原始功率上限；手动风暴不受此比例限制。
+      default: 130
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 5
           unit_of_measurement: '%'
 mode: restart
@@ -305,7 +302,7 @@ action:
     light_target: '{% set v = light_levels.get(bucket) %}{{ ([[v | float, 10] | max, 100] | min) | int if is_number(v)
       else -1 }}'
     pump_target: |-
-      {% set v = pump_levels.get(bucket) %}{% if is_number(v) and is_number(pump_ceiling) %}{% set capped = [[v | float, pump_ceiling | float, 100] | min, 10] | max %}{{ ((capped / 5) | round(0, 'floor') * 5) | int }}{% else %}-1{% endif %}
+      {% set v = pump_levels.get(bucket) %}{% if is_number(v) and is_number(pump_ceiling) %}{% set capped = [[v | float, pump_ceiling | float, 200] | min, 10] | max %}{{ ((capped / 5) | round(0, 'floor') * 5) | int }}{% else %}-1{% endif %}
 - if: |-
     {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_state(light_entity, 'on') and state_attr(light_entity, 'active_mode') == 'schedule' and state_attr(light_entity, 'schedule_recovery_required') != true and is_number(states(light_dimming)) and light_target | float >= 10 and (states(light_dimming) | float - light_target | float) | abs > 0.01 }}
   then:
@@ -316,7 +313,7 @@ action:
     data:
       value: '{{ light_target | int }}'
 - if: |-
-    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_number(pump_ceiling) and 10 <= pump_ceiling | float <= 100 and is_state(pump_fan, 'on') and is_state(pump_run_mode, 'tide') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and state_attr(pump_tidal, 'recovery_required') != true and is_number(states(pump_tidal)) and pump_target | float >= 10 and (states(pump_tidal) | float - pump_target | float) | abs > 0.01 }}
+    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_number(pump_ceiling) and 10 <= pump_ceiling | float <= 200 and is_state(pump_fan, 'on') and is_state(pump_run_mode, 'tide') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and state_attr(pump_tidal, 'recovery_required') != true and is_number(states(pump_tidal)) and is_number(state_attr(pump_tidal, 'max')) and pump_target | float <= state_attr(pump_tidal, 'max') | float and pump_target | float >= 10 and (states(pump_tidal) | float - pump_target | float) | abs > 0.01 }}
   then:
   - service: number.set_value
     continue_on_error: true

@@ -27,7 +27,7 @@ class Sim:
   self.states={'weather.home':weather,'light.coral':'on','number.light_scale':'100',
    'fan.wave':'on','number.tidal':'100','select.run':'tide','sensor.flow':'sine',
    'switch.feed':'off','input_boolean.maint':'off','input_boolean.restore':'off'}
-  self.states.update(states or {});self.attrs={('light.coral','active_mode'):'schedule'}
+  self.states.update(states or {});self.attrs={('light.coral','active_mode'):'schedule',('number.tidal','max'):200}
   self.attrs.update(attrs or {});self.calls=[];self.fail=set(fail);self.hook=hook
  def val(self,value):
   if isinstance(value,Input):return self.inputs[value]
@@ -61,10 +61,10 @@ class Sim:
 
 class WeatherTests(unittest.TestCase):
  def test_each_weather_has_independent_expected_levels(self):
-  expected={'sunny':(100,80),'clear-night':(100,80),'partlycloudy':(90,80),
-   'cloudy':(75,80),'fog':(75,80),'rainy':(60,90),'snowy':(60,90),
-   'snowy-rainy':(60,90),'windy':(75,90),'windy-variant':(75,90),
-   'pouring':(50,95),'hail':(50,95),'lightning':(50,100),'lightning-rainy':(50,100)}
+  expected={'sunny':(100,100),'clear-night':(100,100),'partlycloudy':(90,100),
+   'cloudy':(75,100),'fog':(75,100),'rainy':(60,110),'snowy':(60,110),
+   'snowy-rainy':(60,110),'windy':(75,115),'windy-variant':(75,115),
+   'pouring':(50,120),'hail':(50,120),'lightning':(50,130),'lightning-rainy':(50,130)}
   for weather,values in expected.items():
    with self.subTest(weather=weather):
     s=Sim(weather,states={'number.light_scale':'20','number.tidal':'20'});s.run()
@@ -81,10 +81,10 @@ class WeatherTests(unittest.TestCase):
     with self.subTest(entity=e,value=value):self.assertEqual(Sim('rainy',states={e:value}).run(),[])
  def test_off_or_unavailable_light_does_not_block_pump_or_turn_light_on(self):
   for value in ['off','unknown','unavailable']:
-   self.assertEqual(Sim('rainy',states={'light.coral':value}).run(),[('number.set_value','number.tidal',90)])
+   self.assertEqual(Sim('rainy',states={'light.coral':value}).run(),[('number.set_value','number.tidal',110)])
  def test_manual_and_viewing_light_not_overridden(self):
   for mode in ['manual','viewing',None]:
-   self.assertEqual(Sim('rainy',attrs={('light.coral','active_mode'):mode}).run(),[('number.set_value','number.tidal',90)])
+   self.assertEqual(Sim('rainy',attrs={('light.coral','active_mode'):mode}).run(),[('number.set_value','number.tidal',110)])
   self.assertEqual(Sim('rainy',attrs={('light.coral','active_mode'):'feeding'}).run(),[])
  def test_off_pump_and_manual_storm_are_not_overridden(self):
   for changes in [{'fan.wave':'off'},{'fan.wave':'unavailable'},{'select.run':'manual'},
@@ -93,22 +93,22 @@ class WeatherTests(unittest.TestCase):
    self.assertEqual(Sim('rainy',states=changes).run(),[('number.set_value','number.light_scale',60)])
  def test_missing_number_only_skips_its_branch(self):
   for value in ['unknown','unavailable','nan','inf']:
-   self.assertEqual(Sim('rainy',states={'number.light_scale':value}).run(),[('number.set_value','number.tidal',90)])
+   self.assertEqual(Sim('rainy',states={'number.light_scale':value}).run(),[('number.set_value','number.tidal',110)])
    self.assertEqual(Sim('rainy',states={'number.tidal':value}).run(),[('number.set_value','number.light_scale',60)])
  def test_pending_curve_recovery_not_overwritten(self):
-  self.assertEqual(Sim('rainy',attrs={('light.coral','schedule_recovery_required'):True}).run(),[('number.set_value','number.tidal',90)])
+  self.assertEqual(Sim('rainy',attrs={('light.coral','schedule_recovery_required'):True}).run(),[('number.set_value','number.tidal',110)])
   self.assertEqual(Sim('rainy',attrs={('number.tidal','recovery_required'):True}).run(),[('number.set_value','number.light_scale',60)])
  def test_ceiling_and_quantization_never_exceed_cap(self):
-  for cap,expected in [(100,95),(73,70),(10,10),(67,65)]:
+  for cap,expected in [(200,120),(115,115),(73,70),(10,10),(67,65)]:
    s=Sim('pouring',inputs={'pump_ceiling':cap});s.run();self.assertEqual(int(s.states['number.tidal']),expected)
  def test_invalid_settings_are_skipped_and_numeric_bounds_held(self):
   for bad in ['nan','unknown',None]:
    self.assertEqual(Sim('rainy',inputs={'pump_rainy_pct':bad}).run(),[('number.set_value','number.light_scale',60)])
-   self.assertEqual(Sim('rainy',inputs={'light_rainy_pct':bad}).run(),[('number.set_value','number.tidal',90)])
-  for cap in [0,101,'unknown']:
+   self.assertEqual(Sim('rainy',inputs={'light_rainy_pct':bad}).run(),[('number.set_value','number.tidal',110)])
+  for cap in [0,201,'unknown']:
    self.assertEqual(Sim('rainy',inputs={'pump_ceiling':cap}).run(),[('number.set_value','number.light_scale',60)])
   s=Sim('rainy',inputs={'light_rainy_pct':500,'pump_rainy_pct':200},states={'number.light_scale':'20','number.tidal':'20'});s.run()
-  self.assertEqual((s.states['number.light_scale'],s.states['number.tidal']),('100','100'))
+  self.assertEqual((s.states['number.light_scale'],s.states['number.tidal']),('100','130'))
  def test_repeated_run_is_idempotent(self):
   s=Sim('rainy');s.run();s.calls=[];self.assertEqual(s.run(),[])
  def test_weather_clear_restores_configured_normal_not_hardcoded_full(self):
@@ -125,7 +125,7 @@ class WeatherTests(unittest.TestCase):
    self.assertEqual(Sim('rainy',hook=change).run(),[('number.set_value','number.light_scale',60)])
  def test_storm_manual_to_tide_recovery_reapplies_without_mode_command(self):
   s=Sim('lightning',states={'select.run':'manual','number.tidal':'80'});s.run();s.calls=[]
-  s.states['select.run']='tide';s.run();self.assertEqual(s.calls,[('number.set_value','number.tidal',100)])
+  s.states['select.run']='tide';s.run();self.assertEqual(s.calls,[('number.set_value','number.tidal',130)])
  def test_mode_end_or_availability_recovery_reconciles_current_weather(self):
   for e in ['switch.feed','input_boolean.maint','input_boolean.restore']:
    s=Sim('rainy',states={e:'on'});self.assertEqual(s.run(),[]);s.states[e]='off';self.assertEqual(len(s.run()),2)
@@ -143,6 +143,15 @@ class WeatherTests(unittest.TestCase):
    self.assertIn(key,entity_triggers)
   self.assertEqual({(str(t['entity_id']),t['from']) for t in BP['trigger'] if 'from' in t},
    {(key,state) for key in ['light_dimming','pump_tidal'] for state in ['unknown','unavailable']})
+ def test_old_or_unknown_entity_max_rejects_unsupported_gain(self):
+  for maximum in [100,None,'unknown']:
+   s=Sim('rainy',attrs={('number.tidal','max'):maximum})
+   self.assertEqual(s.run(),[('number.set_value','number.light_scale',60)])
+  s=Sim('sunny',states={'number.tidal':'80'},attrs={('number.tidal','max'):100})
+  self.assertEqual(s.run(),[('number.set_value','number.tidal',100)])
+ def test_gain_ceiling_is_independent_of_entity_cap(self):
+  s=Sim('lightning',inputs={'pump_ceiling':120});s.run();self.assertEqual(s.states['number.tidal'],'120')
+  s=Sim('lightning',attrs={('number.tidal','max'):120});s.run();self.assertEqual(s.states['number.tidal'],'100')
  def test_inputs_complete_and_all_whole_tank_names_brand_neutral(self):
   def walk(v):
    if isinstance(v,Input):self.assertIn(v,BP['blueprint']['input'])
