@@ -508,3 +508,32 @@ write this turn, no implementation or install authorized. Current deployed recip
 unchanged. Next proposed F33-A01: approved short photo comparison with actual camera
 and neutral reference, then choose/set viewing inputs; strong reasoning. No new
 controller, schedule, HACS release, monitor or handoff-export change proposed.
+
+
+### F33-P01 — approved photo preset with dimmer night (2026-10-26)
+
+Rudy approves suggested daytime photography mix and requests darker night. Approved;
+Codex/P1 ACTIVE: day50/10/30/20, night20%=10/2/6/4 (stated assumption for “dimmer”).
+Fresh HA shows viewing already on with50/10/30/20, but automation still holds old
+10/10/30/25/night50%; do not claim that existing live photo mix was set by this
+session. Update only instance inputs using protected reload; preserve active
+viewing, original schedules and weather rules. Actual template smoke check confirms
+both profiles and guard exclusion. No component, generic blueprint-default or
+release change. Next authorized profile update/readback; strong reasoning.
+
+
+F33-P01 closure — DONE for approved parameter update, verified2026-10-26T18:53:25+08:00. Night20%
+was an agent-selected interpretation of the user's dimmer-night request, not a
+separate user-specified value. Day50/10/30/20, night10/2/6/4 persisted in the existing
+instance; private readback confirms actual night values. Fresh initial sample found
+viewing on with photo mix already present; first mutation preflight found viewing
+had exited and stopped before any write. Retry accepted the observed off/schedule
+pair and preserved it. No mode-toggle or night viewing forced.
+Protected single reload paused guards1.06s, both restored without execution.
+Only viewing inputs changed; original blueprint/component defaults unchanged,
+stored pump/lamp schedules equal and weather/storm remain enabled without a new
+trigger during update. Source template smoke check covers approved profiles and
+guard exclusions; no implementation change requiring a new HACS release.
+Private evidence .private/viewing-sun-20261026/photo-update. Local receipt only,
+no push/release/HA restart/new monitor. F33-A01 physical photography/brightness
+acceptance remains open proposal; next ordinary user observation, normal model.

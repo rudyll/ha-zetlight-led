@@ -1,3 +1,25 @@
+## Latest: F33-P01拍摄观赏白天配方与更暗夜间已生效 — 2026-10-26
+
+Verified2026-10-26T18:53:25+08:00. User approves recommended photo mix and asks for dimmer night.
+Day50/10/30/20, night scale20% =>10/2/6/4. Night20% is agent-selected under that
+request, not an explicitly specified user number. Existing instance inputs updated;
+current sun below_horizon and actual viewing parameters10/2/6/4 verified.
+
+Initial sample showed viewing on/photo values already present despite stale auto
+inputs. Before first mutation mode had exited: preflight aborted with zero writes;
+retry preserved current off/schedule and preloaded values without entering viewing.
+Protected one reload, guards paused1.06s then restored without execution. Stored
+lamp/pump curves, blueprint/component bytes unchanged; weather/storm still enabled,
+no new weather trigger during transaction. No HA restart, component update, release
+or monitor. Raw rollback/receipt and goal/recommendation correction chain private
+in ignored.private/viewing-sun-20261026/photo-update and photography goal JSON.
+
+F33-P01 parameter deployment DONE; F33-A01 actual photo colour/brightness and F32-A01
+button/night optical acceptance remain untested proposals. Next record ordinary
+user observation, normal model. No forced photo/viewing test or publish authorized.
+
+---
+
 ## Latest: F33观赏用途更正为无滤镜拍摄，现场未改 — 2026-10-26
 
 Rudy clarifies viewing means phone/camera photography with natural fish colour and
