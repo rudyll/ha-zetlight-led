@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.24.0 — Unreleased
+
+- Correct the existing Moon phase label to Moonlight / 月光开关. Preserve its
+  unique ID, registry identity, translation key and0x19 command; existing entity
+  IDs, custom names and automations continue controlling the same Moon Light flag.
+- Add a separate Lunar phase / 月相模式 switch, with its own lunar_phase unique ID
+  and the0x14 phase byte. Read-modify-write under the shared option lock preserves
+  cloud/acclimation flags; readback must confirm the target and preserved fields.
+  Failed/cancelled writes or readback leave options unknown and report the error.
+- Native lunar phase and coral acclimation are mutually exclusive in the App.
+  Enabling either while the other is active now fails with an explicit message;
+  first disable the other mode. Do not silently reset an acclimation day or stop
+  the other mode. Moon Light remains independent.
+-120tests/52subtests pass, including18new semantic/compatibility cases. Native HA
+  entity classes and a synthetic registry confirm old entity ID/custom name survive
+  and the new control is distinct. No real device mode/effect test is claimed.
+- Upgrade: install/restart only in an approved window. Do not delete/recreate the
+  legacy entity or repoint existing automations to the new Lunar phase entity.
+  A legacy entity_id containing moon_phase is intentional. User-set names remain
+  user-set; the default display name is corrected. New switch setup sends no command.
+  Physical night output still depends on device firmware and is not established
+  by a stored option byte. This local candidate is not published or installed.
+
 ## 0.23.0 — 2026-10-26
 
 - Add independent whole-tank weather v2 light and pump-gain profiles, a separate

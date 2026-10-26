@@ -34,7 +34,7 @@ See [`capture-guide.md`](capture-guide.md) for how to capture the frames.
 | F6 | Lightning effect | 闪电 | custom `0x13` | ✅ Shipped (v0.5.0) | Custom white+blue flash (not the vendor effect); tunable |
 | F7 | Cloud effect | 云彩 | `sendcloud` | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F8 | Auto-clouds toggle | 自动云彩 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
-| F9 | Moonlight mode | 月相模式 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
+| F9 | Native Moon Light + Lunar Phase | 月光开关 / 月相模式 | `0x19` / `0x14` phase | Source/test complete,0.24.0 candidate (F30-P01) | Existing Moon Light identity retained; release/install/device acceptance separate |
 | F10 | Acclimation mode | 适应模式 | config frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
 | F11 | Fade/ramp duration | 渐变时长 (minutes) | `0x22` (observed) | ⏸️ Deprioritized | Frame partly decoded (see note); skip unless requested |
 | F12 | Temporary-on timer | 临开 | timer frame | ⏸️ Deprioritized | Low value for the user; skip unless requested |
@@ -332,3 +332,25 @@ add separate Lunar Phase control with unrelated-option preservation/semantic tes
 F30-P02 proposed audit of unused moonlight blueprint's assumed channel labels.
 Physical M5 night effect and current iOS UI unverified. Next F30-P01 source fix if
 authorized, strong reasoning; no automatic HA install/release/device test.
+
+### F30-P01 — compatible Moonlight + Lunar Phase implementation (2026-10-26)
+
+Source: Rudy explicitly asks to correct Moonlight name, add true Lunar Phase and
+preserve existing entity compatibility. Codex/P1, depends completed F30 mapping
+audit. SOURCE/TEST COMPLETE, local0.24.0 Unreleased candidate. Legacy moon_phase
+UID/translation key, constructor/getter/actions/client/frame behavior retained;
+display changed to Moonlight/月光开关. New lunar_phase UID reads phase/writes only
+0x14phase, shared lock/readback confirms target and sibling fields. New failed/
+cancelled action marks options unknown, no guessed success. Native phase and coral
+acclimation conflicts require the other mode off, never silently cancel it.
+120tests/52subtests PASS (18new semantic cases); native HA classes + synthetic
+registry preserve old entity_id/registry ID/custom name and add a distinct entity.
+Static AST equality confirms old Moon Light path unchanged. Historical test fixture
+with both native modes enabled replaced by a valid independent-options fixture;
+new negative/concurrent conflict cases cover the App's mutual exclusion explicitly.
+Evidence ignored.private/moon-controls-audit-20261026/implementation-verified.json
+and /private/tmp/moon-controls-20261026; guide docs/moon-controls.md.
+Not published, installed, restarted, live-toggled or physically accepted; no HA/
+device connection in this task. F30-P02 unused blue-light assumptions remains open.
+F30-R01 proposed publication and separately approved HA install/registry readback,
+strong reasoning; new physical-mode tests require their own scope.

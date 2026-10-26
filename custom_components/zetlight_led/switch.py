@@ -26,6 +26,7 @@ async def async_setup_entry(
             ZetlightCoralSwitch(coordinator, entry.entry_id),
             ZetlightAutoCloudSwitch(coordinator, entry.entry_id),
             ZetlightMoonSwitch(coordinator, entry.entry_id),
+            ZetlightLunarPhaseSwitch(coordinator, entry.entry_id),
             ZetlightFadeSwitch(coordinator, entry.entry_id),
             ZetlightViewingSwitch(coordinator, entry.entry_id),
         ]
@@ -117,7 +118,11 @@ class ZetlightAutoCloudSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEnti
 
 
 class ZetlightMoonSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
-    """Moon-phase mode: moonlight follows the lunar cycle at night (0x19)."""
+    """Native Moon Light switch (0x19), separate from lunar-phase simulation.
+
+    Keep the legacy moon_phase translation key/unique ID so existing entities,
+    custom names and automation references continue controlling the same command.
+    """
 
     _attr_has_entity_name = True
     _attr_translation_key = "moon_phase"
@@ -138,6 +143,32 @@ class ZetlightMoonSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_moon(False)
+
+
+class ZetlightLunarPhaseSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):
+    """Native Lunar Phase option (0x14 phase byte), not the Moon Light toggle."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "lunar_phase"
+    _attr_icon = "mdi:moon-waning-crescent"
+
+    def __init__(self, coordinator: ZetlightCoordinator, entry_id: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_lunar_phase"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def is_on(self) -> bool | None:
+        opts = self.coordinator.options
+        if opts is None or opts.phase not in (0, 1):
+            return None
+        return opts.phase == 1
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_lunar_phase(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_lunar_phase(False)
 
 
 class ZetlightFadeSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity):

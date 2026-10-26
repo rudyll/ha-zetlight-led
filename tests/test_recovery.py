@@ -90,12 +90,12 @@ class RecoveryTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(OSError):await getattr(c,method)(True)
                 c._request.assert_not_awaited()
     async def test_options_edits_serialize_and_preserve_other_bits(self):
-        c=Client(None,'test',8855,protocol.DEFAULT_DEVICE_CODE);state=[0,1,0]
+        c=Client(None,'test',8855,protocol.DEFAULT_DEVICE_CODE);state=[0,0,0]
         async def read():await asyncio.sleep(0);return SimpleNamespace(auto_cloud=state[0],phase=state[1],coral=state[2])
         async def write(frame,**kwargs):await asyncio.sleep(0);state[:]=frame[8:11]
         c.async_read_options=read;c._request=write
         await asyncio.gather(c.async_set_coral(True),c.async_set_auto_cloud(True))
-        self.assertEqual(state,[1,1,1])
+        self.assertEqual(state,[1,0,1])
 
     async def test_restart_restores_saved_scale_before_new_preset(self):
         c,_=self.make();c.schedule=[(80,)*4]*5

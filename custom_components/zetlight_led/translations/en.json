@@ -94,7 +94,8 @@
       "feeding_mode": { "name": "Feeding mode" },
       "coral_acclimation": { "name": "Coral acclimation (native)" },
       "auto_cloud": { "name": "Auto clouds" },
-      "moon_phase": { "name": "Moon phase" },
+      "moon_phase": { "name": "Moonlight" },
+      "lunar_phase": { "name": "Lunar phase" },
       "fade": { "name": "Fade (smooth transitions)" },
       "viewing_mode": { "name": "Viewing mode" }
     }

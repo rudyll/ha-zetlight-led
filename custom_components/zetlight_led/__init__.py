@@ -278,6 +278,8 @@ class ZetlightClient:
                 current = await self.async_read_options()
             except (ZetlightUDPError, ValueError) as err:
                 raise ZetlightUDPError("cannot preserve current options; coral unchanged") from err
+            if on and current.phase != 0:
+                raise ZetlightUDPError("Disable lunar phase before enabling native coral acclimation")
             await self._request(protocol.build_set_options(
                 current.auto_cloud, current.phase, 1 if on else 0, device_code=self.device_code), expect_reply=False)
 
@@ -291,8 +293,30 @@ class ZetlightClient:
             await self._request(protocol.build_set_options(
                 1 if on else 0, current.phase, current.coral, device_code=self.device_code), expect_reply=False)
 
+    async def async_set_lunar_phase(self, on: bool) -> protocol.OptionState:
+        """Change only the phase byte, then confirm it and preserved sibling flags."""
+        async with self._option_lock:
+            try:
+                current = await self.async_read_options()
+            except (ZetlightUDPError, ValueError) as err:
+                raise ZetlightUDPError("cannot preserve current options; lunar phase unchanged") from err
+            if on and current.coral > 0:
+                raise ZetlightUDPError("Disable native coral acclimation before enabling lunar phase")
+            await self._request(protocol.build_set_options(
+                current.auto_cloud, 1 if on else 0, current.coral,
+                device_code=self.device_code), expect_reply=False)
+            await asyncio.sleep(0.2)
+            try:
+                observed = await self.async_read_options()
+            except (ZetlightUDPError, OSError, ValueError) as err:
+                raise ZetlightUDPError("lunar phase update unconfirmed; options readback failed") from err
+            if (observed.phase != int(on) or observed.auto_cloud != current.auto_cloud
+                    or observed.coral != current.coral):
+                raise ZetlightUDPError("lunar phase update unconfirmed; inspect device options")
+            return observed
+
     async def async_set_moon(self, on: bool) -> None:
-        """Enable/disable moon-phase mode (0x19)."""
+        """Enable/disable native Moon Light (0x19); retain the legacy method."""
         await self._request(
             protocol.build_set_moon(on, device_code=self.device_code),
             expect_reply=False,
@@ -431,8 +455,20 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         await self.client.async_set_auto_cloud(on)
         await self._refresh_options()
 
+    async def async_set_lunar_phase(self, on: bool) -> None:
+        """Toggle native Lunar Phase and refresh actual option readback."""
+        try:
+            observed = await self.client.async_set_lunar_phase(on)
+        except (ZetlightUDPError, OSError, ValueError, asyncio.CancelledError):
+            # The write may have reached the lamp; do not display a stale flag.
+            self.options = None
+            self.async_update_listeners()
+            raise
+        self.options = observed
+        self.async_update_listeners()
+
     async def async_set_moon(self, on: bool) -> None:
-        """Toggle moon-phase mode and refresh."""
+        """Toggle native Moon Light and refresh; existing callers stay compatible."""
         await self.client.async_set_moon(on)
         await self._refresh_options()
 

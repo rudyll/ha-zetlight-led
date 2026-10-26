@@ -37,7 +37,7 @@ CMD_SYNC_TIME = 0x03     # set device clock (BCD yy mm dd hh mm ss)
 CMD_SAVE_TIMES = 0x11    # save the 5 time-slot boundaries
 CMD_SAVE_SCHEDULE = 0x1C # save the 5-slot x 4-channel brightness curve
 CMD_SET_OPTIONS = 0x14   # set option switches [auto_cloud, phase, coral]
-CMD_SET_MOON = 0x19      # set moon-phase mode on/off (1 byte)
+CMD_SET_MOON = 0x19      # set native Moon Light on/off (1 byte)
 CMD_SET_FADE = 0x22      # set gradient/fade time: [enable, minutes]
 CMD_START = 0x1E         # turn on / resume (device-verified)
 CMD_OFF = 0x1F           # turn off (device-verified)
@@ -313,7 +313,7 @@ def build_set_options(
 
 
 def build_set_moon(on: bool, *, device_code: bytes = DEFAULT_DEVICE_CODE) -> bytes:
-    """Build the set-moon-phase frame (CMD 0x19), 1-byte on/off payload."""
+    """Build native Moon Light (CMD 0x19), separate from the 0x14 phase byte."""
     return build_frame(CMD_SET_MOON, bytes([1 if on else 0]), device_code=device_code)
 
 

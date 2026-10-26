@@ -51,6 +51,15 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Read daily schedule | ✅ `sensor.schedule` (5×4 brightness, raw %) |
 | Reachability polling | ✅ Reads device status (`0x0C`) every 30 s |
 
+### Native moon controls (0.24.0 candidate)
+
+**Moonlight / 月光开关** retains the old entity and0x19 behavior; its previous
+“Moon phase” label was incorrect. **Lunar phase / 月相模式** is a separate new
+entity for the native phase flag. Existing entity IDs/custom names are preserved.
+Lunar phase and native coral acclimation require the other mode to be off before
+enabling. See [compatibility and limits](docs/moon-controls.md). Software tested;
+not a physical night-effect test. No mode is enabled by entity setup.
+
 ### How on/off and brightness behave
 
 - **On/off is optimistic.** The read command (`0x0C`) returns each channel's

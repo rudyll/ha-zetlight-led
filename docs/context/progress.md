@@ -1,3 +1,30 @@
+## Latest: F30-P01 compatible moon controls implemented/tested — 2026-10-26
+
+User authorizes label correction + independent native lunar switch with existing
+entity compatibility. Local0.24.0 Unreleased candidate ready: old moon_phase UID/
+translation key and0x19 code path preserved, default label Moonlight/月光开关;
+new lunar_phase UID andphase0x14 control. Current option snapshot and shared lock
+preserve sibling flags; returned options confirm target. Failed/cancelled action
+leaves unknown options and raises; native phase/acclimation conflict refuses to
+silently cancel either mode. No live HA/UDP/device access or setting changes.
+
+120tests/52subtests PASS incl18new semantic cases. Native HA entity classes and
+synthetic registry verify same old entity_id/registry entry/custom name and distinct
+new entity. Legacy constructor/getter/on/off/client/frame AST unchanged. Source/
+JSON syntax and candidate metadata valid. docs/moon-controls.md and0.24.0 Unreleased
+notes explain compatibility and limits. Evidence private ignored and /private/tmp/
+moon-controls-20261026. Code touched switch/client/coordinator, protocol comments,
+translations, manifest, two tests and scoped docs; blueprints/GTS/real records/
+HA configuration intentionally untouched. Existing physical deployment last verified
+0.23.0 (F29) was not modified. No scheduler/background process, push/tag/Release.
+
+Next proposed F30-R01: formal publication plus separately authorized HA installation
+and registry readback, strong reasoning. Physical night effects remain untested;
+F30-P02 unused moonlight-blueprint channel assumptions remains open. No further
+live action authorized by this source task.
+
+---
+
 ## Latest: F30 confirms moonlight mislabelled as lunar phase — 2026-10-26
 
 Read-only investigation of Rudy's App/HA discrepancy: current HA Moon phase switch
