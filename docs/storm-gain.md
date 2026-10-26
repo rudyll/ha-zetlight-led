@@ -25,7 +25,8 @@ current HA local hour under the device operation lock. Config-v2 banks only.
 It prepares bounded power and the day's period before changing waveform/manual
 mode, then requires heartbeat confirmation. Failure after a possible output
 change attempts a confirmed safe stop and reports command_error; this can stop
-the pump and requires inspection/recovery. A failed command is not retried by
+the pump and requires inspection/recovery. command_error distinguishes confirmed
+stop from unconfirmed stop; failed cleanup is not reported as a stopped pump. A failed command is not retried by
 this blueprint and ownership remains visible. Daily curve and weather gain are
 not rewritten by the transient action; manual banks retain the last setpoint.
 
@@ -59,7 +60,7 @@ interlocks. Review the default-false clock confirmation and all limits. HACS
 updates do not update imported blueprints. Released GTS0.6.2 lacks storm_gain;
 importing this template there is insufficient. The legacy absolute v2 is retained.
 
-Software evidence:70 GTS tests/41 subtests,102 Zetlight tests/52 subtests;
+Software evidence:71 GTS tests/41 subtests,102 Zetlight tests/52 subtests;
 actual-template to actual fan-method simulations pass for daytime/night with no
 curve rewrite. Offline native HA schema/trigger/action validation passes for the
 expanded new blueprint. Hardware transport, clock agreement, physical flow,

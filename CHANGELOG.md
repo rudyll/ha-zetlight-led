@@ -23,6 +23,9 @@
   automation inputs. Reimport the desired template separately, preserve backups,
   confirm one writer per scaling entity, and keep candidates disabled until review.
   Install the paired GTS capability before enabling positive pump gain.
+- Known diagnostic limitation: the schedule sensor lists A–H labels even for
+  four-channel schedules; use the actual returned slot width. Channel letters
+  do not establish measured spectrum or irradiance. This does not change outputs.
 - Schedule-at-sun remains a full schedule writer: its durations and channel values
   replace the stored program. It does not merely shift the current curve. Do not
   enable its sample values over a tuned program without reviewing them.

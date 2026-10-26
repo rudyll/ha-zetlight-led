@@ -247,3 +247,14 @@ handoff export changed; no automatic Xiaochen sync claimed. Verification: JSON
 parse, exact label readback and git-ignore check. Raw config was not written;
 no before/after hash comparison was performed. Next F28 release decision (strong reasoning); new spectrum optimization
 is not authorized or completed by a label confirmation.
+
+### F28-P01 — final software preflight (2026-10-26)
+
+Source “继续”; Codex/P1, prerequisite F26-P01. DONE for local software preflight,
+publication still awaiting explicit approval. Fixed ambiguous GTS stop telemetry
+with reproduced failing regression;71GTS tests/41subtests PASS. Zetlight102/52
+evidence retained after exact source/test/blueprint equality check. Native offline
+validation, joint simulation, version/body/private-history checks PASS. Report
+docs/release-preflight-20261026.md. Known F27-A01 label-width issue remains proposal,
+now included in candidate known limitations; no HA/device change or publication.
+Next F28 formal release decision, strong reasoning.
