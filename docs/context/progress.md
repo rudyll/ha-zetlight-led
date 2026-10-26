@@ -1,3 +1,15 @@
+## Latest: F30-R01 formal release + HA upgrade explicitly authorized — 2026-10-26
+
+Rudy approves publishing0.24.0 and upgrading HA with previous guarded single
+restart/two-controller pause-and-restore plan. Source120tests/52subtests and native
+synthetic registry compatibility already verified; release/deployment now in
+progress, not yet claimed complete. No mode toggles or pump/lamp action tests;
+weather/storm remainOFF. Readonly actual registry/native options baseline is being
+captured privately. No GTS/blueprint changes in this release. Next complete remote
+publication then HACS/guarded runtime verification, strong reasoning.
+
+---
+
 ## Latest: F30-P01 compatible moon controls implemented/tested — 2026-10-26
 
 User authorizes label correction + independent native lunar switch with existing

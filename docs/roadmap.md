@@ -354,3 +354,16 @@ Not published, installed, restarted, live-toggled or physically accepted; no HA/
 device connection in this task. F30-P02 unused blue-light assumptions remains open.
 F30-R01 proposed publication and separately approved HA install/registry readback,
 strong reasoning; new physical-mode tests require their own scope.
+
+### F30-R01 — official0.24.0 publication and guarded HA upgrade (2026-10-26)
+
+Rudy explicitly authorizes formal0.24.0 publication and HA installation, using
+the previous single-restart/two-controller pause-and-restore plan. Codex/P1;
+depends F30-P01 complete. ACTIVE: final default-branch push→v0.24.0→official
+Release/exact notes verification, HACS installation, backup/guarded single restart
+and readonly actual registry/name/independent flags verification. No moon/phase/
+feed/brightness/pump/outlet commands; startup lamp clock sync inherited from the
+disclosed prior plan. Weather/storm stayOFF. No GTS upgrade or blueprint activation.
+Success: release proven, runtime0.24.0, old ID/registry/custom name retained, new
+phase entity independent, native option values/curves unchanged, rules restored.
+Next complete authorized publication/deployment readback, strong reasoning.

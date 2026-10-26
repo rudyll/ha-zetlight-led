@@ -51,7 +51,7 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Read daily schedule | ✅ `sensor.schedule` (5×4 brightness, raw %) |
 | Reachability polling | ✅ Reads device status (`0x0C`) every 30 s |
 
-### Native moon controls (0.24.0 candidate)
+### Native moon controls (0.24.0)
 
 **Moonlight / 月光开关** retains the old entity and0x19 behavior; its previous
 “Moon phase” label was incorrect. **Lunar phase / 月相模式** is a separate new

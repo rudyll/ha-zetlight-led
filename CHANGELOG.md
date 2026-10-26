@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.24.0 — Unreleased
+## 0.24.0 — 2026-10-26
 
 - Correct the existing Moon phase label to Moonlight / 月光开关. Preserve its
   unique ID, registry identity, translation key and0x19 command; existing entity
@@ -21,7 +21,7 @@
   A legacy entity_id containing moon_phase is intentional. User-set names remain
   user-set; the default display name is corrected. New switch setup sends no command.
   Physical night output still depends on device firmware and is not established
-  by a stored option byte. This local candidate is not published or installed.
+  by a stored option byte. Installing this release does not enable either mode.
 
 ## 0.23.0 — 2026-10-26
 

@@ -1,4 +1,4 @@
-# Native moon controls (0.24.0 candidate)
+# Native moon controls (0.24.0)
 
 | Display name | Identity | Device control |
 | --- | --- | --- |
