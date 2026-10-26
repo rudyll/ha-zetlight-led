@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.23.0 — 2026-10-26
+
+- Add independent whole-tank weather v2 light and pump-gain profiles, a separate
+  gain ceiling, missing-state handling, per-target failure isolation and recovery.
+  Normal tidal gain is100%; adverse-weather examples add gain from the daily curve.
+- Pump gain above100 requires GTS Wave Pump0.7.0 or newer with the matching entity
+  range. Targets above the live entity maximum are skipped, not silently applied
+  as stronger flow. Existing0.6.2 installs remain limited to100.
+- Add an opt-in storm v2 blueprint with bounded bursts, persistent ownership and
+  feeding/maintenance/restore guards. It still uses absolute burst setpoints;
+  baseline-relative manual storm redesign is NOT included. Night policy and
+  actual tank-specific limits must be reviewed before enabling it.
+- Include the unified feeding/maintenance v2 template and skimmer/return interlocks;
+  name whole-tank templates generically to distinguish them from lamp-only ones.
+- 92 tests and38 subtests passed; expanded weather/storm actions passed native HA
+  validation. This is software/configuration evidence, not a physical intensity test.
+- Upgrade: HACS integration updates do not replace imported blueprints or existing
+  automation inputs. Reimport the desired template separately, preserve backups,
+  confirm one writer per scaling entity, and keep candidates disabled until review.
+  Install the paired GTS capability before enabling positive pump gain.
+- Schedule-at-sun remains a full schedule writer: its durations and channel values
+  replace the stored program. It does not merely shift the current curve. Do not
+  enable its sample values over a tuned program without reviewing them.
+- Automation saves may broadcast automation_reloaded and retrigger other listeners;
+  inspect active delay/recovery workflows before editing. No live automation is
+  enabled by this release, and no pump/light device update is performed here.
+
 ## 0.22.0 — 2026-10-24
 
 - Persist the real feeding deadline and unfinished recovery across HA restarts;

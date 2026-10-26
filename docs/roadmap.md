@@ -199,3 +199,24 @@ source/tests and weather capability/default correction, without a HACS release
 or HA/device change. GTS publication uses an isolated tree based on publicmain
 to exclude unrelated local raw acceptance history. Source publication does not
 close F26-P01 baseline-relative manual storm or enable either HA draft.
+
+## F28 — versioned HACS release preparation (2026-10-26)
+
+User asks why integration versions remain old. Prepared GTS0.7.0 and Zetlight
+0.23.0 manifests plus matching changelogs/release bodies;57/92 tests respectively
+PASS. Official releases remain0.6.2/0.22.0; intended new tags absent. Integration
+release does not update imported blueprints/inputs. No release/tag/HA installation
+or automation activation yet; formal publication approval pending. Fixed manual
+storm relative gain remains F26-P01, not included as completed behavior. Owner
+Codex/P1; next approval then default-branch push→tag→non-draft/non-prerelease release
+and remote verification, strong reasoning.
+
+## F27 — sun-event schedule semantics and lighting review (2026-10-26)
+
+User requests analysis only. Code and read-only device config verified; sun
+template replaces entire schedule, not merely start time. Current household
+profile and user confirmations remain ignored.private/lighting-review-20261026.
+No device operation or handoff export change. PAR/specific coral/wavelength data
+limits retained. F27-P01 proposed PAR/placement assessment. F27-A01 proposed
+sensor channel-label width correction, and future sun-template target/offset/
+time-preservation design; no code fix claimed. Codex/P2, strong reasoning.

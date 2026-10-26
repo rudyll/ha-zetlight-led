@@ -1,3 +1,19 @@
+## Latest: version files prepared; current lamp analysis read-only — 2026-10-26
+
+Version question: prepared GTS0.7.0/Zetlight0.23.0 manifests, matching changelogs and
+reviewable release bodies.57/92tests PASS; official latest0.6.2/0.22.0 and no new
+tags. Candidate not pushed/released; formal publication approval pending F28. No
+HA edit/reload/device action. Imported blueprints need independent update; fixed
+manual-storm relative gain remains unfinished F26-P01.
+
+F27 sun/spectrum analysis: source schedule_at_sun writes COMPLETE times+brightness,
+not a time-only shift. No matching active configuration found in current read.
+Current user context, actual schedule and image analysis remain in ignored
+private notes; no handoff export or real-tank data changed. Next F28 approval/publication and
+F27 PAR-informed review, strong reasoning; no automatic device update authority.
+
+---
+
 ## Current publication: paired gain source, no HA deployment — 2026-10-26
 
 User explicitly authorizes GitHub update for the gain correction. Matching GTS
@@ -246,3 +262,15 @@ was not changed. Runtime deployment was backed up under HA's
 
 ---
 
+
+## F27 read-only sun/spectrum analysis outcome — 2026-10-26
+
+Code proves schedule_at_sun overwrites full times+brightness; default900min15h
+program is not a time-only shift. Read-only0x10 confirmed valid repeated BCD
+boundaries and actual five-slot values; private evidence/analysis saved under
+.private/lighting-review-20261026, no personal settings added to public docs.
+Current species/PAR/LED wavelength uncertainty retained; no lamp/config action.
+Next F27-P01 PAR/placement assessment if user supplies measurements, strong
+reasoning. F27-A01 proposal: schedule sensor currently labels8channels despite
+4values/row; do not interpret extra labels as physical channels. Solar target/
+offset/time-preservation improvements are proposals, not implemented behavior.
