@@ -415,3 +415,26 @@ weather/storm remain off. Success: remote version/tag/release exact, installed
 bytes/runtime labels verified, identities/configuration/curves preserved, controllers
 restored without action. ACTIVE; next release then guarded deployment, strong reasoning.
 Spectrum discussion is recommendation only, not authorization to write a schedule.
+
+
+### F31-R01 closure / F31-A01 weather release authorization (2026-10-26)
+
+F31-R01 DONE: v0.24.1 formal remote release verified, HACS15files exact, core
+check pass; one guarded restart, runtime/new eight default names and all registry
+identities/custom names verified. Stored curves/native flags unchanged at upgrade
+checkpoint; 233.1s protector pause restored without execution. Report
+ docs/zetlight-0241-deployment-20261026.md. Receipt is a local follow-up, not pushed.
+F31-A01 source: explicit user approval to enable weather/storm actual control,
+plus direct user confirmation of vendor-app pump clock matching Beijing. Approved,
+Codex/P1, DONE: both initial states true, clock_confirmed true. Brief protected
+reload1.06s; only three authorized config fields changed, four rules on, no new
+protector/weather/storm execution during transaction. No forced weather test;
+physical adverse-weather acceptance remains untested. Blueprint bytes unchanged.
+Spectrum question answered as dated private AI proposal, not applied actual record.
+Next proposed PAR/placement-based tuning before coral introduction, strong reasoning;
+no further physical acceptance or schedule change authorized.
+
+F31-D01 low-priority documentation follow-up: async_lightning method docstring
+still says white+blue/no purple, unlike the corrected public description and
+actual A+B implementation. Proposal, Codex, no output change or release authority;
+next correct that remaining internal prose in a future source maintenance window.

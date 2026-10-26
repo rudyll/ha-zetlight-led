@@ -1,3 +1,29 @@
+## Latest: 0.24.1 deployed; weather/storm explicitly released — 2026-10-26
+
+F31-R01/F31-A01 DONE, readback16:01:39+08. Official v0.24.1 final7d82b99,
+manifest/tag/latest exact release notes verified; HACS15files exact, core check
+pass. One guarded restart (timeout/502 observed, not repeated); actual runtime and
+all eight corrected channel/viewing defaults verified, old IDs/custom names intact.
+GTS0.7.0 unchanged. Upgrade preserved native flags/stored curves; 233.1s guard pause
+restored without action. HA lamp power unknown/schedule intent remains limitation.
+
+User then explicitly authorized enabling weather/storm with actual pump/lamp
+control, and confirmed vendor-app pump clock matches Beijing. Baseline both rules
+already on/idle, paused during upgrade. Persistent initial_state true for both plus
+storm clock_confirmed true (human evidence), only three config fields changed.
+Protected global automation reload1.06s, both protectors restored without execution;
+final all four rules on, no new weather/storm trigger during transaction. No forced
+storm or physical-effect test, no blueprint installation/new monitor/scheduler.
+
+Report docs/zetlight-0241-deployment-20261026.md; private evidence/proposed spectrum
+in ignored.private/channel-labels-deploy-20261026. Recommendations NOT applied,
+not actual tank/water records. Receipt local only. One remaining internal lightning
+docstring tracked F31-D01 proposal; public docs describe actual A+B correctly.
+Next proposed pre-coral species/placement/PAR tuning uses strong reasoning;
+no additional physical test or schedule write authorized.
+
+---
+
 ## Latest: F31 channel labels and source evidence corrected — 2026-10-26
 
 Source-only DONE: A白光 / B UV紫光 / C深蓝 / D浅蓝, including viewing labels.
