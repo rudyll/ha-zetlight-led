@@ -284,3 +284,38 @@ tagged code. Primary GTS private-history branch must never be pushed.
 No HA installation/reload/import, activation, device action or monitor. Actual
 local HACS UI refresh not checked. Next possible deployment/migration/physical
 acceptance remains unapproved, strong reasoning; no automatic device work.
+
+## F29 / GTS-R13 — paired HA upgrade, no device test (2026-10-26)
+
+Source: Rudy explicitly requests HA GTS/Zetlight and blueprint upgrades, weather/
+storm disabled and no actual pump/lamp operation. Subsequently explicitly approves
+one HA restart and temporary suspension/restoration of the two startup/reload
+controllers (feeding/maintenance and skimmer protection); lamp startup clock sync
+is disclosed. Codex/P1; depends completed F28/R11 publication. ACTIVE: HACS native
+specific-version downloads installed0.7.0/0.23.0;33tagged files exact hash/Python
+syntax verified.14existing blueprints updated; only two OFF draft configs migrated
+(weather baseline gains and relative storm, clock_confirmed false);113other
+automations preserved. Native draft structure validation passed; core check and
+single guarded restart/runtime validation pending. Private backup/evidence is
+under /private/tmp/reef-ha-upgrade-20261026 and HA private release backup folder;
+no raw bindings in public docs. Success requires loaded entry/new service/max200,
+weather/storm still OFF/untriggered, helper modes unchanged, controllers restored
+and no pump/lamp control service used. No publish/new monitor/hardware test.
+Next complete one authorized guarded restart/readback, strong reasoning.
+
+### F29 / GTS-R13 closure — 2026-10-26
+
+Codex/P1. DONE for explicitly requested HA upgrade and blueprint migration.
+HACS0.7.0/0.23.0 installed and runtime verified after one approved guarded restart.
+33component hashes/syntax, native draft validation/core check PASS;14runtime
+blueprints error-free. TwoOFFdrafts updated (relative storm with clock confirmation
+false);113other definitions preserved. Both control rules restored without
+execution after241.9s pause; helpers/gain/curves unchanged. Weather/storm
+stillOFF/current0/nevertriggered. HACSno pending restart. Lamp on/off unknown is
+explicit optimistic-state limitation; schedule/no error verified, no turn_on sent.
+No pump/lamp/outlet service action or physical test; approved startup clock sync
+only. Receipt Zetlight docs/ha-upgrade-20261026.md; actual bindings/backup/evidence
+remain private/ignored. No monitor, export or new publication.
+Next possible enablement/supervised acceptance is unapproved, strong reasoning.
+F29-E01: startup edge_tts error observed, out of these integration domains;
+diagnosis only a proposal for the kitchen-assistant owner, not a blocker/fix claim.

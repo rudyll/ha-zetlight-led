@@ -1,3 +1,28 @@
+## Latest: HA upgraded,14blueprints verified, weather/storm still OFF — 2026-10-26
+
+F29/GTS-R13 DONE for installation/runtime upgrade, verified2026-10-26T13:37:48+08:00.
+Native HACS installed GTS0.7.0/Zetlight0.23.0;33tagged component hashes and syntax
+PASS, native draft validation/core check PASS. One explicitly authorized guarded
+restart completed after a response timeout/initial502; no repeat restart. Loaded
+entries, runtime versions/new storm service/max200 verified. HACS versions match,
+no pending restart.14blueprints visible/error-free; only two OFF draft definitions
+migrated,113other automations unchanged. Weather/storm remain OFF/current0/untriggered,
+initial_state false; storm clock_confirmed false. Temporary two-rule guards/file
+were restored exactly and rules re-enabled without execution (241.9s pause).
+
+Pump reports on/tide and stored pump/lamp curves unchanged. Lamp reports unknown
+on/off but schedule mode with no error/pending recovery; physical on/off was not
+inferred and no turn_on issued. No pump/lamp/outlet control service or physical
+test; disclosed/approved startup lamp clock sync only. Backup/raw bindings remain
+private; compact durable evidence ignored.private/ha-upgrade-20261026 (Zetlight).
+Safe report Zetlight docs/ha-upgrade-20261026.md. No public push/release, monitoring
+or real-tank data/export change. These local documentation receipts are unpushed.
+
+Next possible weather/storm enablement/supervised acceptance requires separate
+scoped authorization (strong reasoning); no ready authorized device action.
+
+---
+
 ## Latest: paired official releases published and verified — 2026-10-26
 
 Rudy explicitly authorized publication. GTS0.7.0/v0.7.0 oncf199460 and Zetlight
