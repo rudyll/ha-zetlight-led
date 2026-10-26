@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.24.1 — 2026-10-26
 
 - Correct Chinese channel/viewing labels for the tested M5-80M: A white,
   B UV violet, C royal blue, D ice blue. Preserve entity IDs, custom names,
@@ -9,6 +9,14 @@
   blueprint. Input keys/actions remain compatible; existing bindings are not
   migrated. Verify the chosen output is blue, rather than M5-M B UV violet.
 
+
+- Software verification: 120 tests and 52 subtests pass; channel/viewing names
+  change only, with unchanged executable control paths and blueprint bindings.
+- Upgrade: existing custom entity names remain unchanged. Reloading the integration
+  or restarting HA is required for new default names; use an approved maintenance
+  window because startup automations and lamp clock sync may execute. Existing
+  moonlight blueprint instances must have their channel selections reviewed;
+  this release does not rebind or enable them.
 
 ## 0.24.0 — 2026-10-26
 

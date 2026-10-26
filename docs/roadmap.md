@@ -404,3 +404,14 @@ A+B rather than white+blue/no-purple; executable AST unchanged. No HA access,
 install/restart or output changes. System Python lacked pytest; successful full
 run used existing /opt/miniconda3/bin/python.
 Next release/install is pending explicit scope; strong reasoning.
+
+
+### F31-R01 — publish/install corrected labels (2026-10-26)
+
+Rudy says “做吧” to the stated publication/HA upgrade next step. Approved; Codex/P1.
+Scope 0.24.1 formal release, HACS install and same guarded single HA restart with
+two startup/reload controllers paused and restored. No output setting changes;
+weather/storm remain off. Success: remote version/tag/release exact, installed
+bytes/runtime labels verified, identities/configuration/curves preserved, controllers
+restored without action. ACTIVE; next release then guarded deployment, strong reasoning.
+Spectrum discussion is recommendation only, not authorization to write a schedule.
