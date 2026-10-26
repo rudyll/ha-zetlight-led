@@ -603,3 +603,14 @@ persistedfalse without reload. No pump/lamp command, curve adoption, component
 installation, release or new monitor. F35-D01 OPEN: obtain coordinated release/
 installation authority, reread and confirm user's current curve as100% baseline,
 verify runtime and explicitly resume rules. F34 deployment remains behind F35.
+
+### F35-P01 — versioned release preparation (2026-10-26)
+
+Source: Rudy“继续”; Codex/P1; F35 source checks prerequisite. DONE for local
+preparation: manifests0.8.0/0.25.0, matching changelog and release bodies, unchanged
+tested executable/blueprint hashes, public remote heads/tag availability and
+private-history exclusion verified. Existing75/164tests and41/91subtests reused,
+not rerun. No push/tag/Release/HA/device mutation. See headroom-release-preflight-
+20261026.md. F35-D01/R14-D01 OPEN pending explicit publication/guarded-install
+scope; weather/storm remain disabled and current lamp adoption separate. Strong
+reasoning next. DualKey firmware not included.

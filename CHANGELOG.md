@@ -1,13 +1,14 @@
 # Changelog
 
-## Unreleased — F35
+## 0.25.0 — 2026-10-26
 
 - Correct verified marine M5 live0x13 to raw0–200%; retain legacy encoding for unverified model codes. Channel/viewing/lightning limits follow model range; generic HA brightness semantics stay compatible. Historical accepted frames did not prove percentage encoding.
 - Bound stored-program scaling by baseline channel headroom. Read current curve before writing; refuse external-App edits, including old100% restoration. Add explicit no-lamp-write baseline adoption with revision history.
-- Pair weather and storm blueprints with App-unit GTS gain metadata and dynamic full-day headroom; peak and gap both bounded. Requires coordinated integration/blueprint/instance migration. See docs/output-headroom.md. Not installed or hardware-accepted.
+- Pair weather and storm blueprints with App-unit GTS gain metadata and dynamic full-day headroom; peak and gap both bounded. Requires coordinated integration/blueprint/instance migration. See docs/output-headroom.md.
 
-## Unreleased
 
+- Add a sunrise/sunset viewing-profile blueprint. It selects day/night brightness;
+  entering/exiting viewing remains manual and existing saved inputs are preserved.
 - Bound viewing by a persistent30minute deadline or a verified next lamp boundary.
   Unsupported/stale/invalid timing falls back to30minutes; no guessed nodes.
 - Read standard M5 timing from verified0x10 layout; expose nullable schedule timing
@@ -16,11 +17,28 @@
   drops expired, invalid and legacy unbounded saved viewing. Physical return waits
   for HA availability if HA was down. This affects upgrade behavior.
 - Separate failed control recovery from feeding expiry; an old retry cannot end
-  a new feeding session.156tests/91subtests PASS plus native HA synthetic checks.
+  a new feeding session.
 - Coordinate installation with DualKey DK-R14: its updated key blueprint requires
   the actual feeding/maintenance coordinator and must precede free-key firmware.
-  No live installation, publication or physical acceptance is claimed.
+  No DualKey firmware is installed by this integration release.
 
+
+- Software verification:164 tests/91 subtests, native HA validation of both paired
+  blueprint instances and actual template-to-GTS-service simulations passed with
+  fake transports. Physical light output/flow acceptance remains separate.
+- Upgrade: disable weather/storm, install paired GTS0.8.0 capability, update both
+  imported blueprints and saved instance inputs, then restart/reload at an approved
+  time. Startup can sync lamp clock and reconcile saved temporary modes; an expired
+  or legacy unbounded viewing session ends on startup. Do not enable until checked.
+- Known migration issue: the retained HA lamp baseline may differ from an App edit.
+  Do not force old100% recovery. Fresh-read and explicitly adopt the current lamp
+  program only after confirmation; adoption archives the previous HA baseline and
+  sends no lamp command. Weather scaling still writes the lamp's saved program.
+- The live0x13 encoding correction changes actual requested percentages on the
+  verified marine M5. Recheck photo/lightning appearance; historical replies did
+  not prove percentage accuracy. No physical acceptance is claimed by unit tests.
+- This release does not install DualKey firmware, grant light-key unlock, create
+  schedules, enable weather/storm, or synchronize the phone's local preset library.
 
 ## 0.24.1 — 2026-10-26
 
