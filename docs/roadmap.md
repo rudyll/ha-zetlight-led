@@ -258,3 +258,14 @@ validation, joint simulation, version/body/private-history checks PASS. Report
 docs/release-preflight-20261026.md. Known F27-A01 label-width issue remains proposal,
 now included in candidate known limitations; no HA/device change or publication.
 Next F28 formal release decision, strong reasoning.
+
+### F28-R01 / GTS-R11 publication authorization — 2026-10-26
+
+Source: Rudy explicitly says “可以” to formal paired publication of GTS0.7.0 and
+Zetlight0.23.0. Codex/P1, dependencies F28-P01/R11-P01 complete. ACTIVE: authorize
+final default-branch push, matching vtags and non-draft/non-prerelease GitHub
+Releases with exact reviewed changelog notes, followed by remote verification.
+Scope excludes HA installation/reload/import/activation and all device actions.
+Use isolated public GTS tree, never primary private acceptance-history branch.
+Success: remote versions/tags/final commit/official status/exact notes match.
+Next complete and record actual remote readback, strong reasoning.
