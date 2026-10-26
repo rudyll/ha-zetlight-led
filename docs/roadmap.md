@@ -191,3 +191,11 @@ F25-P01's previous80..100 tidal profile is superseded as a design, preserved in
 actual disabled HA drafts/history. Fixed65/45 storm draft is not final gain policy.
 No activation authority inferred; prior GitHub push remains4570ae9, local gain
 changes are unpublished until the paired capability/policy is ready.
+
+### F26 GitHub source update authorized (2026-10-26)
+
+Rudy explicitly requests GitHub updates too. Publish the matching GTS gain
+source/tests and weather capability/default correction, without a HACS release
+or HA/device change. GTS publication uses an isolated tree based on publicmain
+to exclude unrelated local raw acceptance history. Source publication does not
+close F26-P01 baseline-relative manual storm or enable either HA draft.

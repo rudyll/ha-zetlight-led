@@ -44,21 +44,21 @@
 | whole_tank_acclimation | **整缸驯化**:每天同时升灯「调光比例」+泵「潮汐强度」 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_acclimation.yaml) |
 | whole_tank_weather_dimming | **旧版整缸天气调暗**：灯和泵共用百分比；保留兼容，独立配置请用 v2 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_weather_dimming.yaml) |
 
-## 日常基线加增益：本地修正候选（2026-10-26）
+## 日常基线加增益：源码修正候选（2026-10-26）
 
 Rudy确认日常潮汐曲线已经调好：晴天应保持100%，天气恶劣时叠加增益，而不是先将
 晴天降到80再恢复100。前一版草稿不符合这个意图；下节旧草稿表保留为历史／现场状态，
 不能当成最新候选规则。
 
-本地源码候选分别设置：晴天100、多云100、阴天100、雨雪110、大风115、暴雨120、
+源码候选分别设置：晴天100、多云100、阴天100、雨雪110、大风115、暴雨120、
 雷暴130，增益上限130（可设10–200）。这些只是待核定的示例，不是实际设备配置。
 例如日常某段设置60，120%目标为72；每个时段从原始基线重新计算，回到100精确恢复。
 各结果仍受GTS既有原始功率上限99限制，削顶时峰值会变平；软件上限不是缸的安全流量。
 设置刻度增加20%也不证明实际流量增加20%。修改日常曲线前应先恢复100，避免混淆基线。
 
-需要同批GTS-R10未发布的增益实现（实体范围10–200），已发布0.6.2仍最多100。
+需要配套GTS-R10增益源码实现（尚未发布新的HACS版本）（实体范围10–200），已发布0.6.2仍最多100。
 天气候选检查实体实际max，超出能力时跳过泵写入，灯光分支独立；不会悄悄把130当100。
-本轮只改本地源码／测试，**未更新HA蓝图或草稿、未部署GTS、未推送这些修正**。
+本次GitHub更新仅同步配套源码与测试，**未更新HA蓝图或草稿、未部署GTS、未发布新的HACS版本**。
 当前HA两条关闭草稿仍是此前版本。固定65/45的手动风暴还须改为从日常基线计算，
 此前风暴候选不能直接与本次增益规则一起启用；后续F26-P01负责该项及联合验收。
 

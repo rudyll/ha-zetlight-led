@@ -1,3 +1,19 @@
+## Current publication: paired gain source, no HA deployment — 2026-10-26
+
+User explicitly authorizes GitHub update for the gain correction. Matching GTS
+source and weather-blueprint candidate published as source only; no HACS version/
+tag/release or HA edit. New source preserves normal100 and adds110..130 weather
+gain, guards old max100 entities. Original manual-storm fixed65/45 remains an
+open F26-P01 dependency before activation; neither existing HA draft is updated.
+
+GTS public tree excludes unrelated private raw acceptance commits and passes
+57tests/28subtests; weather source previously92tests/38subtests. Remote refs and
+source hashes must match after push; record actual verification in task reply.
+Next F26-P01 relative manual storm plus paired release/deployment proposal,
+strong reasoning. No device operation authorized by GitHub publication.
+
+---
+
 ## Latest: F26 corrects weather to positive daily-baseline gain — 2026-10-26
 
 User clarifies daily tidal curve is already tuned; normal must100, bad weather

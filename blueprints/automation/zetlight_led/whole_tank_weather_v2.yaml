@@ -1,14 +1,14 @@
 blueprint:
   name: 整缸联动 — 天气（灯光与造浪独立）v2 / Whole-tank weather v2
   description: |-
-    本地增益修正候选，尚未发布／部署。灯光和造浪分别配置七档天气；晴天造浪100保留既有日常曲线，雨天110、大风115、暴雨120、雷暴130为待核定示例。
+    增益修正源码候选，尚未发布HACS版本／部署。灯光和造浪分别配置七档天气；晴天造浪100保留既有日常曲线，雨天110、大风115、暴雨120、雷暴130为待核定示例。
     造浪只从保存的日常基线计算，100恢复原曲线；设备端各时段仍受原始功率上限约束，削顶时不能保证比例或实际流量同比变化。
-    依赖同批未发布GTS增益候选（上限200%）；旧版上限100时，超出实体能力的泵写入跳过，灯光分支独立执行。不能仅更改蓝图数字就宣称增益已生效。
+    依赖配套GTS增益源码候选（尚无HACS版本）（上限200%）；旧版上限100时，超出实体能力的泵写入跳过，灯光分支独立执行。不能仅更改蓝图数字就宣称增益已生效。
     喂食、维护、恢复及缺测时不写入。灯须已开且按日程运行；泵须已开、tide且非喂食。天气不明保持现状，不开泵、开灯或强切模式。
     原固定百分比手动风暴与相对基线增益尚未统一，现有风暴草稿不得视为已经符合该修正规则；启用前需一起核定。
     替换旧天气／驯化控制者，不能同时占用同一比例实体。示例值不是任何缸的实测安全配置。停用不会自动还原比例。
 
-    Local candidate:100% preserves the tuned daily tidal baseline, above100 adds bounded weather gain. Requires the matching unreleased GTS gain implementation.
+    Source candidate:100% preserves the tuned daily tidal baseline, above100 adds bounded weather gain. Requires the matching unreleased GTS gain implementation.
     Targets above the live entity maximum are skipped. Existing HA drafts are not changed by this source edit.
   domain: automation
   input:
