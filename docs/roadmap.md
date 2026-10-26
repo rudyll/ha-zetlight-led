@@ -537,3 +537,30 @@ guard exclusions; no implementation change requiring a new HACS release.
 Private evidence .private/viewing-sun-20261026/photo-update. Local receipt only,
 no push/release/HA restart/new monitor. F33-A01 physical photography/brightness
 acceptance remains open proposal; next ordinary user observation, normal model.
+
+
+### F34 — proposed bounded viewing and verified schedule-boundary return (2026-10-26)
+
+Rudy asks to exit viewing at the next normal spectral schedule change to permit
+free DualKey light key; cross-link M5Stack DK-R14. Advisory requested, Codex/P1;
+review DONE, implementation PROPOSAL. Current viewing stays on until explicitly
+turned off, and live0x13 preview holds beyond lamp schedule boundaries. Current
+schedule sensor exposes slot brightness tuples only, not start/durations/current
+phase. A sensor brightness/state change is NOT evidence of a clock boundary.
+Proposed next *verified lamp* boundary OR30min maximum, earliest; daily sun-based
+profile change is a different clock and must not be mislabeled as lamp schedule.
+Do not infer actual times from screenshots, defaults or planned presets. Verify/
+expose schedule timing first; until then a30min cap is the implementable fallback.
+Persistent deadline and startup reconciliation needed: timer.finished alone misses
+expiry while HA is stopped (official HA Timer documentation). End viewing through
+mode-aware state transition, never unconditional light.turn_on; manual power-off,
+feeding/maintenance and restore precedence preserved, including across restart.
+Inputs/data missing must not fabricate a boundary or reopen a manually off lamp.
+
+No code, live HA read/write, mode action, timer helper/automation creation or firmware
+installation performed. F33-P01 installed photo presets unchanged. F32-A01/F33-A01
+physical evidence gaps retained. Next proposed source/protocol timing verification,
+combined recovery/lease tests and DK-R14 compile, strong reasoning; separate scoped
+OTA/HA activation required before any real behavior change.
+Sources: https://www.home-assistant.io/integrations/timer/ and repository
+sensor.py/async_resume_schedule/firmware/key_actions_v2 source inspection.

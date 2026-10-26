@@ -1,3 +1,22 @@
+## Latest: F34观赏自动退出与灯键免解锁建议，未改现场 — 2026-10-26
+
+Rudy asks for selective free light-key controls with viewing auto-return at next
+scheduled spectral change. Advisory review: recommend deliberate2s light long press,
+keep feeding/maintenance dual-key unlock, combo suppression and existing interlocks;
+link M5Stack DK-R14. Add next verified lamp boundary or30min cap, earliest, with
+restart-aware deadline and manual-off precedence. Existing schedule sensor only
+exposes brightness slots, no phase clock/timestamps; cannot claim boundary-triggered
+exit is available. Sunrise/sunset profile changes are distinct from lamp schedule.
+
+F34 design proposal recorded, no firmware/integration/blueprint code change, HA/device
+access, helper/timer/automation creation or OTA. Existing F33 photo profile remains
+last deployed configuration; no runtime freshness claim from source-only inspection.
+DK-R11 reliability and F32/F33 physical acceptance gaps retained. Next proposed
+source verification/tests plus DK-R14 compile, strong reasoning; live activation
+not authorized by this advisory question.
+
+---
+
 ## Latest: F33-P01拍摄观赏白天配方与更暗夜间已生效 — 2026-10-26
 
 Verified2026-10-26T18:53:25+08:00. User approves recommended photo mix and asks for dimmer night.
