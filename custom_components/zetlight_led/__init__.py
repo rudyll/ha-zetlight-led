@@ -397,6 +397,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self._acclimation_base: list[tuple] | None = None
         self._acclimation_loaded = False
         self._acclimation_has_scale = False
+        self.schedule_conflict = False
         self.channels: list[int] = [0] * protocol.NUM_CHANNELS
         self._channels_seeded = False
         # Tunable custom-lightning parameters (set by number entities).
@@ -437,7 +438,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         # setpoints, not live on/off state (see docs §6).
         self.channel_count = len(status.setpoints) or protocol.NUM_CHANNELS
         if not self._channels_seeded:
-            self.channels = [max(0, min(100, s)) for s in status.setpoints]
+            self.channels = [max(0, min(self.channel_limit, s)) for s in status.setpoints]
             self._channels_seeded = True
         # Best-effort schedule read (0x10); don't fail the update if it errors.
         try:
@@ -512,7 +513,9 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self._generation += 1
         async with self._mode_lock:
             channels = list(self._manual_channels or self.channels)
-            channels[index] = max(0, min(100, value))
+            if type(value) is not int or not 0 <= value <= self.channel_limit:
+                raise HomeAssistantError("channel outside verified model range")
+            channels[index] = value
             self._manual_channels = channels
             self._power_off = False
             await self._apply_and_save_control()
@@ -520,7 +523,9 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
     async def async_set_all(self, level: int) -> None:
         self._generation += 1
         async with self._mode_lock:
-            self._manual_channels = [max(0, min(100, level))] * self.channel_count
+            if type(level) is not int or not 0 <= level <= self.channel_limit:
+                raise HomeAssistantError("brightness outside verified model range")
+            self._manual_channels = [level] * self.channel_count
             self._power_off = False
             await self._apply_and_save_control()
 
@@ -539,7 +544,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
                 return
             saved = tuple(self.channels)
             strokes = max(1, int(self.lightning_flashes))
-            peak = max(1, min(100, int(self.lightning_intensity)))
+            peak = max(1, min(self.channel_limit, int(self.lightning_intensity)))
             on_s = max(0.02, int(self.lightning_on_ms) / 1000)
             nch = len(saved)
             ru = random.uniform
@@ -646,7 +651,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         await asyncio.sleep(0.3)
         try:
             status = await self.client.async_read_status()
-            self.channels = [max(0, min(100, s)) for s in status.setpoints]
+            self.channels = [max(0, min(self.channel_limit, s)) for s in status.setpoints]
         except (ZetlightUDPError, ValueError):
             pass
         self.async_update_listeners()
@@ -831,7 +836,9 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
     async def async_set_viewing_level(self, index: int, value: int) -> None:
         self._generation += 1
         async with self._mode_lock:
-            self.viewing_levels[index] = max(0, min(100, int(value)))
+            if type(value) is not int or not 0 <= value <= self.channel_limit:
+                raise HomeAssistantError("viewing outside verified model range")
+            self.viewing_levels[index] = value
             if self.viewing_on:
                 await self._restore_current_intent()
 
@@ -843,7 +850,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             protocol.build_schedule_times(start_minute, durations)
             protocol.build_schedule_brightness(base)
             scale = self.acclimation_scale
-            target = [tuple(round(c * scale / 100) for c in slot) for slot in base]
+            target = self._scaled_schedule(base, scale)
             pending = {"base": base, "start": start_minute, "durations": durations}
             await self._acclimation_store.async_save({"base": self._acclimation_base,
                 "pending_schedule": pending, "scale": scale})
@@ -857,20 +864,82 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             self.schedule = target
             await self._restore_current_intent()
 
+    @property
+    def channel_limit(self):
+        return protocol.channel_limit(getattr(self.client, "device_code", protocol.DEFAULT_DEVICE_CODE))
+
+    @property
+    def max_schedule_gain(self):
+        base = self._acclimation_base if self._acclimation_base is not None else self.schedule
+        if not base or len(base) != protocol.NUM_SLOTS or any(len(row) != protocol.NUM_CHANNELS for row in base):
+            return 100
+        if any(type(v) is not int or not 0 <= v <= self.channel_limit for row in base for v in row):
+            return 100
+        peak = max(max(row) for row in base)
+        return min(200, self.channel_limit * 100 // peak) if peak else 100
+
+    def _scaled_schedule(self, base, value):
+        if (isinstance(value, bool) or not isinstance(value, (int, float))
+                or not math.isfinite(value) or not 10 <= value <= 200):
+            raise HomeAssistantError("schedule gain must be10..200")
+        # Validate every baseline channel BEFORE scaling or writing any time field.
+        protocol.build_schedule_brightness(base, device_code=getattr(self.client, "device_code", protocol.DEFAULT_DEVICE_CODE))
+        peak = max(max(row) for row in base)
+        if peak and value > self.channel_limit * 100 // peak:
+            raise HomeAssistantError("gain exceeds available channel headroom")
+        return [tuple(round(c * value / 100) for c in row) for row in base]
+
+    async def _read_current_curve(self):
+        raw = await self.client.async_read_config()
+        curve = protocol.parse_schedule_brightness(raw)
+        protocol.build_schedule_brightness(curve, device_code=getattr(self.client, "device_code", protocol.DEFAULT_DEVICE_CODE))
+        return curve
+
+    async def async_adopt_current_schedule(self, confirmed: bool):
+        """Explicitly accept an external edit as100%, without writing to the lamp."""
+        if confirmed is not True:
+            raise HomeAssistantError("explicit confirmation of current program required")
+        async with self._mode_lock:
+            await self._load_acclimation_base()
+            if self._pending_schedule is not None or self._pending_scale is not None:
+                raise HomeAssistantError("resolve pending recovery before adopting an external program")
+            current = await self._read_current_curve()
+            history = Store(self.hass, 1, self._acclimation_store.key + ".history")
+            record = await history.async_load() or {"revisions": []}
+            record["revisions"].append({"accepted_at": time.time(), "previous": await self._acclimation_store.async_load(), "accepted_curve": current})
+            await history.async_save(record)
+            await self._acclimation_store.async_save({"base": None, "scale": 100})
+            self._acclimation_base = None
+            self.acclimation_scale = 100
+            self._acclimation_has_scale = True
+            self.schedule_conflict = False
+            self.schedule = current
+            self.async_update_listeners()
+
     async def async_apply_acclimation(self, value: int) -> None:
-        if not 10 <= value <= 100:
-            raise HomeAssistantError("dimming must be between 10 and 100")
         self._generation += 1
         async with self._mode_lock:
             await self._load_acclimation_base()
             if self._pending_schedule is not None:
                 raise HomeAssistantError("retry the pending schedule before changing dimming")
+            current = await self._read_current_curve()
             if self._acclimation_base is None:
-                if not self.schedule:
-                    raise HomeAssistantError("complete current schedule required")
-                self._acclimation_base = [tuple(slot) for slot in self.schedule]
+                if self.acclimation_scale != 100:
+                    raise HomeAssistantError("missing100% baseline; explicitly adopt the current program")
+                self._acclimation_base = [tuple(slot) for slot in current]
             base = self._acclimation_base
-            target = [tuple(round(c * value / 100) for c in slot) for slot in base]
+            old_target = self._scaled_schedule(base, self.acclimation_scale)
+            permitted = [old_target]
+            if self._pending_scale is not None:
+                if value != self._pending_scale:
+                    raise HomeAssistantError("retry pending gain before selecting another value")
+                permitted.append(self._scaled_schedule(base, self._pending_scale))
+            if current not in permitted:
+                self.schedule_conflict = True
+                self.schedule = current
+                self.async_update_listeners()
+                raise HomeAssistantError("external schedule change: refusing to overwrite; explicitly adopt current program")
+            target = self._scaled_schedule(base, value)
             await self._acclimation_store.async_save({"base": base,
                 "scale": self.acclimation_scale, "pending_scale": value})
             self._pending_scale = value
@@ -881,6 +950,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             self._acclimation_base = next_base
             self.acclimation_scale = value
             self._pending_scale = None
+            self.schedule_conflict = False
             self.schedule = target
             await self._restore_current_intent()
 
@@ -894,7 +964,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             self._pending_scale = data.get("pending_scale")
             if "scale" in data:
                 scale = data["scale"]
-                if not isinstance(scale, int) or not 10 <= scale <= 100:
+                if type(scale) is not int or not 10 <= scale <= 200:
                     raise HomeAssistantError("invalid saved dimming scale; recovery required")
                 self.acclimation_scale = scale
                 self._acclimation_has_scale = True
@@ -1129,6 +1199,7 @@ async def _async_update_listener(
 
 SERVICE_SET_SCHEDULE = "set_schedule"
 SERVICE_SYNC_CLOCK = "sync_clock"
+SERVICE_ADOPT_SCHEDULE = "adopt_current_schedule"
 
 _SET_SCHEDULE_SCHEMA = vol.Schema(
     {
@@ -1240,6 +1311,13 @@ def _async_register_services(hass: HomeAssistant) -> None:
             except ZetlightUDPError as err:
                 raise HomeAssistantError(f"failed to sync clock: {err}") from err
 
+    async def handle_adopt_schedule(call: ServiceCall) -> None:
+        for coordinator in selected(call):
+            await coordinator.async_adopt_current_schedule(call.data["confirm_current"])
+
+    hass.services.async_register(DOMAIN, SERVICE_ADOPT_SCHEDULE, handle_adopt_schedule,
+        schema=vol.Schema({vol.Optional("entry_ids"): vol.All(cv.ensure_list, [cv.string]),
+                           vol.Required("confirm_current"): vol.In([True])}))
     hass.services.async_register(
         DOMAIN, SERVICE_SET_SCHEDULE, handle_set_schedule, schema=_SET_SCHEDULE_SCHEMA
     )
@@ -1259,6 +1337,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZetlightConfigEntry) ->
             if e.entry_id != entry.entry_id and e.state.recoverable
         ]
         if not loaded:
-            for service in (SERVICE_SET_SCHEDULE, SERVICE_SYNC_CLOCK):
+            for service in (SERVICE_SET_SCHEDULE, SERVICE_SYNC_CLOCK, SERVICE_ADOPT_SCHEDULE):
                 hass.services.async_remove(DOMAIN, service)
     return unload_ok

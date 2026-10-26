@@ -1,5 +1,10 @@
 # Zetlight / Horizon Aqua — M5 珊瑚灯通信协议分析
 
+> 2026-10-26 F35更正：已验证海水M5设备码01023A01的实时0x13与保存0x1C均为原始0–200百分比。
+> 下文历史“实时亮度BCD/100→AA”的语义解释已被厂家过驱型号分支证据推翻；历史帧字节保持原样，
+> 其硬件回复仅证明接受该帧，不能证明对应显示百分比。其他型号不能外推。详见[更正及迁移](output-headroom.md)。
+
+
 分析对象：Horizon Aqua 64-Bit 安卓版 **4.4.2**（包名 `com.zetlightgoogle`，Zetlight Group），
 内部版本串 `Horizon-4.4.2-202610140922_release`，原生 Android（Java/Kotlin），jadx 反编译，类名未混淆。
 设备：**M5-80M_AEDC45**，局域网 **10.10.10.138**（Espressif/ESP32）。

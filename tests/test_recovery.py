@@ -116,3 +116,39 @@ class RecoveryTests(unittest.IsolatedAsyncioTestCase):
         other,_=self.make();await other.async_restore_feeding()
         other.client.async_turn_off.assert_awaited_once()
         other.client.async_turn_on.assert_not_awaited()
+
+class HeadroomTests(unittest.IsolatedAsyncioTestCase):
+    setUp=RecoveryTests.setUp
+    make=RecoveryTests.make
+    async def test_model200_and_baseline_dependent_gain(self):
+        c,_=self.make();c.client.curve=[(160,100,20,0)]*5
+        await c.async_apply_acclimation(125)
+        self.assertEqual(c.client.curve,[(200,125,25,0)]*5)
+        self.assertEqual(c.max_schedule_gain,125)
+        before=dict(Store.saved)
+        with self.assertRaises(RuntimeError):await c.async_apply_acclimation(126)
+        self.assertEqual(Store.saved,before)
+        await c.async_apply_acclimation(100)
+        self.assertEqual(c.client.curve,[(160,100,20,0)]*5)
+    async def test_external_app_edit_refuses_all_writes_including_restore(self):
+        c,_=self.make();await c.async_apply_acclimation(50)
+        restored=[(20,100,80,75)]*5;c.client.curve=restored
+        c.client.async_write_brightness=AsyncMock();c.client.async_turn_on.reset_mock()
+        for value in [40,100]:
+            with self.assertRaisesRegex(RuntimeError,'external schedule change'):await c.async_apply_acclimation(value)
+        c.client.async_write_brightness.assert_not_awaited();c.client.async_turn_on.assert_not_awaited()
+        self.assertTrue(c.schedule_conflict)
+        with self.assertRaises(RuntimeError):await c.async_adopt_current_schedule(False)
+        await c.async_adopt_current_schedule(True)
+        self.assertEqual(c.acclimation_scale,100);self.assertFalse(c.schedule_conflict)
+        self.assertEqual(c.client.curve,restored)
+        self.assertEqual(len(Store.saved[c._acclimation_store.key+'.history']['revisions']),1)
+        c.client.async_write_brightness.assert_not_awaited();c.client.async_turn_on.assert_not_awaited()
+    async def test_missing_unknown_and_zero_do_not_offer_boost(self):
+        c,_=self.make();self.assertEqual(c.max_schedule_gain,100)
+        c.schedule=[(0,)*4]*5;self.assertEqual(c.max_schedule_gain,100)
+        c.schedule=[(201,)*4]*5;self.assertEqual(c.max_schedule_gain,100)
+    async def test_read_failure_never_writes(self):
+        c,_=self.make();c.client.async_read_config=AsyncMock(side_effect=OSError('offline'));c.client.async_write_brightness=AsyncMock()
+        with self.assertRaises(OSError):await c.async_apply_acclimation(50)
+        c.client.async_write_brightness.assert_not_awaited();self.assertEqual(Store.saved,{})

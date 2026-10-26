@@ -1,3 +1,31 @@
+## Latest: F35动态上限/曲线保护候选已验证，天气与风暴暂停 — 2026-10-26
+
+User confirms App selectable maximum119%, red homepage power condition stillunknown.
+GTS App-unit dynamic gain and verified M5 raw0x13/channel200 correction prepared;
+external App curve edits fail closed before write, explicit lamp-baseline adoption
+saves previous revision with no lamp command. Both blueprints and actual private
+instance migration candidate ready, NOT installed/published. Native2blueprint
+validation and joint actual-template→actual-service simulation PASS;75GTS/164Zetlight
+tests,41/91subtests PASS. See docs/output-headroom.md for units, source evidence,
+known limitations and preset/chart capability. F34 candidates remain uninstalled.
+
+Fresh private evidence found old lamp baseline differs from user's restored curve.
+Two idle weather/storm rules protectively turnedoff; initial_statefalse persisted
+without reload, guarded by exact original automations hash. No pump/lamp device
+service, preset/schedule write, baseline adoption, HA restart, component installation,
+serial access or new monitor. Keep OFF until coordinated migration, not just new
+blueprint numbers. Existing feeding/maintenance/skimmer rules untouched. Private
+snapshots and instance candidate in ignored.private/headroom-20261026; raw receipts
+and native/joint scripts in/private/tmp/reef-headroom-20261026. Public docs omitIDs.
+
+Next F35-D01 (strong reasoning): approved paired publication/install with known
+restart protections; reread current curve and confirm baseline adoption; verify
+runtime units/ranges before authorized weather/storm re-enable. Current proposal
+is not installation or release authority. GTS primary private-history checkout
+must NEVER be pushed; source public worktree/private/tmp/gts-weather-gain-public-20261026.
+
+---
+
 ## Latest: F34源码准备封存；F35上限与保存方案问题优先 — 2026-10-26
 
 F34/DK-R14 approved preparation complete:156Zetlight tests/91subtests,79controller

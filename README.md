@@ -41,11 +41,11 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | --- | --- |
 | Turn on / off | ✅ Working (device-verified commands `0x1E` / `0x1F`) |
 | Overall brightness | ✅ Working (device-verified command `0x13`) |
-| Per-channel A/B/C/D dimming | ✅ Working (four `number` sliders, 0–100%) |
+| Per-channel A/B/C/D dimming | ✅ Working (four `number` sliders, 0–200% for verified marine M5; other codes0–100%) |
 | Custom lightning effect | ✅ Working (`button.lightning`, tunable; A+B channel flash) |
 | Custom cloud effect | ✅ Working (`button.cloud`; ramp down → hold → up) |
 | Feeding / maintenance mode | ✅ Working (`switch.feeding_mode`; dim + auto-restore) |
-| Acclimation mode | ✅ `Acclimation` number scales your schedule's output (non-destructive; 100% restores; persists until changed) |
+| Acclimation mode | ✅ `Acclimation` number scales your schedule's output (writes the stored program; retained baseline restores at100%; external edits require explicit adoption) |
 | Clock sync | ✅ Working (`0x03`; button + auto on setup) |
 | Write daily schedule | ✅ `zetlight_led.set_schedule` (brightness + times verified; **overwrites stored program**) |
 | Read daily schedule | ✅ `sensor.schedule` (5×4 brightness, raw %) |
@@ -156,6 +156,8 @@ one-click import links — are in [`docs/blueprints.md`](docs/blueprints.md).
 > Home Assistant and the light are on different VLANs, allow UDP to the light on
 > port `8855`.
 
+See [output units, migration and preset capabilities](docs/output-headroom.md) for the unreleased headroom/protection correction.
+
 ## Development
 
 ```bash
@@ -206,7 +208,7 @@ Home Assistant  ──UDP :8855──►  灯  (EE…CC 请求 / DD…CC 回包 
 | --- | --- |
 | 开 / 关 | ✅ 可用（实测命令 `0x1E` / `0x1F`） |
 | 整体亮度 | ✅ 可用（实测命令 `0x13`） |
-| A/B/C/D 四通道独立调光 | ✅ 可用（4 个 `number` 滑杆，0–100%） |
+| A/B/C/D 四通道独立调光 | ✅ 可用（4 个 `number` 滑杆，已验证海水M5为0–200%；其他码0–100%） |
 | 在线状态轮询 | ✅ 每 30 秒读一次设备状态（`0x0C`） |
 | 特效 / 日程 / 模式 | 🚧 计划中 —— 见 [roadmap](docs/roadmap.md) |
 

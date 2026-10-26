@@ -18,9 +18,9 @@ class Sim:
  def __init__(self,states=None,inputs=None,mode='schedule',hook=None,wait_hook=None,fail=None):
   self.inputs={k:v['default']for k,v in BP['blueprint']['input'].items()if'default'in v};self.inputs.update(IDS);self.inputs.update(clock_confirmed=True);self.inputs.update(inputs or {})
   self.states={'weather.home':'lightning','fan.wave':'on','select.wave':'sine','select.run':'tide','light.coral':'on','switch.feed':'off','input_boolean.maint':'off','input_boolean.restore':'off','sensor.flow':'sine','input_boolean.owner':'off'}
-  self.states.update({'sensor.schedule':'24','number.gain':'130'});self.states.update(states or {});self.hour=12;self.baseline=[60]*24;self.schedule=[dict(hour=h,power=78,mode='sine')for h in range(24)];self.pending=False;self.mode=mode;self.calls=[];self.waits=[];self.hook=hook;self.wait_hook=wait_hook;self.fail=fail;self.stopped=False
+  self.states.update({'sensor.schedule':'24','number.gain':'130'});self.states.update(states or {});self.hour=12;self.baseline=[60]*24;self.schedule=[dict(hour=h,power=84,mode='sine')for h in range(24)];self.pending=False;self.mode=mode;self.calls=[];self.waits=[];self.hook=hook;self.wait_hook=wait_hook;self.fail=fail;self.stopped=False
  def attr(self,e,k):
-  return {('light.coral','active_mode'):self.mode,('sensor.schedule','schedule'):self.schedule,('number.gain','baseline_powers'):self.baseline,('number.gain','recovery_required'):self.pending}.get((e,k))
+  return {('light.coral','active_mode'):self.mode,('sensor.schedule','schedule'):self.schedule,('number.gain','baseline_powers'):self.baseline,('number.gain','recovery_required'):self.pending,('number.gain','gain_basis'):'app_percent',('number.gain','max'):11900//(max(self.baseline)+20) if self.baseline else 148,('number.gain','baseline_peak_app_percent'):max(self.baseline)+20 if self.baseline else max(x['power'] for x in self.schedule)+20}.get((e,k))
  def val(self,x):
   if isinstance(x,I):return self.inputs[x]
   if isinstance(x,dict):return{k:self.val(v)for k,v in x.items()}
@@ -67,14 +67,14 @@ class StormGainTests(unittest.TestCase):
  def test_peak_gap_and_restore(self):
   s=Sim();s.run()
   calls=[d for svc,e,d in s.calls if svc=='gts_wavepump.storm_gain']
-  self.assertEqual([float(d['gain'])for d in calls],[150,130]);self.assertEqual([d['wave_mode']for d in calls],['daily','daily'])
+  self.assertEqual([float(d['gain'])for d in calls],[148,130]);self.assertEqual([d['wave_mode']for d in calls],['daily','daily'])
   self.assertEqual([d['expected_run_mode']for d in calls],['tide','manual'])
   # Exit detected while waiting aborts the current run. Weather trigger reruns restoration.
   s.calls=[];s.run();self.assertEqual(s.states['select.run'],'tide');self.assertEqual(s.states['input_boolean.owner'],'off')
   self.assertFalse(any(svc in ['fan.set_percentage','fan.turn_on','light.turn_on']for svc,e,d in s.calls))
  def test_weather_gain_sets_gap_floor_without_compounding(self):
-  s=Sim({'number.gain':'140'});s.run();self.assertEqual([float(d['gain'])for svc,e,d in s.calls if svc=='gts_wavepump.storm_gain'],[]) # weather output84 exceeds raw cap80
-  s=Sim({'number.gain':'140'},inputs={'power_ceiling':90});s.run();self.assertEqual([float(d['gain'])for svc,e,d in s.calls if svc=='gts_wavepump.storm_gain'],[150,140])
+  s=Sim({'number.gain':'140'},inputs={'power_ceiling':80});s.run();self.assertEqual([float(d['gain'])for svc,e,d in s.calls if svc=='gts_wavepump.storm_gain'],[]) # weather output84 exceeds raw cap80
+  s=Sim({'number.gain':'140'},inputs={'power_ceiling':99});s.run();self.assertEqual([float(d['gain'])for svc,e,d in s.calls if svc=='gts_wavepump.storm_gain'],[148,140])
  def test_zero_night_missing_and_invalid_values(self):
   for case in ['zero','missing','pending','incomplete','invalid','clock','cap','attenuation','above_peak','unknown_gain','unknown_schedule','mode','missing_field','non_mapping']:
    s=Sim()
@@ -128,3 +128,13 @@ class StormGainTests(unittest.TestCase):
   self.assertFalse(BP['blueprint']['input']['clock_confirmed']['default'])
   self.assertNotIn('pump_wave_mode',BP['blueprint']['input'])
 if __name__=='__main__':unittest.main()
+
+class DynamicStormTests(unittest.TestCase):
+ def test_peak_depends_on_daily_max_and_service_declares_units(self):
+  for raw,expected in [(60,148),(80,119),(99,100)]:
+   s=Sim({'number.gain':'100'});s.baseline=[raw]*24;s.run()
+   calls=[d for svc,e,d in s.calls if svc=='gts_wavepump.storm_gain']
+   self.assertTrue(calls)
+   self.assertEqual(float(calls[0]['gain']),expected)
+   self.assertTrue(all(float(d['gain'])<=expected for d in calls))
+   self.assertTrue(all(d['gain_basis']=='app_percent' for d in calls))

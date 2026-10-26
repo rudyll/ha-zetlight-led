@@ -1,6 +1,6 @@
 blueprint:
   name: 整缸联动 — 相对增益风暴 / Daily-baseline storm gain
-  description: '需要 GTS 0.7.0 的 storm_gain 动作。峰值和间隔都按原始日常曲线计算，不叠乘天气增益；100%=日常，默认150/130，间隔至少等于当前天气增益。原始档位上限80只是候选值，不是实机安全保证。
+  description: '需要配套 App 百分比增益版本的 storm_gain 动作（源码候选）。峰值和间隔都按原始日常曲线计算，不叠乘天气增益；100%=日常，默认150/130，间隔至少等于当前天气增益。原始上限仍为0–99，较新泵App显示非零值加20，最高119；红色提示不作为上限证据。峰值按完整曲线余量动态下调，不是流量保证。
 
     保持24小时曲线不变；默认保留日常波形/周期。每小时重新核对夜间基线，零档不启动。天气增益高于峰值、上限低于当前天气输出、数据缺测或时钟未确认均不接管。
 
@@ -168,7 +168,7 @@ blueprint:
           unit_of_measurement: '%'
     power_ceiling:
       name: 原始功率档位上限（1–99）
-      default: 80
+      default: 99
       selector:
         number:
           min: 1
@@ -258,7 +258,7 @@ trigger:
   seconds: '0'
 action:
 - choose:
-  - conditions: '{% set gain = states(pump_tidal_gain) %}
+  - conditions: '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
       {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -293,12 +293,11 @@ action:
       120 and is_number(gap_min) and is_number(gap_max) and 3 <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states
       and states(storm_owner) in [''on'',''off''] and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual'')))
       and states(pump_schedule) not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false
-      and is_number(gain) and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode
-      in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float
-      / 100)|round(0)|int]|min <= power_ceiling|int }}'
+      and is_number(gain) and 100 <= gain|float <= peak_gain|float and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode
+      in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and ns.base[now().hour] > 0 and peak >= gain|float }}'
     sequence:
     - condition: template
-      value_template: '{% set gain = states(pump_tidal_gain) %}
+      value_template: '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
         {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -333,15 +332,14 @@ action:
         120 and is_number(gap_min) and is_number(gap_max) and 3 <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in
         storm_states and states(storm_owner) in [''on'',''off''] and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'')
         and is_state(pump_run_mode,''manual''))) and states(pump_schedule) not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'')
-        == false and is_number(gain) and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode
-        in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float
-        / 100)|round(0)|int]|min <= power_ceiling|int }}'
+        == false and is_number(gain) and 100 <= gain|float <= peak_gain|float and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode
+        in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and ns.base[now().hour] > 0 and peak >= gain|float }}'
     - service: input_boolean.turn_on
       target:
         entity_id: !input 'storm_owner'
     - repeat:
         while:
-        - '{% set gain = states(pump_tidal_gain) %}
+        - '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
           {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -377,11 +375,11 @@ action:
           <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off''] and (is_state(pump_run_mode,''tide'')
           or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule) not in [''unknown'',''unavailable'']
           and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain) and 100 <= gain|float <= peak_gain|float
-          and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
-          and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+          and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+          and ns.base[now().hour] > 0 and peak >= gain|float }}'
         sequence:
         - condition: template
-          value_template: '{% set gain = states(pump_tidal_gain) %}
+          value_template: '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
             {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -417,15 +415,15 @@ action:
             <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
             and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
             not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
-            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
-            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+            and 100 <= gain|float <= peak_gain|float and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and peak >= gain|float }}'
         - if: '{{ is_state(light_entity,''on'') and state_attr(light_entity,''active_mode'') == ''schedule'' }}'
           then:
           - service: button.press
             target:
               entity_id: !input 'lightning_button'
         - condition: template
-          value_template: '{% set gain = states(pump_tidal_gain) %}
+          value_template: '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
             {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -461,18 +459,20 @@ action:
             <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
             and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
             not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
-            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
-            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+            and 100 <= gain|float <= peak_gain|float and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and peak >= gain|float }}'
         - service: gts_wavepump.storm_gain
           target:
             entity_id: !input 'pump_fan'
           data:
-            gain: !input 'peak_gain'
+            gain: >-
+              {{ [peak_gain|float, gain_ceiling|float, state_attr(pump_tidal_gain, 'max')|float, ((power_ceiling|int+20)*100/(([1, state_attr(pump_tidal_gain, 'baseline_peak_app_percent')|float(9999)]|max)))|round(0,'floor')]|min }}
             power_ceiling: !input 'power_ceiling'
             wave_mode: !input 'surge_wave'
             expected_run_mode: '{{ states(pump_run_mode) }}'
             clock_confirmed: !input 'clock_confirmed'
-        - wait_template: '{% set gain = states(pump_tidal_gain) %}
+            gain_basis: app_percent
+        - wait_template: '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
             {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -508,13 +508,13 @@ action:
             <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
             and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
             not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
-            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
-            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int) }}'
+            and 100 <= gain|float <= peak_gain|float and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and peak >= gain|float) }}'
           timeout:
             seconds: '{{ range(burst_min|int, (burst_max|int)+1)|random }}'
           continue_on_timeout: true
         - condition: template
-          value_template: '{% set gain = states(pump_tidal_gain) %}
+          value_template: '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
             {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -550,18 +550,19 @@ action:
             <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
             and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
             not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
-            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
-            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+            and 100 <= gain|float <= peak_gain|float and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and peak >= gain|float }}'
         - service: gts_wavepump.storm_gain
           target:
             entity_id: !input 'pump_fan'
           data:
-            gain: '{{ [calm_gain|float, states(pump_tidal_gain)|float]|max }}'
+            gain: "{{ [[calm_gain|float, peak_gain|float, gain_ceiling|float, state_attr(pump_tidal_gain, 'max')|float, ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, 'baseline_peak_app_percent')|float(9999)]|max))|round(0,'floor')]|min, states(pump_tidal_gain)|float]|max }}"
             power_ceiling: !input 'power_ceiling'
             wave_mode: daily
             expected_run_mode: '{{ states(pump_run_mode) }}'
             clock_confirmed: !input 'clock_confirmed'
-        - wait_template: '{% set gain = states(pump_tidal_gain) %}
+            gain_basis: app_percent
+        - wait_template: '{% set gain = states(pump_tidal_gain) %} {% set limit = state_attr(pump_tidal_gain, ''max'') %} {% set peak = [peak_gain|float(-1), gain_ceiling|float(-1), limit|float(-1), ((power_ceiling|int+20)*100/([1, state_attr(pump_tidal_gain, ''baseline_peak_app_percent'')|float(9999)]|max))|round(0,''floor'')]|min %}
 
             {% set schedule = state_attr(pump_schedule, ''schedule'') %}
 
@@ -597,8 +598,8 @@ action:
             <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
             and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
             not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
-            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
-            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int) }}'
+            and 100 <= gain|float <= peak_gain|float and state_attr(pump_tidal_gain,''gain_basis'') == ''app_percent'' and is_number(limit) and ns.valid and ns.base|length == 24 and state_attr(pump_tidal_gain,''baseline_peak_app_percent'') == ((ns.base|max)+20) and peak <= ((power_ceiling|int + 20) * 100 / ((ns.base|max) + 20))|round(0,''floor'') and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and peak >= gain|float) }}'
           timeout:
             seconds: '{{ range(gap_min|int, (gap_max|int)+1)|random }}'
           continue_on_timeout: true

@@ -26,8 +26,8 @@ set_schedule:
     brightness:
       name: Per-slot brightness
       description: >-
-        Five slots, each a list of four channel values 0-100 in order
-        A (white), B (blue), C (color), D (purple).
+        Five slots, each four channel values in the verified model range (marine M5 0-200).
+        A white, B UV violet, C royal blue, D ice blue on the tested M5.
       required: true
       example: "[[2,18,18,2],[4,36,24,4],[10,90,60,10],[6,54,36,6],[3,27,18,3]]"
       selector:
@@ -36,3 +36,20 @@ set_schedule:
 sync_clock:
   name: Sync clock
   description: Set the device clock to Home Assistant's current local time.
+
+adopt_current_schedule:
+  name: Accept current lamp program as baseline
+  description: >-
+    Read the current lamp curve and explicitly accept it as the new100% baseline.
+    Keeps a revision of the prior HA baseline; sends no lamp write or mode command.
+    Does not import or change the phone App's preset library. Refuses pending recovery.
+  fields:
+    entry_ids:
+      name: Target config entry IDs
+      selector:
+        object:
+    confirm_current:
+      name: Confirm current program is the intended baseline
+      required: true
+      selector:
+        boolean:

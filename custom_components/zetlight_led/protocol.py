@@ -112,28 +112,30 @@ SET_LIGHT_PREFIX = 0x00
 SET_LIGHT_SUFFIX = 0x00
 
 
+def channel_limit(device_code: bytes = DEFAULT_DEVICE_CODE) -> int:
+    """Verified overclockable marine M5: raw percent0..200; other models retain100."""
+    return 200 if device_code == DEFAULT_DEVICE_CODE else 100
+
+
 def build_brightness(
     channels: tuple[int, int, int, int],
     *,
     device_code: bytes = DEFAULT_DEVICE_CODE,
 ) -> bytes:
-    """Build a dimming frame (CMD 0x13) for the four channels (each 0-100).
+    """Build live0x13 preview. Verified marine M5 uses raw0..200, NOT BCD.
 
-    Payload is ``<i> <c1> <c2> <c3> <c4> <i6>`` where ``i`` and ``i6`` are both
-    0x00 and each ``c`` is the BCD-encoded brightness (100 -> 0xAA). This is a
-    real-time preview command: it sets the live output but does NOT write the
-    device's stored time-curve program. Device-verified (docs §6b):
-
-    * all 10% -> ``EE000C01023A011300101010100027CC``
-    * all 100% -> ``EE000C01023A011300AAAAAAAA0027CC``
-
-    Accepts any channel count (detected per device), not just 4.
+    Other device codes keep legacy BCD0..100 until their encoding is verified.
+    Accepted historical BCD-shaped frames prove transport acceptance only, not
+    their claimed displayed percentages. This does not save the lamp schedule.
     """
     if not channels:
         raise ValueError("need at least one channel value")
+    limit = channel_limit(device_code)
+    if any(type(c) is not int or not 0 <= c <= limit for c in channels):
+        raise ValueError(f"channel value must be an integer0..{limit}")
     payload = (
         bytes([SET_LIGHT_PREFIX])
-        + bytes(_to_bcd(c) for c in channels)
+        + bytes(channels if device_code == DEFAULT_DEVICE_CODE else (_to_bcd(c) for c in channels))
         + bytes([SET_LIGHT_SUFFIX])
     )
     return build_frame(CMD_SET_LIGHT, payload, device_code=device_code)
@@ -183,9 +185,10 @@ def build_schedule_brightness(
     laid out ``slot0:A B C D, slot1:A B C D, ...``. Each channel byte is the
     **raw percentage** (device-verified 2026-10-21): the stored byte equals the
     displayed % (e.g. 50 -> 0x32, 100 -> 0x64). Values above 100 are allowed as
-    overdrive (the app shows them in red), so the byte may be 0-255.
+    overdrive (the app shows them in red), the verified marine M5 limit is200. Other model codes remain limited to100.
 
-    NOTE: this is *raw*, unlike the live 0x13 command which uses BCD (100->0xAA).
+    The verified marine M5 also uses raw percent for live0x13; legacy models
+    retain their BCD live encoding.
 
     WARNING: this overwrites the device's stored brightness program.
     """
@@ -196,8 +199,8 @@ def build_schedule_brightness(
         if len(slot) != NUM_CHANNELS:
             raise ValueError(f"each slot needs {NUM_CHANNELS} channel values")
         for c in slot:
-            if not 0 <= c <= 255:
-                raise ValueError("channel value must be 0-255")
+            if type(c) is not int or not 0 <= c <= channel_limit(device_code):
+                raise ValueError("schedule channel exceeds verified model range")
         payload += bytes(slot)
     return build_frame(CMD_SAVE_SCHEDULE, bytes(payload), device_code=device_code)
 

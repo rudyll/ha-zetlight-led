@@ -2,8 +2,8 @@ blueprint:
   name: 整缸联动 — 天气（灯光与造浪独立）v2 / Whole-tank weather v2
   description: |-
     增益修正源码候选，尚未发布HACS版本／部署。灯光和造浪分别配置七档天气；晴天造浪100保留既有日常曲线，雨天110、大风115、暴雨120、雷暴130为待核定示例。
-    造浪只从保存的日常基线计算，100恢复原曲线；设备端各时段仍受原始功率上限约束，削顶时不能保证比例或实际流量同比变化。
-    依赖配套GTS增益源码候选（尚无HACS版本）（上限200%）；旧版上限100时，超出实体能力的泵写入跳过，灯光分支独立执行。不能仅更改蓝图数字就宣称增益已生效。
+    造浪只从保存的日常基线计算，100恢复原曲线；按完整24段日常基线最高值计算余量，不再逐段削顶；增益不代表实测流量同比变化。
+    依赖配套GTS增益源码候选（尚无HACS版本）（上限随原始日常基线计算）；旧版上限100时，超出实体能力的泵写入跳过，灯光分支独立执行。不能仅更改蓝图数字就宣称增益已生效。
     喂食、维护、恢复及缺测时不写入。灯须已开且按日程运行；泵须已开、tide且非喂食。天气不明保持现状，不开泵、开灯或强切模式。
     原固定百分比手动风暴与相对基线增益尚未统一，现有风暴草稿不得视为已经符合该修正规则；启用前需一起核定。
     替换旧天气／驯化控制者，不能同时占用同一比例实体。示例值不是任何缸的实测安全配置。停用不会自动还原比例。
@@ -91,7 +91,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 1
           unit_of_measurement: '%'
     light_partly_pct:
@@ -100,7 +100,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 1
           unit_of_measurement: '%'
     light_cloudy_pct:
@@ -109,7 +109,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 1
           unit_of_measurement: '%'
     light_rainy_pct:
@@ -118,7 +118,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 1
           unit_of_measurement: '%'
     light_windy_pct:
@@ -127,7 +127,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 1
           unit_of_measurement: '%'
     light_pouring_pct:
@@ -136,7 +136,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 1
           unit_of_measurement: '%'
     light_storm_pct:
@@ -145,7 +145,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 100
+          max: 200
           step: 1
           unit_of_measurement: '%'
     pump_sunny_pct:
@@ -299,12 +299,12 @@ action:
   value_template: |-
     {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and bucket in light_levels }}
 - variables:
-    light_target: '{% set v = light_levels.get(bucket) %}{{ ([[v | float, 10] | max, 100] | min) | int if is_number(v)
+    light_target: '{% set v = light_levels.get(bucket) %}{{ ([[v | float, 10] | max, 200, state_attr(light_dimming, ''max'') | float(100)] | min) | int if is_number(v)
       else -1 }}'
     pump_target: |-
-      {% set v = pump_levels.get(bucket) %}{% if is_number(v) and is_number(pump_ceiling) %}{% set capped = [[v | float, pump_ceiling | float, 200] | min, 10] | max %}{{ ((capped / 5) | round(0, 'floor') * 5) | int }}{% else %}-1{% endif %}
+      {% set v = pump_levels.get(bucket) %}{% if is_number(v) and is_number(pump_ceiling) %}{% set cap = state_attr(pump_tidal, 'max') %}{% if is_number(cap) %}{{ [[v | float, pump_ceiling | float, cap | float] | min, 10] | max | round(0, 'floor') | int }}{% else %}-1{% endif %}{% else %}-1{% endif %}
 - if: |-
-    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_state(light_entity, 'on') and state_attr(light_entity, 'active_mode') == 'schedule' and state_attr(light_entity, 'schedule_recovery_required') != true and is_number(states(light_dimming)) and light_target | float >= 10 and (states(light_dimming) | float - light_target | float) | abs > 0.01 }}
+    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_state(light_entity, 'on') and state_attr(light_entity, 'active_mode') == 'schedule' and state_attr(light_entity, 'schedule_recovery_required') != true and state_attr(light_dimming, 'gain_basis') == 'saved_schedule' and state_attr(light_dimming, 'external_schedule_conflict') == false and is_number(state_attr(light_dimming, 'max')) and is_number(states(light_dimming)) and light_target | float >= 10 and (states(light_dimming) | float - light_target | float) | abs > 0.01 }}
   then:
   - service: number.set_value
     continue_on_error: true
@@ -313,7 +313,7 @@ action:
     data:
       value: '{{ light_target | int }}'
 - if: |-
-    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_number(pump_ceiling) and 10 <= pump_ceiling | float <= 200 and is_state(pump_fan, 'on') and is_state(pump_run_mode, 'tide') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and state_attr(pump_tidal, 'recovery_required') != true and is_number(states(pump_tidal)) and is_number(state_attr(pump_tidal, 'max')) and pump_target | float <= state_attr(pump_tidal, 'max') | float and pump_target | float >= 10 and (states(pump_tidal) | float - pump_target | float) | abs > 0.01 }}
+    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_number(pump_ceiling) and 10 <= pump_ceiling | float <= 200 and is_state(pump_fan, 'on') and is_state(pump_run_mode, 'tide') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and state_attr(pump_tidal, 'gain_basis') == 'app_percent' and state_attr(pump_tidal, 'recovery_required') == false and is_number(states(pump_tidal)) and is_number(state_attr(pump_tidal, 'max')) and pump_target | float <= state_attr(pump_tidal, 'max') | float and pump_target | float >= 10 and (states(pump_tidal) | float - pump_target | float) | abs > 0.01 }}
   then:
   - service: number.set_value
     continue_on_error: true

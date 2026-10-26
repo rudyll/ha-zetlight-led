@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — F35
+
+- Correct verified marine M5 live0x13 to raw0–200%; retain legacy encoding for unverified model codes. Channel/viewing/lightning limits follow model range; generic HA brightness semantics stay compatible. Historical accepted frames did not prove percentage encoding.
+- Bound stored-program scaling by baseline channel headroom. Read current curve before writing; refuse external-App edits, including old100% restoration. Add explicit no-lamp-write baseline adoption with revision history.
+- Pair weather and storm blueprints with App-unit GTS gain metadata and dynamic full-day headroom; peak and gap both bounded. Requires coordinated integration/blueprint/instance migration. See docs/output-headroom.md. Not installed or hardware-accepted.
+
 ## Unreleased
 
 - Bound viewing by a persistent30minute deadline or a verified next lamp boundary.

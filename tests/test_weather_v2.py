@@ -27,7 +27,7 @@ class Sim:
   self.states={'weather.home':weather,'light.coral':'on','number.light_scale':'100',
    'fan.wave':'on','number.tidal':'100','select.run':'tide','sensor.flow':'sine',
    'switch.feed':'off','input_boolean.maint':'off','input_boolean.restore':'off'}
-  self.states.update(states or {});self.attrs={('light.coral','active_mode'):'schedule',('number.tidal','max'):200}
+  self.states.update(states or {});self.attrs={('light.coral','active_mode'):'schedule',('number.tidal','max'):148,('number.tidal','gain_basis'):'app_percent',('number.tidal','recovery_required'):False,('number.light_scale','max'):200,('number.light_scale','gain_basis'):'saved_schedule',('number.light_scale','external_schedule_conflict'):False}
   self.attrs.update(attrs or {});self.calls=[];self.fail=set(fail);self.hook=hook
  def val(self,value):
   if isinstance(value,Input):return self.inputs[value]
@@ -99,7 +99,7 @@ class WeatherTests(unittest.TestCase):
   self.assertEqual(Sim('rainy',attrs={('light.coral','schedule_recovery_required'):True}).run(),[('number.set_value','number.tidal',110)])
   self.assertEqual(Sim('rainy',attrs={('number.tidal','recovery_required'):True}).run(),[('number.set_value','number.light_scale',60)])
  def test_ceiling_and_quantization_never_exceed_cap(self):
-  for cap,expected in [(200,120),(115,115),(73,70),(10,10),(67,65)]:
+  for cap,expected in [(200,120),(115,115),(73,73),(10,10),(67,67)]:
    s=Sim('pouring',inputs={'pump_ceiling':cap});s.run();self.assertEqual(int(s.states['number.tidal']),expected)
  def test_invalid_settings_are_skipped_and_numeric_bounds_held(self):
   for bad in ['nan','unknown',None]:
@@ -108,7 +108,7 @@ class WeatherTests(unittest.TestCase):
   for cap in [0,201,'unknown']:
    self.assertEqual(Sim('rainy',inputs={'pump_ceiling':cap}).run(),[('number.set_value','number.light_scale',60)])
   s=Sim('rainy',inputs={'light_rainy_pct':500,'pump_rainy_pct':200},states={'number.light_scale':'20','number.tidal':'20'});s.run()
-  self.assertEqual((s.states['number.light_scale'],s.states['number.tidal']),('100','130'))
+  self.assertEqual((s.states['number.light_scale'],s.states['number.tidal']),('200','130'))
  def test_repeated_run_is_idempotent(self):
   s=Sim('rainy');s.run();s.calls=[];self.assertEqual(s.run(),[])
  def test_weather_clear_restores_configured_normal_not_hardcoded_full(self):
@@ -151,7 +151,7 @@ class WeatherTests(unittest.TestCase):
   self.assertEqual(s.run(),[('number.set_value','number.tidal',100)])
  def test_gain_ceiling_is_independent_of_entity_cap(self):
   s=Sim('lightning',inputs={'pump_ceiling':120});s.run();self.assertEqual(s.states['number.tidal'],'120')
-  s=Sim('lightning',attrs={('number.tidal','max'):120});s.run();self.assertEqual(s.states['number.tidal'],'100')
+  s=Sim('lightning',attrs={('number.tidal','max'):120});s.run();self.assertEqual(s.states['number.tidal'],'120')
  def test_inputs_complete_and_all_whole_tank_names_brand_neutral(self):
   def walk(v):
    if isinstance(v,Input):self.assertIn(v,BP['blueprint']['input'])
@@ -165,3 +165,12 @@ class WeatherTests(unittest.TestCase):
    self.assertTrue(name.startswith('整缸联动 —'),(p,name));self.assertNotIn('积光',name)
 
 if __name__=='__main__':unittest.main()
+
+class HeadroomWeatherTests(unittest.TestCase):
+ def test_app_gain_clamps_dynamic_max_at_integer_step(self):
+  for maximum in [148,119,100]:
+   s=Sim('lightning',inputs={'pump_lightning_pct':200,'pump_ceiling':200},attrs={('number.tidal','max'):maximum})
+   s.run();self.assertLessEqual(float(s.states['number.tidal']),maximum)
+ def test_unknown_gain_basis_and_external_edit_do_not_write(self):
+  s=Sim('rainy',attrs={('number.tidal','gain_basis'):None,('number.light_scale','external_schedule_conflict'):True})
+  self.assertEqual(s.run(),[])

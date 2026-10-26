@@ -592,3 +592,14 @@ not a fixed148% gain. Confirmed observations versus suspected overwrite remain
 separate. Next inspect GTS/Zetlight control/curve-write paths and actual readonly
 configuration, prepare source/tests and concrete automation changes; strong reasoning.
 No push/release/restart or irreversible preset replacement authorized yet.
+
+F35 update: SOURCE/TEST PREPARED (not deployed). User confirms119 is App selectable
+maximum, not red indication. Dynamic App-unit gain, raw0x13 model correction,
+external-curve tripwire and explicit history-preserving adoption, both blueprints
+and private instance candidate ready.75GTS/164Zetlight tests with41/91subtests,
+native HA schema/action/trigger and joint three-baseline simulation PASS. See
+output-headroom.md. Actual weather/storm rules protectively paused; initial_state
+persistedfalse without reload. No pump/lamp command, curve adoption, component
+installation, release or new monitor. F35-D01 OPEN: obtain coordinated release/
+installation authority, reread and confirm user's current curve as100% baseline,
+verify runtime and explicitly resume rules. F34 deployment remains behind F35.

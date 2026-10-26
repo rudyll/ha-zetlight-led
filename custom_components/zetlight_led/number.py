@@ -46,7 +46,7 @@ async def async_setup_entry(
             ),
             ZetlightLightningParam(
                 coordinator, entry.entry_id, "lightning_intensity",
-                "Lightning intensity", 10, 100, 1, PERCENTAGE,
+                "Lightning intensity", 10, coordinator.channel_limit, 1, PERCENTAGE,
                 LIGHTNING_DEFAULT_INTENSITY, "mdi:brightness-percent",
             ),
             ZetlightLightningParam(
@@ -97,6 +97,7 @@ class ZetlightChannelNumber(CoordinatorEntity[ZetlightCoordinator], NumberEntity
         self, coordinator: ZetlightCoordinator, entry_id: str, index: int
     ) -> None:
         super().__init__(coordinator)
+        self._attr_native_max_value = coordinator.channel_limit
         self._index = index
         label = CHANNEL_LABELS[index]
         self._attr_translation_key = f"channel_{label.lower()}"
@@ -180,7 +181,7 @@ class ZetlightAcclimationNumber(CoordinatorEntity[ZetlightCoordinator], RestoreN
     _attr_translation_key = "acclimation_scale"
     _attr_mode = NumberMode.SLIDER
     _attr_native_min_value = 10
-    _attr_native_max_value = 100
+    _attr_native_max_value = 200
     _attr_native_step = 1
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_icon = "mdi:sprout"
@@ -204,8 +205,18 @@ class ZetlightAcclimationNumber(CoordinatorEntity[ZetlightCoordinator], RestoreN
             self.coordinator.acclimation_scale = int(self._value)
 
     @property
+    def native_max_value(self):
+        return self.coordinator.max_schedule_gain
+
+    @property
+    def extra_state_attributes(self):
+        return {"gain_basis": "saved_schedule", "channel_limit": self.coordinator.channel_limit,
+                "external_schedule_conflict": self.coordinator.schedule_conflict,
+                "writes_stored_program": True}
+
+    @property
     def native_value(self) -> float:
-        return self._value
+        return self.coordinator.acclimation_scale
 
     async def async_set_native_value(self, value: float) -> None:
         await self.coordinator.async_apply_acclimation(int(value))
@@ -262,6 +273,7 @@ class ZetlightViewingLevel(CoordinatorEntity[ZetlightCoordinator], RestoreNumber
         self, coordinator: ZetlightCoordinator, entry_id: str, index: int
     ) -> None:
         super().__init__(coordinator)
+        self._attr_native_max_value = coordinator.channel_limit
         self._index = index
         label = CHANNEL_LABELS[index]
         self._attr_translation_key = f"viewing_{label.lower()}"

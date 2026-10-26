@@ -102,27 +102,27 @@ def test_to_bcd_encoding():
 
 
 def test_build_brightness_all_10_percent():
-    # Verified on device: all channels at 10%.
+    # Manufacturer overclockable-model branch uses raw percent, not legacy BCD.
     assert (
         protocol.build_brightness((10, 10, 10, 10)).hex().upper()
-        == "EE000C01023A011300101010100027CC"
+        == "EE000C01023A0113000A0A0A0A0027CC"
     )
 
 
 def test_build_brightness_all_100_percent():
-    # Verified on device: all channels at 100% (BCD special-cased to 0xAA).
+    # Earlier accepted 0xAA frames proved transport, not100% semantics.
     assert (
         protocol.build_brightness((100, 100, 100, 100)).hex().upper()
-        == "EE000C01023A011300AAAAAAAA0027CC"
+        == "EE000C01023A011300646464640027CC"
     )
 
 
 def test_build_brightness_mixed_channels():
-    # (0, 30, 55, 100) -> payload i(00) + 00 30 55 AA + i6(00)
+    # (0,30,55,100) are raw percent bytes on the verified M5.
     frame = protocol.build_brightness((0, 30, 55, 100))
     assert frame[0] == protocol.REQUEST_HEADER
     assert frame[7] == protocol.CMD_SET_LIGHT
-    assert frame[8:14] == bytes.fromhex("00003055AA00")
+    assert frame[8:14] == bytes.fromhex("00001E376400")
     assert frame[-1] == protocol.TRAILER
 
 
@@ -273,3 +273,12 @@ def test_schedule_builders_reject_wrong_counts():
         protocol.build_schedule_brightness([(0, 0, 0, 0)])  # not 5 slots
     with pytest.raises(ValueError):
         protocol.build_schedule_times(0, [60, 60])  # not 5 durations
+
+
+def test_verified_model_limit_and_unknown_legacy_encoding():
+    assert protocol.build_brightness((200,)*4)[9:13] == bytes([200]*4)
+    assert protocol.build_brightness((100,)*4,device_code=bytes.fromhex("01020001"))[9:13] == bytes([0xAA]*4)
+    for bad in [201,255,True,-1]:
+        with pytest.raises(ValueError): protocol.build_brightness((bad,)*4)
+        with pytest.raises(ValueError): protocol.build_schedule_brightness([(bad,)*4]*5)
+    with pytest.raises(ValueError): protocol.build_brightness((101,)*4,device_code=bytes.fromhex("01020001"))

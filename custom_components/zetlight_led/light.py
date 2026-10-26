@@ -81,6 +81,7 @@ class ZetlightLight(CoordinatorEntity[ZetlightCoordinator], LightEntity):
                 "viewing_deadline_unix": self.coordinator._viewing_deadline,
                 "command_error": self.coordinator.command_error,
                 "schedule_recovery_required": self.coordinator._pending_schedule is not None or self.coordinator._pending_scale is not None,
+                "max_app_channel_percent": self.coordinator.channel_limit,
                 "state_confirmation": "optimistic"}
 
     @property
