@@ -1,3 +1,20 @@
+## Latest: F33观赏用途更正为无滤镜拍摄，现场未改 — 2026-10-26
+
+Rudy clarifies viewing means phone/camera photography with natural fish colour and
+coral fluorescence, without clip-on filters. Prior F32 dim/blue recommendation did
+not match that purpose; software/deployment success is not photo-quality acceptance.
+F32-A01 retains actual brightness/button/night evidence gap and adds photo quality.
+F33 advice uses first-hand coral fluorescence photography plus aquarium camera
+sources: white/blue balance can reduce cast, cannot promise barrier-filter isolation
+by LED mix alone. Dated private candidate saved separately from deployed settings.
+
+No HA access or output/config change this turn. Last deployed F32 remains unchanged;
+recommendation is not an installed/manufacturer-tested spectrum. No export/scheduler
+or publication. Next proposed approved photo comparison and preset tuning F33-A01,
+strong reasoning; no further device action authorized by the advisory question.
+
+---
+
 ## Latest: F32昼夜观赏已安装启用 — 2026-10-26
 
 Verified2026-10-26T17:33:20+08:00. User approved concrete levels, guarded reload and button-only

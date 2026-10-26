@@ -492,3 +492,19 @@ Success: observe ordinary viewing on/off by button and brighter day/dimmer night
 exit returns schedule. Not executed; no forced sun state or remote mode toggles.
 Next record user observation when convenient, normal model. No further remote
 physical test or publication is authorized. F31-D01 remains visible proposal.
+
+
+### F33 — viewing intent corrected to unfiltered photography (2026-10-26)
+
+Source: Rudy clarifies viewing is for phone/camera photography, fish colour and
+coral fluorescence without a clip-on filter. Requested advice; Codex/P1. The F32
+low-blue display recommendation did not target this goal. F32 logic/deployment
+evidence remains valid, but F32-A01 now also needs photography quality acceptance;
+do not infer that a correct day/night preset proves acceptable photo colour.
+Evidence-based advisory DONE: more white plus retained blue excitation, camera WB
+and filter limits explained. Personal candidate and confirmed goal remain in ignored
+.private/viewing-sun-20261026/photography-goal-and-proposal-20261026.json; no HA read/
+write this turn, no implementation or install authorized. Current deployed recipe
+unchanged. Next proposed F33-A01: approved short photo comparison with actual camera
+and neutral reference, then choose/set viewing inputs; strong reasoning. No new
+controller, schedule, HACS release, monitor or handoff-export change proposed.
