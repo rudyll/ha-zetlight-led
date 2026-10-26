@@ -1,0 +1,622 @@
+blueprint:
+  name: 整缸联动 — 相对增益风暴 / Daily-baseline storm gain
+  description: '需要 GTS 0.7.0 的 storm_gain 动作。峰值和间隔都按原始日常曲线计算，不叠乘天气增益；100%=日常，默认150/130，间隔至少等于当前天气增益。原始档位上限80只是候选值，不是实机安全保证。
+
+    保持24小时曲线不变；默认保留日常波形/周期。每小时重新核对夜间基线，零档不启动。天气增益高于峰值、上限低于当前天气输出、数据缺测或时钟未确认均不接管。
+
+    仅接管运行中的tide，不启动关闭的泵或灯。喂食、维护及恢复期间让行；接管标记持久保存，之后仅将自己持有的manual恢复tide。不清除用户手动模式。
+
+    这是独立新蓝图，旧风暴v2仍为绝对百分比；不要同时启用两份风暴。迁移时重新选择新增实体和上限，先退出旧风暴并核对接管标记。
+
+    闪电仅在灯开启且按日程运行时执行。命令失败后停止后续动作并保留接管标记，需检查运行轨迹；不能撤回已发出的命令。'
+  domain: automation
+  input:
+    weather_entity:
+      name: 天气实体 / Weather entity
+      selector:
+        entity:
+          filter:
+          - domain: weather
+    lightning_button:
+      name: 闪电按钮 / Lightning button
+      selector:
+        entity:
+          filter:
+          - integration: zetlight_led
+            domain: button
+    pump_fan:
+      name: 造浪泵 / Wave pump
+      description: 选择本自动化要接管的造浪泵。
+      selector:
+        entity:
+          filter:
+          - domain: fan
+    pump_run_mode:
+      name: 泵运行模式选择器 / Pump run-mode select
+      description: 选择运行模式。只接管 tide，或本自动化已持有的 manual；退出后恢复 tide，不接管用户手动模式。
+      selector:
+        entity:
+          filter:
+          - integration: gts_wavepump
+            domain: select
+    surge_wave:
+      name: 大浪波形 / Surge wave mode
+      default: daily
+      selector:
+        select:
+          custom_value: true
+          options:
+          - daily
+          - surge
+          - turbulence
+          - pulse
+      description: daily保留当前小时的日常波形和周期；其他选项仅改变峰值波形，间隔仍恢复日常波形。
+    burst_min:
+      name: 每阵大浪最短（秒） / Burst min (s)
+      default: 8
+      selector:
+        number:
+          min: 2
+          max: 120
+          unit_of_measurement: s
+    burst_max:
+      name: 每阵大浪最长（秒） / Burst max (s)
+      default: 12
+      selector:
+        number:
+          min: 2
+          max: 120
+          unit_of_measurement: s
+    gap_min:
+      name: 两阵之间最短（秒） / Gap min (s)
+      default: 90
+      selector:
+        number:
+          min: 3
+          max: 600
+          unit_of_measurement: s
+    gap_max:
+      name: 两阵之间最长（秒） / Gap max (s)
+      default: 180
+      selector:
+        number:
+          min: 3
+          max: 600
+          unit_of_measurement: s
+    storm_states:
+      name: 算作雷暴的天气状态 / Storm weather states
+      default:
+      - lightning
+      - lightning-rainy
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options:
+          - lightning
+          - lightning-rainy
+          - pouring
+          - hail
+    light_entity:
+      name: 珊瑚灯 / Coral light
+      description: 灯已开启且按日程运行时才闪电，关灯或观赏／手动模式不闪。
+      selector:
+        entity:
+          filter:
+          - domain: light
+    feeding_switch:
+      name: 喂食开关 / Feeding switch
+      description: 喂食或状态缺测时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: switch
+    maintenance_toggle:
+      name: 维护开关 / Maintenance
+      description: 维护或缺测时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    maintenance_restore_marker:
+      name: 维护恢复标记 / Maintenance restore
+      description: 使用整缸喂食维护v2的恢复标记，恢复未完成时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    pump_flow_mode:
+      name: 泵实际流态 / Pump flow
+      description: 选择实际流态，喂食／停止／缺测时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: sensor
+    storm_owner:
+      name: 风暴接管标记 / Storm ownership
+      description: 专用持久开关，只供这条自动化使用；不要手动打开。首次应为关闭。
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    peak_gain:
+      name: 峰值／日常基线
+      default: 150
+      selector:
+        number:
+          min: 100
+          max: 200
+          step: 1
+          unit_of_measurement: '%'
+    calm_gain:
+      name: 间隔／日常基线
+      default: 130
+      selector:
+        number:
+          min: 100
+          max: 200
+          step: 1
+          unit_of_measurement: '%'
+    gain_ceiling:
+      name: 增益上限
+      default: 160
+      selector:
+        number:
+          min: 100
+          max: 200
+          step: 1
+          unit_of_measurement: '%'
+    power_ceiling:
+      name: 原始功率档位上限（1–99）
+      default: 80
+      selector:
+        number:
+          min: 1
+          max: 99
+          step: 1
+          unit_of_measurement: 档
+    pump_schedule:
+      name: GTS 24小时潮汐日程
+      selector:
+        entity:
+          filter:
+          - domain: sensor
+            integration: gts_wavepump
+    pump_tidal_gain:
+      name: GTS 潮汐强度增益
+      selector:
+        entity:
+          filter:
+          - domain: number
+            integration: gts_wavepump
+    clock_confirmed:
+      name: 已确认泵时钟与 HA 本地时间一致
+      description: 集成不能读回泵时钟，未人工核实前保持关闭。跨时区／夏令时变化后重新核实。
+      default: false
+      selector:
+        boolean: {}
+mode: restart
+variables:
+  weather_entity: !input 'weather_entity'
+  lightning_button: !input 'lightning_button'
+  pump_fan: !input 'pump_fan'
+  pump_run_mode: !input 'pump_run_mode'
+  surge_wave: !input 'surge_wave'
+  burst_min: !input 'burst_min'
+  burst_max: !input 'burst_max'
+  gap_min: !input 'gap_min'
+  gap_max: !input 'gap_max'
+  storm_states: !input 'storm_states'
+  light_entity: !input 'light_entity'
+  feeding_switch: !input 'feeding_switch'
+  maintenance_toggle: !input 'maintenance_toggle'
+  maintenance_restore_marker: !input 'maintenance_restore_marker'
+  pump_flow_mode: !input 'pump_flow_mode'
+  storm_owner: !input 'storm_owner'
+  peak_gain: !input 'peak_gain'
+  calm_gain: !input 'calm_gain'
+  gain_ceiling: !input 'gain_ceiling'
+  power_ceiling: !input 'power_ceiling'
+  pump_schedule: !input 'pump_schedule'
+  pump_tidal_gain: !input 'pump_tidal_gain'
+  clock_confirmed: !input 'clock_confirmed'
+trigger:
+- platform: state
+  entity_id:
+  - !input 'weather_entity'
+  - !input 'feeding_switch'
+  - !input 'maintenance_toggle'
+  - !input 'maintenance_restore_marker'
+- platform: state
+  entity_id: !input 'pump_fan'
+  from: 'off'
+  to: 'on'
+- platform: state
+  entity_id: !input 'pump_flow_mode'
+  from: feed
+- platform: state
+  entity_id:
+  - !input 'pump_fan'
+  - !input 'pump_run_mode'
+  - !input 'pump_flow_mode'
+  from: unavailable
+- platform: state
+  entity_id:
+  - !input 'pump_fan'
+  - !input 'pump_run_mode'
+  - !input 'pump_flow_mode'
+  from: unknown
+- platform: homeassistant
+  event: start
+- platform: state
+  entity_id: !input 'pump_tidal_gain'
+  to: null
+- platform: state
+  entity_id: !input 'pump_schedule'
+- platform: time_pattern
+  minutes: '0'
+  seconds: '0'
+action:
+- choose:
+  - conditions: '{% set gain = states(pump_tidal_gain) %}
+
+      {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+      {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+      {% set ns = namespace(valid=true, base=[]) %}
+
+      {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+      {% else %}{% for s in schedule %}
+
+      {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'') <= 99
+      or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false %}{% endif
+      %}
+
+      {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+      {% if saved is not none %}
+
+      {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+      {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false %}{% endif
+      %}{% endfor %}{% endif %}
+
+      {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+      {{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker, ''off'')
+      and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode) in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+      and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse''] and is_number(peak_gain) and is_number(calm_gain)
+      and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float <= gain_ceiling|float <= 200 and is_number(power_ceiling)
+      and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min|int <= burst_max|int <=
+      120 and is_number(gap_min) and is_number(gap_max) and 3 <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states
+      and states(storm_owner) in [''on'',''off''] and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual'')))
+      and states(pump_schedule) not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false
+      and is_number(gain) and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode
+      in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float
+      / 100)|round(0)|int]|min <= power_ceiling|int }}'
+    sequence:
+    - condition: template
+      value_template: '{% set gain = states(pump_tidal_gain) %}
+
+        {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+        {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+        {% set ns = namespace(valid=true, base=[]) %}
+
+        {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+        {% else %}{% for s in schedule %}
+
+        {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'') <=
+        99 or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false %}{%
+        endif %}
+
+        {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+        {% if saved is not none %}
+
+        {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+        {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false %}{%
+        endif %}{% endfor %}{% endif %}
+
+        {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+        {{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker, ''off'')
+        and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode) in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+        and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse''] and is_number(peak_gain) and is_number(calm_gain)
+        and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float <= gain_ceiling|float <= 200 and is_number(power_ceiling)
+        and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min|int <= burst_max|int <=
+        120 and is_number(gap_min) and is_number(gap_max) and 3 <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in
+        storm_states and states(storm_owner) in [''on'',''off''] and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'')
+        and is_state(pump_run_mode,''manual''))) and states(pump_schedule) not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'')
+        == false and is_number(gain) and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode
+        in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float
+        / 100)|round(0)|int]|min <= power_ceiling|int }}'
+    - service: input_boolean.turn_on
+      target:
+        entity_id: !input 'storm_owner'
+    - repeat:
+        while:
+        - '{% set gain = states(pump_tidal_gain) %}
+
+          {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+          {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+          {% set ns = namespace(valid=true, base=[]) %}
+
+          {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+          {% else %}{% for s in schedule %}
+
+          {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'') <=
+          99 or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false %}{%
+          endif %}
+
+          {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+          {% if saved is not none %}
+
+          {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+          {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false %}{%
+          endif %}{% endfor %}{% endif %}
+
+          {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+          {{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker, ''off'')
+          and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode) in
+          [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse'']
+          and is_number(peak_gain) and is_number(calm_gain) and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float
+          <= gain_ceiling|float <= 200 and is_number(power_ceiling) and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and is_number(burst_max)
+          and 2 <= burst_min|int <= burst_max|int <= 120 and is_number(gap_min) and is_number(gap_max) and 3 <= gap_min|int <= gap_max|int
+          <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off''] and (is_state(pump_run_mode,''tide'')
+          or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule) not in [''unknown'',''unavailable'']
+          and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain) and 100 <= gain|float <= peak_gain|float
+          and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+          and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+        sequence:
+        - condition: template
+          value_template: '{% set gain = states(pump_tidal_gain) %}
+
+            {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+            {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+            {% set ns = namespace(valid=true, base=[]) %}
+
+            {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% for s in schedule %}
+
+            {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'')
+            <= 99 or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false
+            %}{% endif %}
+
+            {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+            {% if saved is not none %}
+
+            {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false
+            %}{% endif %}{% endfor %}{% endif %}
+
+            {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+            {{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker,
+            ''off'') and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode)
+            in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse'']
+            and is_number(peak_gain) and is_number(calm_gain) and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float
+            <= gain_ceiling|float <= 200 and is_number(power_ceiling) and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and
+            is_number(burst_max) and 2 <= burst_min|int <= burst_max|int <= 120 and is_number(gap_min) and is_number(gap_max) and 3
+            <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
+            and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
+            not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
+            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+        - if: '{{ is_state(light_entity,''on'') and state_attr(light_entity,''active_mode'') == ''schedule'' }}'
+          then:
+          - service: button.press
+            target:
+              entity_id: !input 'lightning_button'
+        - condition: template
+          value_template: '{% set gain = states(pump_tidal_gain) %}
+
+            {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+            {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+            {% set ns = namespace(valid=true, base=[]) %}
+
+            {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% for s in schedule %}
+
+            {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'')
+            <= 99 or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false
+            %}{% endif %}
+
+            {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+            {% if saved is not none %}
+
+            {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false
+            %}{% endif %}{% endfor %}{% endif %}
+
+            {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+            {{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker,
+            ''off'') and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode)
+            in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse'']
+            and is_number(peak_gain) and is_number(calm_gain) and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float
+            <= gain_ceiling|float <= 200 and is_number(power_ceiling) and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and
+            is_number(burst_max) and 2 <= burst_min|int <= burst_max|int <= 120 and is_number(gap_min) and is_number(gap_max) and 3
+            <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
+            and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
+            not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
+            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+        - service: gts_wavepump.storm_gain
+          target:
+            entity_id: !input 'pump_fan'
+          data:
+            gain: !input 'peak_gain'
+            power_ceiling: !input 'power_ceiling'
+            wave_mode: !input 'surge_wave'
+            expected_run_mode: '{{ states(pump_run_mode) }}'
+            clock_confirmed: !input 'clock_confirmed'
+        - wait_template: '{% set gain = states(pump_tidal_gain) %}
+
+            {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+            {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+            {% set ns = namespace(valid=true, base=[]) %}
+
+            {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% for s in schedule %}
+
+            {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'')
+            <= 99 or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false
+            %}{% endif %}
+
+            {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+            {% if saved is not none %}
+
+            {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false
+            %}{% endif %}{% endfor %}{% endif %}
+
+            {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+            {{ not (is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker,
+            ''off'') and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode)
+            in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse'']
+            and is_number(peak_gain) and is_number(calm_gain) and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float
+            <= gain_ceiling|float <= 200 and is_number(power_ceiling) and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and
+            is_number(burst_max) and 2 <= burst_min|int <= burst_max|int <= 120 and is_number(gap_min) and is_number(gap_max) and 3
+            <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
+            and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
+            not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
+            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int) }}'
+          timeout:
+            seconds: '{{ range(burst_min|int, (burst_max|int)+1)|random }}'
+          continue_on_timeout: true
+        - condition: template
+          value_template: '{% set gain = states(pump_tidal_gain) %}
+
+            {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+            {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+            {% set ns = namespace(valid=true, base=[]) %}
+
+            {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% for s in schedule %}
+
+            {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'')
+            <= 99 or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false
+            %}{% endif %}
+
+            {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+            {% if saved is not none %}
+
+            {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false
+            %}{% endif %}{% endfor %}{% endif %}
+
+            {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+            {{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker,
+            ''off'') and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode)
+            in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse'']
+            and is_number(peak_gain) and is_number(calm_gain) and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float
+            <= gain_ceiling|float <= 200 and is_number(power_ceiling) and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and
+            is_number(burst_max) and 2 <= burst_min|int <= burst_max|int <= 120 and is_number(gap_min) and is_number(gap_max) and 3
+            <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
+            and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
+            not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
+            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int }}'
+        - service: gts_wavepump.storm_gain
+          target:
+            entity_id: !input 'pump_fan'
+          data:
+            gain: '{{ [calm_gain|float, states(pump_tidal_gain)|float]|max }}'
+            power_ceiling: !input 'power_ceiling'
+            wave_mode: daily
+            expected_run_mode: '{{ states(pump_run_mode) }}'
+            clock_confirmed: !input 'clock_confirmed'
+        - wait_template: '{% set gain = states(pump_tidal_gain) %}
+
+            {% set schedule = state_attr(pump_schedule, ''schedule'') %}
+
+            {% set saved = state_attr(pump_tidal_gain, ''baseline_powers'') %}
+
+            {% set ns = namespace(valid=true, base=[]) %}
+
+            {% if schedule is not sequence or schedule is string or schedule|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% for s in schedule %}
+
+            {% if s is not mapping or s.get(''hour'') != loop.index0 or s.get(''power'') is not integer or not 0 <= s.get(''power'')
+            <= 99 or s.get(''mode'') not in [''constant'',''pulse'',''sine'',''turbulence'',''surge'',''off''] %}{% set ns.valid=false
+            %}{% endif %}
+
+            {% set ns.base=ns.base+[s.get(''power'')] if s is mapping else ns.base %}{% endfor %}{% endif %}
+
+            {% if saved is not none %}
+
+            {% if saved is not sequence or saved is string or saved|length != 24 %}{% set ns.valid=false %}
+
+            {% else %}{% set ns.base=saved %}{% for p in saved %}{% if p is not integer or not 0 <= p <= 99 %}{% set ns.valid=false
+            %}{% endif %}{% endfor %}{% endif %}
+
+            {% elif gain|float(-1) != 100 %}{% set ns.valid=false %}{% endif %}
+
+            {{ not (is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker,
+            ''off'') and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_fan, ''on'') and states(pump_flow_mode)
+            in [''constant'',''pulse'',''sine'',''turbulence'',''surge''] and (clock_confirmed == true and surge_wave in [''daily'',''surge'',''turbulence'',''pulse'']
+            and is_number(peak_gain) and is_number(calm_gain) and is_number(gain_ceiling) and 100 <= calm_gain|float <= peak_gain|float
+            <= gain_ceiling|float <= 200 and is_number(power_ceiling) and 1 <= power_ceiling|int <= 99 and is_number(burst_min) and
+            is_number(burst_max) and 2 <= burst_min|int <= burst_max|int <= 120 and is_number(gap_min) and is_number(gap_max) and 3
+            <= gap_min|int <= gap_max|int <= 600) and states(weather_entity) in storm_states and states(storm_owner) in [''on'',''off'']
+            and (is_state(pump_run_mode,''tide'') or (is_state(storm_owner,''on'') and is_state(pump_run_mode,''manual''))) and states(pump_schedule)
+            not in [''unknown'',''unavailable''] and state_attr(pump_tidal_gain,''recovery_required'') == false and is_number(gain)
+            and 100 <= gain|float <= peak_gain|float and ns.valid and ns.base|length == 24 and schedule[now().hour].mode in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']
+            and ns.base[now().hour] > 0 and [99, (ns.base[now().hour] * gain|float / 100)|round(0)|int]|min <= power_ceiling|int) }}'
+          timeout:
+            seconds: '{{ range(gap_min|int, (gap_max|int)+1)|random }}'
+          continue_on_timeout: true
+- if: '{{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker, ''off'')
+    and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(storm_owner,''on'') and (is_state(pump_run_mode,''tide'')
+    or (is_state(pump_run_mode,''manual'') and is_state(pump_fan, ''on'') and states(pump_flow_mode) in [''constant'',''pulse'',''sine'',''turbulence'',''surge'']))
+    }}'
+  then:
+  - if: '{{ is_state(pump_run_mode,''manual'') }}'
+    then:
+    - service: select.select_option
+      target:
+        entity_id: !input 'pump_run_mode'
+      data:
+        option: tide
+  - condition: template
+    value_template: '{{ is_state(feeding_switch, ''off'') and is_state(maintenance_toggle, ''off'') and is_state(maintenance_restore_marker,
+      ''off'') and state_attr(light_entity, ''active_mode'') != ''feeding'' and is_state(pump_run_mode,''tide'') }}'
+  - service: input_boolean.turn_off
+    target:
+      entity_id: !input 'storm_owner'

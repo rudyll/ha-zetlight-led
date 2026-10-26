@@ -220,3 +220,18 @@ No device operation or handoff export change. PAR/specific coral/wavelength data
 limits retained. F27-P01 proposed PAR/placement assessment. F27-A01 proposed
 sensor channel-label width correction, and future sun-template target/offset/
 time-preservation design; no code fix claimed. Codex/P2, strong reasoning.
+
+## F26-P01 — relative manual storm source closure (2026-10-26)
+
+Source: Rudy asks to wait for storm-relative gain before release, then “做吧”.
+Authorization: source/tests/local commit only; no HA/device change or release.
+Owner Codex/P1, dependencies GTS-R10/R12. SOURCE/TEST COMPLETE: new additive
+whole_tank_storm_gain plus GTS storm_gain; immutable baseline, gap weather floor,
+raw/gain caps, original-hour timing, zero/off guard, owned restore and interlocks.
+102tests/52subtests and paired GTS70/41 pass; offline native HA validation and
+actual-template→fan-method daytime/night simulations pass. docs/storm-gain.md
+records defaults, migration and unverified hardware/clock bounds. Old v2 unchanged.
+This supersedes earlier unfinished source status, not physical acceptance.
+F28 remains HELD pending explicit formal-release approval; prepared changelog and
+matching release body updated. Next F28 release review (strong reasoning), then
+separately approved installation and supervised acceptance; no automatic activation.

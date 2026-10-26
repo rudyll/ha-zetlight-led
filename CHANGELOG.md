@@ -8,14 +8,17 @@
 - Pump gain above100 requires GTS Wave Pump0.7.0 or newer with the matching entity
   range. Targets above the live entity maximum are skipped, not silently applied
   as stronger flow. Existing0.6.2 installs remain limited to100.
-- Add an opt-in storm v2 blueprint with bounded bursts, persistent ownership and
-  feeding/maintenance/restore guards. It still uses absolute burst setpoints;
-  baseline-relative manual storm redesign is NOT included. Night policy and
-  actual tank-specific limits must be reviewed before enabling it.
+- Add a separate daily-baseline storm-gain blueprint: both phases use the original
+  current-hour daily curve; gap gain never falls below weather gain. Enforce caps,
+  off/night handling, persistent ownership and feeding/maintenance/restore guards.
+  Requires GTS0.7.0 storm_gain, schedule/gain entities and explicit clock agreement.
+  Legacy storm v2 keeps its absolute inputs; do not enable both for one pump.
+  Defaults150/130%, raw cap80 are candidates, not measured tank safety limits.
 - Include the unified feeding/maintenance v2 template and skimmer/return interlocks;
   name whole-tank templates generically to distinguish them from lamp-only ones.
-- 92 tests and38 subtests passed; expanded weather/storm actions passed native HA
-  validation. This is software/configuration evidence, not a physical intensity test.
+- 102 tests and52 subtests passed. The new expanded storm template passed offline
+  native HA validation; joint daytime/night simulations confirmed unchanged curves.
+  This is software evidence, not physical flow, lightning or restoration acceptance.
 - Upgrade: HACS integration updates do not replace imported blueprints or existing
   automation inputs. Reimport the desired template separately, preserve backups,
   confirm one writer per scaling entity, and keep candidates disabled until review.

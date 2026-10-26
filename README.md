@@ -237,3 +237,9 @@ HA 会发一个读探针，收到回包即确认可达，并自动识别设备�
 Aqua, M5-80M, aquarium light, reef tank, coral light, saltwater, marine
 aquarium, LED controller, 4-channel dimmer, local control, UDP, no cloud,
 海缸, 珊瑚灯, 水族灯, 本地控制, 智能家居.</sub>
+
+### Baseline-relative whole-tank storm candidate
+
+See [calculation, guards and migration](docs/storm-gain.md) for the new
+`whole_tank_storm_gain.yaml` template (requires GTS0.7.0). Existing storm v2
+retains its absolute setpoints; do not run both against one pump.
