@@ -1,9 +1,11 @@
 # Viewing brightness by sunrise / sunset
 
-Source candidate, 2026-10-26. Blueprint: `viewing_sun.yaml`.
+Deployed 2026-10-26. Blueprint: `viewing_sun.yaml`.
 This is a profile selector, not an automatic all-night viewing schedule.
-The requested distinction between those behaviours is awaiting owner confirmation.
-No installation, enablement or actual light-output acceptance has occurred.
+The owner confirmed button-controlled entry/exit with automatic profile selection.
+Installation, enablement and current-day local-profile application are verified;
+physical light-output acceptance remains untested. See
+[deployment evidence](viewing-sun-deployment-20261026.md).
 
 - Day: A/B/C/D = 10/10/30/25 by default. Night: 50% of day, rounded down,
   giving 5/5/15/12. Values are editable automation inputs, not measured PAR.
@@ -43,11 +45,9 @@ executed. A normalized native config uses plural triggers/actions fields.
 References: [HA sun](https://www.home-assistant.io/integrations/sun/),
 [HA automation triggers](https://www.home-assistant.io/docs/automation/trigger/).
 
-Before activation, confirm whether the owner wants button-controlled viewing with
-automatic brightness (this candidate), or automatic viewing on/off at sunset/sunrise
-(a different behaviour). Proposed installation needs no integration version bump
-or HA restart. A global automation reload can retrigger existing pump/skimmer
-protection: installation must use the established temporary guard-and-restore
-procedure. That deployment and first profile application remain pending scoped
-confirmation; do not silently replace the existing 90/50/60/25 viewing preset.
+The owner approved replacing the existing 90/50/60/25 viewing preset with the
+listed defaults. Installation required no integration version bump or HA restart.
+A global automation reload can retrigger existing pump/skimmer protection, so the
+established temporary guard-and-restore procedure was used. Any future installation
+must preserve that protection; source testing alone is not device acceptance.
 Private actual instance/baseline stay in ignored `.private/`.

@@ -467,3 +467,28 @@ remain pending; do not claim automation deployed. Next F32 user acceptance of
 button-controlled profile semantics, day10/10/30/25/night50%, then guarded HA
 blueprint install/reload/seed/readback; strong reasoning. Day/night percentages
 are recommendations, not actual records or optical output measurements.
+
+
+F32 activation authorization: Rudy replies “可以” to the concrete day10/10/30/25,
+night50%, button entry/exit and guarded automation reload proposal, then separately
+confirms profile-only semantics. Approved; Codex/P1 ACTIVE installation + preload
+and runtime/readback. No integration restart, schedule write, pump/light-mode test,
+GitHub push/release or automatic overnight viewing requested.
+
+
+F32 closure — installed and runtime-verified 2026-10-26T17:33:20+08:00. DONE for approved profile-only
+source/deployment scope: new rule enabled/persistent, current-day preset reads
+10/10/30/25. Protected single reload paused two guards1.23s, both restored
+without execution. New rule enabled and seeded only after guards restored; viewing
+remained off/schedule intent unchanged. Stored pump/lamp curves, existing blueprint
+and component bytes unchanged; existing rule configs preserved. Weather/storm on,
+no new triggers during transaction. No HA restart, real mode switch, new monitor,
+GitHub push/release. Report docs/viewing-sun-deployment-20261026.md; raw private.
+
+F32-A01 — physical day/night/button acceptance gap. Proposal; owner Rudy observation,
+Codex records; P2, depends deployed F32. Software134tests/83subtests and actual day
+local-preset readback do not prove optical output or sunset/sunrise transition.
+Success: observe ordinary viewing on/off by button and brighter day/dimmer night,
+exit returns schedule. Not executed; no forced sun state or remote mode toggles.
+Next record user observation when convenient, normal model. No further remote
+physical test or publication is authorized. F31-D01 remains visible proposal.

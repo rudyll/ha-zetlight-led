@@ -1,3 +1,25 @@
+## Latest: F32昼夜观赏已安装启用 — 2026-10-26
+
+Verified2026-10-26T17:33:20+08:00. User approved concrete levels, guarded reload and button-only
+entry/exit, then separately confirmed profile-only semantics. New HA rule enabled,
+persistent startup true. Day10/10/30/25; night50% floored5/5/15/12. Actual registry
+roles/same lamp verified. Current-day numbers read back10/10/30/25; viewing remained
+off and lamp schedule intent unchanged. No forced day/night or mode toggle.
+
+One protected automation reload; feeding/maintenance and skimmer guards paused
+1.23s then restored on/idle with no execution. Existing config entries, pump/lamp
+stored curves, blueprint/component bytes unchanged. Weather/storm remain on, no new
+trigger during transaction. No HA restart/component upgrade/GitHub publication,
+no monitor/scheduler. Private rollback and actual evidence retained, ignored
+.private/viewing-sun-20261026/deploy. Report docs/viewing-sun-deployment-20261026.md.
+
+F32 source/deploy DONE; F32-A01 physical button/brightness/night-transition evidence
+remains proposal, not tested. Next record ordinary user observation, normal model;
+no further remote output test authorized. Source134tests/83subtests and actual HA
+readonly validation previously passed. F31-D01 prose follow-up still proposal.
+
+---
+
 ## Latest: F32昼夜观赏候选已测试，未安装 — 2026-10-26
 
 User requests viewing automation based on sunset, dimmer until sunrise. Candidate
