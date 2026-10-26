@@ -1,0 +1,34 @@
+[
+  {
+    "repository": "rudyll/ha-gts-wavepump",
+    "version": "0.7.0",
+    "commit": "cf19946046f96c602ca2103ee99b2c98b5491bbf",
+    "tag": "v0.7.0",
+    "tag_object": "9935190040293e399398ff813fd50a572a4d5306",
+    "url": "https://github.com/rudyll/ha-gts-wavepump/releases/tag/v0.7.0",
+    "published_at": "2026-10-26T05:12:26Z",
+    "official": true,
+    "latest": true,
+    "manifest_tag_and_main_match": true,
+    "tag_targets_final_default_branch_commit": true,
+    "notes_exactly_match_changelog": true,
+    "notes_sha256": "81052362f86721bbfd29122c68f6f7602710fd1b9f7fbccf589ec24486083826",
+    "release_id": 423879255
+  },
+  {
+    "repository": "rudyll/ha-zetlight-led",
+    "version": "0.23.0",
+    "commit": "ca242cf14fba3fc9c554e030aec7d7a671ff13fb",
+    "tag": "v0.23.0",
+    "tag_object": "6dd8ebb8492114104f06a130bf8d35f2c553fd2a",
+    "url": "https://github.com/rudyll/ha-zetlight-led/releases/tag/v0.23.0",
+    "published_at": "2026-10-26T05:12:32Z",
+    "official": true,
+    "latest": true,
+    "manifest_tag_and_main_match": true,
+    "tag_targets_final_default_branch_commit": true,
+    "notes_exactly_match_changelog": true,
+    "notes_sha256": "56734c78ae79520a3790fcb8b98b9afa7578a6cc0e812b915955fedd14e83199",
+    "release_id": 423879301
+  }
+]

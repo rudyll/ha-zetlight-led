@@ -1,3 +1,24 @@
+## Latest: paired official releases published and verified — 2026-10-26
+
+Rudy explicitly authorized publication. GTS0.7.0/v0.7.0 oncf199460 and Zetlight
+0.23.0/v0.23.0 onca242cf1 are latest official non-draft/non-prerelease releases.
+Remote tag/main manifests, annotated tag targets and exact changelog/Release notes
+all verified. Tagged final contents were pushed BEFORE tags/Releases. Private GTS
+acceptance history excluded; primary private branch never pushed.
+
+F28/GTS-R11 DONE for publication. Safe receipt in Zetlight docs/release-publication-
+20261026.md/.json; private raw verification in /private/tmp/reef-releases-20261026.
+This post-publication documentation receipt is LOCAL ONLY, not pushed or tagged;
+remote release contents remain the verified commits above. No source changed,
+HA install/reload/import, automation activation, device action, export or monitor.
+Physical flow/clock/failure acceptance remains open. Previous pending/in-progress
+entries are historical and superseded by this observed completion.
+
+Next possible HA upgrade/blueprint migration and supervised acceptance requires
+separate scoped authorization (strong reasoning); no ready authorized device action.
+
+---
+
 ## Latest: paired formal publication authorized and in progress — 2026-10-26
 
 Rudy explicitly replies “可以” to publishing GTS0.7.0 and Zetlight0.23.0: push final

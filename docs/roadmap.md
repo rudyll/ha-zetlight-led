@@ -269,3 +269,18 @@ Scope excludes HA installation/reload/import/activation and all device actions.
 Use isolated public GTS tree, never primary private acceptance-history branch.
 Success: remote versions/tags/final commit/official status/exact notes match.
 Next complete and record actual remote readback, strong reasoning.
+
+### F28-R01 / GTS-R11 formal publication closure — 2026-10-26
+
+Rudy explicitly approved formal paired publication. Codex/P1; DONE for published
+release scope. GTSv0.7.0(cf199460) and Zetlightv0.23.0(ca242cf1), both latest,
+non-draft/non-prerelease. Remote manifest(tag/main), annotated tag targets and
+exact changelog/Release bodies verified. Tagged final default-branch contents
+pushed before tags/Release creation; private GTS acceptance history excluded.
+Safe receipt in Zetlight docs/release-publication-20261026.md/.json; private
+evidence /private/tmp/reef-releases-20261026/publication-verified.json. This ledger
+closure is a LOCAL ONLY post-release receipt; do not confuse its commit with the
+tagged code. Primary GTS private-history branch must never be pushed.
+No HA installation/reload/import, activation, device action or monitor. Actual
+local HACS UI refresh not checked. Next possible deployment/migration/physical
+acceptance remains unapproved, strong reasoning; no automatic device work.
