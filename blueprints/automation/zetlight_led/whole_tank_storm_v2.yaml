@@ -1,0 +1,297 @@
+blueprint:
+  name: 整缸联动 — 风暴 v2（喂食维护互锁） / Whole-tank storm v2
+  description: |-
+    雷暴时按随机间隔执行闪电和受上限约束的大浪。只接管潮汐模式，专用持久标记记录接管；天气退出后只恢复自己接管的泵到tide。
+    喂食、维护、恢复、泵关闭或状态缺测时立即停止后续动作，不为恢复而启动设备；条件恢复后再核对。
+    灯已开且按日程运行才闪电；灯关着也不被自动打开。普通下雨／暴雨默认不算雷暴。
+    65/45等默认百分比仅为草稿起点，不是实机安全强度。风暴强度是fan百分比，不是潮汐曲线缩放；闪电强度沿用灯的现有设置。
+    持续接管标记应仅供这一条自动化使用；停用／删除前先在非喂食维护状态退出风暴并确认标记清除，不能盲目清除标记或强行恢复。
+    不支持强制中止已经发送出去的一次闪电／命令，也不承诺服务失败时自动重试。
+
+    Bounded storm bursts with persistent ownership and feed/maintenance guards.
+    No automatic pump/light power-on. Review all draft limits before enabling.
+  domain: automation
+  input:
+    weather_entity:
+      name: 天气实体 / Weather entity
+      selector:
+        entity:
+          filter:
+          - domain: weather
+    lightning_button:
+      name: 闪电按钮 / Lightning button
+      selector:
+        entity:
+          filter:
+          - integration: zetlight_led
+            domain: button
+    pump_fan:
+      name: 造浪泵 / Wave pump
+      description: 选择本自动化要接管的造浪泵。
+      selector:
+        entity:
+          filter:
+          - domain: fan
+    pump_wave_mode:
+      name: 泵波形选择器 / Pump wave-mode select
+      selector:
+        entity:
+          filter:
+          - integration: gts_wavepump
+            domain: select
+    pump_run_mode:
+      name: 泵运行模式选择器 / Pump run-mode select
+      description: 选择运行模式。只接管 tide，或本自动化已持有的 manual；退出后恢复 tide，不接管用户手动模式。
+      selector:
+        entity:
+          filter:
+          - integration: gts_wavepump
+            domain: select
+    surge_wave:
+      name: 大浪波形 / Surge wave mode
+      default: surge
+      selector:
+        select:
+          custom_value: true
+          options:
+          - surge
+          - turbulence
+          - pulse
+    surge_percentage:
+      name: 大浪强度 / Surge intensity
+      default: 65
+      selector:
+        number:
+          min: 10
+          max: 100
+          unit_of_measurement: '%'
+    calm_percentage:
+      name: 平缓强度（两阵之间） / Calm intensity (between bursts)
+      default: 45
+      selector:
+        number:
+          min: 10
+          max: 100
+          unit_of_measurement: '%'
+    burst_min:
+      name: 每阵大浪最短（秒） / Burst min (s)
+      default: 8
+      selector:
+        number:
+          min: 2
+          max: 120
+          unit_of_measurement: s
+    burst_max:
+      name: 每阵大浪最长（秒） / Burst max (s)
+      default: 12
+      selector:
+        number:
+          min: 2
+          max: 120
+          unit_of_measurement: s
+    gap_min:
+      name: 两阵之间最短（秒） / Gap min (s)
+      default: 90
+      selector:
+        number:
+          min: 3
+          max: 600
+          unit_of_measurement: s
+    gap_max:
+      name: 两阵之间最长（秒） / Gap max (s)
+      default: 180
+      selector:
+        number:
+          min: 3
+          max: 600
+          unit_of_measurement: s
+    storm_states:
+      name: 算作雷暴的天气状态 / Storm weather states
+      default:
+      - lightning
+      - lightning-rainy
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options:
+          - lightning
+          - lightning-rainy
+          - pouring
+          - hail
+    storm_ceiling:
+      name: 风暴泵强度上限 / Storm pump ceiling
+      default: 65
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    light_entity:
+      name: 珊瑚灯 / Coral light
+      description: 灯已开启且按日程运行时才闪电，关灯或观赏／手动模式不闪。
+      selector:
+        entity:
+          filter:
+          - domain: light
+    feeding_switch:
+      name: 喂食开关 / Feeding switch
+      description: 喂食或状态缺测时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: switch
+    maintenance_toggle:
+      name: 维护开关 / Maintenance
+      description: 维护或缺测时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    maintenance_restore_marker:
+      name: 维护恢复标记 / Maintenance restore
+      description: 使用整缸喂食维护v2的恢复标记，恢复未完成时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    pump_flow_mode:
+      name: 泵实际流态 / Pump flow
+      description: 选择实际流态，喂食／停止／缺测时不执行。
+      selector:
+        entity:
+          filter:
+          - domain: sensor
+    storm_owner:
+      name: 风暴接管标记 / Storm ownership
+      description: 专用持久开关，只供这条自动化使用；不要手动打开。首次应为关闭。
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+mode: restart
+variables:
+  weather_entity: !input 'weather_entity'
+  lightning_button: !input 'lightning_button'
+  pump_fan: !input 'pump_fan'
+  pump_wave_mode: !input 'pump_wave_mode'
+  pump_run_mode: !input 'pump_run_mode'
+  surge_wave: !input 'surge_wave'
+  surge_percentage: !input 'surge_percentage'
+  calm_percentage: !input 'calm_percentage'
+  burst_min: !input 'burst_min'
+  burst_max: !input 'burst_max'
+  gap_min: !input 'gap_min'
+  gap_max: !input 'gap_max'
+  storm_states: !input 'storm_states'
+  storm_ceiling: !input 'storm_ceiling'
+  light_entity: !input 'light_entity'
+  feeding_switch: !input 'feeding_switch'
+  maintenance_toggle: !input 'maintenance_toggle'
+  maintenance_restore_marker: !input 'maintenance_restore_marker'
+  pump_flow_mode: !input 'pump_flow_mode'
+  storm_owner: !input 'storm_owner'
+trigger:
+- platform: state
+  entity_id:
+  - !input 'weather_entity'
+  - !input 'feeding_switch'
+  - !input 'maintenance_toggle'
+  - !input 'maintenance_restore_marker'
+- platform: state
+  entity_id: !input 'pump_fan'
+  from: 'off'
+  to: 'on'
+- platform: state
+  entity_id: !input 'pump_flow_mode'
+  from: feed
+- platform: state
+  entity_id:
+  - !input 'pump_fan'
+  - !input 'pump_run_mode'
+  - !input 'pump_flow_mode'
+  from: unavailable
+- platform: state
+  entity_id:
+  - !input 'pump_fan'
+  - !input 'pump_run_mode'
+  - !input 'pump_flow_mode'
+  from: unknown
+- platform: homeassistant
+  event: start
+action:
+- choose:
+  - conditions: |-
+      {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and (is_state(pump_run_mode, 'tide') or (is_state(storm_owner, 'on') and is_state(pump_run_mode, 'manual'))) }}
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: !input 'storm_owner'
+    - condition: template
+      value_template: |-
+        {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual'] }}
+    - repeat:
+        while:
+        - |-
+          {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual'] }}
+        sequence:
+        - condition: template
+          value_template: |-
+            {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual'] }}
+        - if: '{{ is_state(light_entity, ''on'') and state_attr(light_entity, ''active_mode'') == ''schedule''
+            }}'
+          then:
+          - service: button.press
+            target:
+              entity_id: !input 'lightning_button'
+        - condition: template
+          value_template: |-
+            {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual'] }}
+        - service: select.select_option
+          target:
+            entity_id: !input 'pump_wave_mode'
+          data:
+            option: !input 'surge_wave'
+        - condition: template
+          value_template: |-
+            {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual'] }}
+        - service: fan.set_percentage
+          target:
+            entity_id: !input 'pump_fan'
+          data:
+            percentage: '{{ surge_percentage | int }}'
+        - wait_template: |-
+            {{ not (is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual']) }}
+          timeout:
+            seconds: '{{ range(burst_min | int, (burst_max | int) + 1) | random }}'
+          continue_on_timeout: true
+        - condition: template
+          value_template: |-
+            {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual'] }}
+        - service: fan.set_percentage
+          target:
+            entity_id: !input 'pump_fan'
+          data:
+            percentage: '{{ calm_percentage | int }}'
+        - wait_template: |-
+            {{ not (is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and surge_wave in ['surge', 'turbulence', 'pulse'] and is_number(surge_percentage) and is_number(calm_percentage) and is_number(storm_ceiling) and 10 <= calm_percentage | float <= surge_percentage | float <= storm_ceiling | float <= 100 and is_number(burst_min) and is_number(burst_max) and 2 <= burst_min | int <= burst_max | int <= 120 and is_number(gap_min) and is_number(gap_max) and 2 <= gap_min | int <= gap_max | int <= 600 and states(weather_entity) in storm_states and is_state(storm_owner, 'on') and states(pump_run_mode) in ['tide', 'manual']) }}
+          timeout:
+            seconds: '{{ range(gap_min | int, (gap_max | int) + 1) | random }}'
+          continue_on_timeout: true
+- if: |-
+    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and is_state(storm_owner, 'on') and states(weather_entity) not in storm_states and states(pump_run_mode) in ['manual', 'tide'] }}
+  then:
+  - if: '{{ is_state(pump_run_mode, ''manual'') }}'
+    then:
+    - service: select.select_option
+      target:
+        entity_id: !input 'pump_run_mode'
+      data:
+        option: tide
+  - condition: template
+    value_template: |-
+      {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and is_state(pump_fan, 'on') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and states(storm_owner) in ['on', 'off'] and is_state(pump_run_mode, 'tide') }}
+  - service: input_boolean.turn_off
+    target:
+      entity_id: !input 'storm_owner'

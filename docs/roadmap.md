@@ -169,3 +169,14 @@ manual-storm ownership/feeding-maintenance safety and a single scaling writer
 before separately authorized migration. Depends on user's selected limits and
 deployment authority. Source/tests complete; no live test/install approved.
 Strong reasoning.
+
+## F25 — published blueprints and disabled household drafts (2026-10-26)
+
+| ID | Source / authority | Owner / order | State and evidence | Next action |
+| --- | --- | --- | --- | --- |
+| F25 | Rudy requests weather/storm automations and tuning explanation; explicitly authorizes GitHub push. Draft staging OFF, no device actuation | Codex / P1 | New storm_v2 ownership/mode guards,11newmethods; full90tests/38subtests, native expanded config valid. TwoHA drafts OFF/current0/untriggered, original113configs unchanged. F24 pushed main4316369, storm_v2 push follows this commit. Private guide ignored. No HACS release/live acceptance | F25-P01 profile/night/flash review then separately authorized enable/test, strong reasoning |
+| F25-E01 | Observed side effect during draft saves | Codex / P1 corrected operating checklist | Targeted reload broadcasts global event; active anti-overflow listener15min wait restarted. Skimmer/return stayedON. User informed; no forced recovery, no further HA edit. Checklist added to docs/blueprints.md | Before future saves inspect global listeners/trace, not just reload target/current count |
+
+F24-P01 draft-creation/source-publication scope now authorized and completed via
+F25; real limits/physical activation remains proposal F25-P01, not silently closed.
+Evidence: docs/context/session-notes/2026-10-26-weather-drafts.md.

@@ -1,3 +1,23 @@
+## Latest: GitHub source pushed; two weather/storm drafts OFF — 2026-10-26
+
+User requests concrete automations/tuning explanation and authorizes GitHub push.
+F24/supporting source pushed main4316369 verified. New storm_v2 guards/ownership:
+11newmethods, full90tests/38subtests, native configs valid. Both HA drafts created
+OFF/current0/last_triggerednull; personal guide/bindings ignored.private/weather-20261026.
+11protected states/last_changed unchanged; original113automation configs preserved.
+No enable/device tests, integration release or monitor. Storm source push follows
+this commit. [Full handoff](session-notes/2026-10-26-weather-drafts.md).
+
+Correction: targeted save still broadcasts automation_reloaded. Missed anti-overflow
+listener restarted its15min wait11:28:56+08; traces verified, skimmer/return both
+stayedON. User informed; no timer/actuator override. Pre-save global-listener/trace
+checklist added; no further HA edit this task. Do not claim active timer unchanged.
+Next F25-P01 proposed baseline/profile/night/flash acceptance then separately
+approved enable/test, strong reasoning. Candidates remainOFF; source tests not
+physical acceptance, no HACS release claimed.
+
+---
+
 ## Latest: F24 weather v2 source/tests complete; whole-tank names clarified — 2026-10-26
 
 Rudy requests independent light/wave weather levels and brand-neutral whole-tank
