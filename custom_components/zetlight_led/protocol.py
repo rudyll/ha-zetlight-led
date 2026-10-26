@@ -277,6 +277,50 @@ def parse_frame(frame: bytes) -> tuple[bytes, int, bytes]:
 SCHEDULE_OFFSET = 40
 
 
+@dataclass(frozen=True)
+class ScheduleTiming:
+    """Verified standard M5 local-wall-clock timing, not an inferred preset."""
+
+    boundaries: tuple[int, ...]
+    clock_fields: tuple[int, ...]
+
+
+def parse_schedule_timing(frame: bytes) -> ScheduleTiming:
+    """Strict fixed-offset layout verified in protocol §8d; never scan offsets.
+
+    Time block20:40 is start, four repeated boundaries, then final boundary.
+    Only the captured 151-byte reply layout is supported. Unknown product codes,
+    lengths, invalid BCD, duplicate mismatch or overlapping cycles fail.
+    Clock14:20 is the local YY MM DD hh mm ss header; caller checks clock skew.
+    """
+    from datetime import datetime
+
+    code, cmd, _ = parse_frame(frame)
+    if cmd != CMD_READ_CONFIG or code != DEFAULT_DEVICE_CODE or len(frame) != 151:
+        raise ValueError("unverified schedule timing layout")
+
+    def bcd(value: int) -> int:
+        if value >> 4 > 9 or value & 15 > 9:
+            raise ValueError("invalid timing BCD")
+        return (value >> 4) * 10 + (value & 15)
+
+    clock = tuple(bcd(v) for v in frame[14:20])
+    datetime(2000 + clock[0], *clock[1:])  # calendar/range validation
+    pairs = []
+    for i in range(20, 40, 2):
+        hour, minute = bcd(frame[i]), bcd(frame[i + 1])
+        if hour > 23 or minute > 59:
+            raise ValueError("invalid schedule clock")
+        pairs.append(hour * 60 + minute)
+    if any(pairs[i] != pairs[i + 1] for i in (1, 3, 5, 7)):
+        raise ValueError("nonstandard repeated schedule boundaries")
+    boundaries = tuple(pairs[i] for i in (0, 1, 3, 5, 7, 9))
+    duration = sum((end - start) % 1440 for start, end in zip(boundaries, boundaries[1:]))
+    if not 0 < duration <= 1440:
+        raise ValueError("ambiguous or overlapping daily schedule")
+    return ScheduleTiming(boundaries, clock)
+
+
 def parse_schedule_brightness(frame: bytes) -> list[tuple[int, int, int, int]]:
     """Parse the per-slot brightness from a 0x10 config reply.
 

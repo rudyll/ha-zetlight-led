@@ -564,3 +564,31 @@ combined recovery/lease tests and DK-R14 compile, strong reasoning; separate sco
 OTA/HA activation required before any real behavior change.
 Sources: https://www.home-assistant.io/integrations/timer/ and repository
 sensor.py/async_resume_schedule/firmware/key_actions_v2 source inspection.
+
+
+F34 preparation closure — approved “可以”, source/test scope DONE, not deployed.
+156tests/91subtests PASS; strict timing accepts public captured frame + existing
+private151byte capture with matching local clock. Unsupported layout/skew/stale
+reads use30min cap. Persistent deadline, legacy saved-view migration, off/feeding
+precedence, native HA Store/timers and key schemas validated. Isolated retry bug
+reproduced(red) then fixed: failed viewing restore callback cannot end new feeding.
+Guide docs/viewing-lifetime.md; immutable private evidence /private/tmp/reef-key-
+viewing-20261026. Existing manifest version retained with Unreleased notes; no
+HA/device access, installation, publication or physical test. DK-R14 compiled79
+controller tests PASS, not installed. Cross-reference F35 new user-priority range/
+preset-data request below; activation awaits later explicit coordinated scope.
+
+### F35 — pump119/lamp200 ceilings and saved-spectrum integrity (2026-10-26)
+
+Latest Rudy: correct integrations, both whole-tank blueprints and actual automation
+inputs for pump maximum119%, lamp maximum200%, dynamic headroom for changed daily
+baselines; saved custom spectrum seemed changed and user restored it. Also asks
+local/cloud factory/custom preset, name/create/delete and chart capability.
+Requested; Codex/P0 ACTIVE audit/fix preparation. This explicit priority supersedes
+F34 live activation; do not infer prior compiled firmware is installed. Preserve
+restored personal data: no schedule/preset writes while diagnosing. User-reported
+119/200 limits must be aligned to protocol raw/display units and daily *maximum*,
+not a fixed148% gain. Confirmed observations versus suspected overwrite remain
+separate. Next inspect GTS/Zetlight control/curve-write paths and actual readonly
+configuration, prepare source/tests and concrete automation changes; strong reasoning.
+No push/release/restart or irreversible preset replacement authorized yet.

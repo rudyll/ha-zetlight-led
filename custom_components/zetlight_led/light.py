@@ -78,6 +78,7 @@ class ZetlightLight(CoordinatorEntity[ZetlightCoordinator], LightEntity):
     @property
     def extra_state_attributes(self):
         return {"active_mode": self.coordinator.active_mode,
+                "viewing_deadline_unix": self.coordinator._viewing_deadline,
                 "command_error": self.coordinator.command_error,
                 "schedule_recovery_required": self.coordinator._pending_schedule is not None or self.coordinator._pending_scale is not None,
                 "state_confirmation": "optimistic"}

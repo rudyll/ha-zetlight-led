@@ -1,3 +1,23 @@
+## Latest: F34源码准备封存；F35上限与保存方案问题优先 — 2026-10-26
+
+F34/DK-R14 approved preparation complete:156Zetlight tests/91subtests,79controller
+tests, native HA coordinator/Store/timers and blueprint schema validations PASS;
+DualKey compiled successfully. Persistent30min/verified-boundary viewing, selective
+light-key unlock and recovery lockout candidates NOT installed. Existing private
+captured151byte timing/clock checked, no new device read. Guide viewing-lifetime.md.
+A failed-return retry ending a new feed was reproduced and fixed in candidate.
+No HA/serial/device operation, firmware upload, component release or mode test.
+
+Newest user prioritizes F35: pump119/lamp200 ceilings, gain based on changing daily
+baseline, saved custom spectrum apparently overwritten(user restored it), factory/
+custom preset/cloud and graph capability. Preserve personal state, investigate
+read-only first; no curve or preset writes. GTS primary private-history checkout
+must NEVER be pushed. Source range/data integrity and existing actual automation
+inputs need review, not just blueprint text. Next audit/fix these with strong
+reasoning; F34 activation/physical acceptance remains separately unapproved.
+
+---
+
 ## Latest: F34观赏自动退出与灯键免解锁建议，未改现场 — 2026-10-26
 
 Rudy asks for selective free light-key controls with viewing auto-return at next

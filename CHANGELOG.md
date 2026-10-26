@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- Bound viewing by a persistent30minute deadline or a verified next lamp boundary.
+  Unsupported/stale/invalid timing falls back to30minutes; no guessed nodes.
+- Read standard M5 timing from verified0x10 layout; expose nullable schedule timing
+  and viewing expiry attributes. Existing entity identities remain unchanged.
+- Manual off clears viewing; explicit on resumes the current schedule. Startup
+  drops expired, invalid and legacy unbounded saved viewing. Physical return waits
+  for HA availability if HA was down. This affects upgrade behavior.
+- Separate failed control recovery from feeding expiry; an old retry cannot end
+  a new feeding session.156tests/91subtests PASS plus native HA synthetic checks.
+- Coordinate installation with DualKey DK-R14: its updated key blueprint requires
+  the actual feeding/maintenance coordinator and must precede free-key firmware.
+  No live installation, publication or physical acceptance is claimed.
+
+
 ## 0.24.1 — 2026-10-26
 
 - Correct Chinese channel/viewing labels for the tested M5-80M: A white,

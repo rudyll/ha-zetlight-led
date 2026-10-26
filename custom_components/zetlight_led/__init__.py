@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import random
 import time
 from datetime import timedelta
@@ -410,8 +411,14 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self.feeding_minutes = FEEDING_DEFAULT_MINUTES
         self.feeding_on = False
         self._feeding_unsub = None
+        self._control_retry_unsub = None
         # Viewing / photo mode state.
         self.viewing_on = False
+        self._viewing_started_at = None
+        self._viewing_deadline = None
+        self._viewing_unsub = None
+        self.schedule_timing = None
+        self.schedule_timing_read_at = None
         self.viewing_levels: dict[int, int] = {}
         # Raw bytes of the last 0x10 config reply (for schedule decoding work).
         self.last_config: bytes | None = None
@@ -437,8 +444,17 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             raw = await self.client.async_read_config()
             self.last_config = raw
             self.schedule = protocol.parse_schedule_brightness(raw)
+            try:
+                self.schedule_timing = protocol.parse_schedule_timing(raw)
+                self.schedule_timing_read_at = time.time()
+            except ValueError:
+                self.schedule_timing = None
+                self.schedule_timing_read_at = None
         except (ZetlightUDPError, ValueError) as err:
+            self.schedule_timing = None
+            self.schedule_timing_read_at = None
             _LOGGER.debug("Schedule read failed: %s", err)
+        await self._shorten_viewing_deadline()
         try:
             self.options = await self.client.async_read_options()
         except (ZetlightUDPError, ValueError) as err:
@@ -716,10 +732,100 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             for i in range(self.channel_count)
         ]
 
+    def _next_viewing_boundary(self, now):
+        """Return a fresh, clock-matched boundary; unsupported data gives no guess."""
+        timing, seen = self.schedule_timing, self.schedule_timing_read_at
+        if timing is None or seen is None or not 0 <= now - seen <= 90:
+            return None
+        local = dt_util.as_local(dt_util.utc_from_timestamp(seen))
+        # Compare real read header to HA local wall clock, not an assumed timezone.
+        year, month, day, hour, minute, second = timing.clock_fields
+        device = local.replace(year=2000 + year, month=month, day=day,
+                               hour=hour, minute=minute, second=second, microsecond=0)
+        skew = device.timestamp() - seen
+        if abs(skew) > 90:
+            return None
+        current = dt_util.as_local(dt_util.utc_from_timestamp(now + skew))
+        candidates = []
+        for days in (0, 1):
+            for boundary in timing.boundaries:
+                for fold in (0, 1):
+                    value = (current + timedelta(days=days)).replace(
+                        hour=boundary // 60, minute=boundary % 60,
+                        second=0, microsecond=0, fold=fold)
+                    normalized = dt_util.as_local(dt_util.utc_from_timestamp(value.timestamp()))
+                    # Skip nonexistent local wall times at a DST transition.
+                    if (normalized.date(), normalized.hour, normalized.minute) != (value.date(), value.hour, value.minute):
+                        continue
+                    deadline = value.timestamp() - skew
+                    if deadline > now:
+                        candidates.append(deadline)
+        return min(candidates) if candidates else None
+
+    def _clear_viewing(self):
+        self.viewing_on = False
+        self._viewing_started_at = None
+        self._viewing_deadline = None
+        if self._viewing_unsub is not None:
+            self._viewing_unsub()
+            self._viewing_unsub = None
+
+    def _arm_viewing_timer(self):
+        if self._viewing_unsub is not None:
+            self._viewing_unsub()
+            self._viewing_unsub = None
+        deadline = self._viewing_deadline
+        if self.viewing_on and deadline is not None and not self._closed:
+            self._viewing_unsub = async_call_later(self.hass, max(0, deadline - time.time()),
+                lambda _now: self._viewing_timeout(deadline))
+
+    @callback
+    def _viewing_timeout(self, deadline):
+        if not self._closed:
+            self.hass.async_create_task(self.async_expire_viewing(deadline, timer_elapsed=True))
+
+    async def async_expire_viewing(self, deadline, *, timer_elapsed=False):
+        async with self._mode_lock:
+            if (self._closed or not self.viewing_on or self._viewing_deadline != deadline
+                    or (not timer_elapsed and time.time() < deadline)):
+                return
+            self._generation += 1
+            self._clear_viewing()
+            self._manual_channels = None
+            if self.feeding_on or self._power_off:
+                # Drop only the viewing obligation; never interrupt feeding or relight off.
+                await self._save_control(self._feeding_deadline, bool(self.command_error))
+                self.async_update_listeners()
+            else:
+                await self._apply_and_save_control()
+
+    async def _shorten_viewing_deadline(self):
+        if not self.viewing_on:
+            return
+        async with self._mode_lock:
+            if self._closed or not self.viewing_on or self._viewing_deadline is None:
+                return
+            boundary = self._next_viewing_boundary(time.time())
+            if boundary is not None and boundary < self._viewing_deadline:
+                self._viewing_deadline = boundary
+                await self._save_control(self._feeding_deadline, bool(self.command_error))
+                self._arm_viewing_timer()
+
     async def async_viewing_set(self, on: bool) -> None:
         self._generation += 1
         async with self._mode_lock:
-            self.viewing_on = on
+            if self._closed:
+                raise HomeAssistantError("integration unloaded")
+            if on and self._power_off:
+                raise HomeAssistantError("turn the light on explicitly before viewing")
+            if on and not self.viewing_on:
+                now = time.time()
+                self._viewing_started_at = now
+                self._viewing_deadline = min(now + 1800, self._next_viewing_boundary(now) or now + 1800)
+                self.viewing_on = True
+            elif not on:
+                self._clear_viewing()
+            self._arm_viewing_timer()
             await self._apply_and_save_control()
 
     async def async_set_viewing_level(self, index: int, value: int) -> None:
@@ -830,6 +936,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         self._generation += 1
         async with self._mode_lock:
             self._power_off = True
+            self._clear_viewing()
             await self._apply_and_save_control()
 
     async def async_resume_schedule(self):
@@ -838,27 +945,45 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
         async with self._mode_lock:
             self._power_off = False
             self._manual_channels = None
+            self._clear_viewing()
             await self._apply_and_save_control()
 
     async def _apply_and_save_control(self):
-        await self._save_control(self._feeding_deadline, True)
         try:
+            await self._save_control(self._feeding_deadline, True)
             await self._restore_current_intent()
         except (Exception, asyncio.CancelledError):
             self.command_error = "lighting transition unconfirmed; recovery pending"
-            if self._feeding_deadline is None:
-                if self._feeding_unsub is not None:
-                    self._feeding_unsub()
-                self._feeding_unsub = async_call_later(self.hass, 30, self._feeding_timeout)
+            if self._control_retry_unsub is None:
+                self._control_retry_unsub = async_call_later(self.hass, 30, self._control_retry_timeout)
             raise
         else:
             await self._save_control(self._feeding_deadline, False)
             self.command_error = None
+            if self._control_retry_unsub is not None:
+                self._control_retry_unsub()
+                self._control_retry_unsub = None
+
+    @callback
+    def _control_retry_timeout(self, _now):
+        self._control_retry_unsub = None
+        if not self._closed:
+            self.hass.async_create_task(self._async_retry_current_intent())
+
+    async def _async_retry_current_intent(self):
+        async with self._mode_lock:
+            if self._closed:
+                return
+            self._generation += 1
+            # Retry what is wanted now, never cancel a subsequently started feed.
+            await self._apply_and_save_control()
 
     async def _save_control(self, deadline, pending):
         await self._feeding_store.async_save({"deadline": deadline,
             "recovery_pending": pending, "level": self.feeding_level,
             "power_off": self._power_off, "viewing": self.viewing_on,
+            "viewing_started_at": self._viewing_started_at,
+            "viewing_deadline": self._viewing_deadline,
             "manual_channels": self._manual_channels})
 
     def _arm_feeding_timer(self):
@@ -882,12 +1007,35 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             # Keep the real deadline, even if it expires while HA is starting.
             self.feeding_on = True
             self._arm_feeding_timer()
-        elif saved.get("recovery_pending"):
+        view_dropped = False
+        if self.viewing_on:
+            start, deadline, now = saved.get("viewing_started_at"), saved.get("viewing_deadline"), time.time()
+            valid = (all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+                         for v in (start, deadline)) and start <= now < deadline <= start + 1800)
+            if self._power_off or not valid:
+                # Includes legacy unbounded viewing, missed expiry and backward-clock jumps.
+                self._clear_viewing()
+                self._manual_channels = None
+                view_dropped = True
+            else:
+                self._viewing_started_at, self._viewing_deadline = start, deadline
+                self._arm_viewing_timer()
+        if view_dropped and not self.feeding_on:
+            await self._apply_and_save_control()
+        elif view_dropped:
+            await self._save_control(self._feeding_deadline, bool(saved.get("recovery_pending")))
+        elif saved.get("recovery_pending") and self._feeding_deadline is None:
             await self.async_feeding_set(False)
 
     async def async_shutdown(self):
         self._closed = True
         self._generation += 1
+        if self._control_retry_unsub is not None:
+            self._control_retry_unsub()
+            self._control_retry_unsub = None
+        if self._viewing_unsub is not None:
+            self._viewing_unsub()
+            self._viewing_unsub = None
         if self._feeding_unsub is not None:
             self._feeding_unsub()
             self._feeding_unsub = None

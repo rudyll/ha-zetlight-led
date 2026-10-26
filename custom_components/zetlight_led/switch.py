@@ -210,7 +210,8 @@ class ZetlightViewingSwitch(CoordinatorEntity[ZetlightCoordinator], SwitchEntity
 
     More white, moderate blue (keeps fluorescence), damped violet (the most
     camera-polluting). Live-only; restores the previous levels when switched off,
-    and stays on until you turn it off. Tune the per-channel targets with the
+    and expires at a verified next schedule boundary or after 30 minutes.
+    Manual power-off clears viewing; tune the per-channel targets with the
     'Viewing …' config numbers.
     """
 

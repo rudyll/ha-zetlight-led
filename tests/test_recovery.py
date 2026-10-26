@@ -1,5 +1,5 @@
 """Real control classes with in-memory storage, fake clocks and UDP transport."""
-import ast,asyncio,copy,importlib.util,logging,sys,time,unittest,random
+import ast,asyncio,math,copy,importlib.util,logging,sys,time,unittest,random
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock,Mock
@@ -20,7 +20,7 @@ clock=SimpleNamespace(now=1000)
 timers=[]
 def later(hass,delay,callback):
     timers.append((delay,callback));return Mock()
-ctx=dict(asyncio=asyncio,random=random,time=SimpleNamespace(time=lambda:clock.now),protocol=protocol,Store=Store,_LOGGER=logging.getLogger('recovery'),DOMAIN='zetlight_led',SCAN_INTERVAL=timedelta(seconds=30),LIGHTNING_DEFAULT_FLASHES=1,LIGHTNING_DEFAULT_INTENSITY=80,LIGHTNING_DEFAULT_ON_MS=50,FEEDING_DEFAULT_LEVEL=20,FEEDING_DEFAULT_MINUTES=10,callback=lambda f:f,DataUpdateCoordinator=Base,HomeAssistantError=RuntimeError,async_call_later=later,ZetlightUDPError=OSError,REQUEST_TIMEOUT=.1)
+ctx=dict(timedelta=timedelta,math=math,asyncio=asyncio,random=random,time=SimpleNamespace(time=lambda:clock.now),protocol=protocol,Store=Store,_LOGGER=logging.getLogger('recovery'),DOMAIN='zetlight_led',SCAN_INTERVAL=timedelta(seconds=30),LIGHTNING_DEFAULT_FLASHES=1,LIGHTNING_DEFAULT_INTENSITY=80,LIGHTNING_DEFAULT_ON_MS=50,FEEDING_DEFAULT_LEVEL=20,FEEDING_DEFAULT_MINUTES=10,callback=lambda f:f,DataUpdateCoordinator=Base,HomeAssistantError=RuntimeError,async_call_later=later,ZetlightUDPError=OSError,REQUEST_TIMEOUT=.1)
 tree=ast.parse((ROOT/'__init__.py').read_text());nodes=[ast.ImportFrom(module='__future__',names=[ast.alias(name='annotations')],level=0)]+[x for x in tree.body if isinstance(x,ast.ClassDef) and x.name in ['ZetlightClient','ZetlightCoordinator','_EffectInterrupted']]
 compiled=ast.Module(body=nodes,type_ignores=[]);ast.fix_missing_locations(compiled);exec(compile(compiled,str(ROOT/'__init__.py'),'exec'),ctx)
 Coord=ctx['ZetlightCoordinator'];Client=ctx['ZetlightClient']

@@ -59,11 +59,14 @@ class ZetlightScheduleSensor(CoordinatorEntity[ZetlightCoordinator], SensorEntit
         return max(max(slot) for slot in schedule)
 
     @property
-    def extra_state_attributes(self) -> dict[str, list[int]] | None:
+    def extra_state_attributes(self) -> dict | None:
         schedule = self.coordinator.schedule
         if not schedule:
             return None
         attrs = {"channels": list(CHANNEL_LABELS)}
+        timing = self.coordinator.schedule_timing
+        attrs["schedule_boundary_minutes"] = list(timing.boundaries) if timing else None
+        attrs["schedule_timing_read_at_unix"] = self.coordinator.schedule_timing_read_at
         for i, slot in enumerate(schedule, start=1):
             attrs[f"slot_{i}"] = list(slot)
         return attrs

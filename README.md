@@ -51,6 +51,13 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Read daily schedule | ✅ `sensor.schedule` (5×4 brightness, raw %) |
 | Reachability polling | ✅ Reads device status (`0x0C`) every 30 s |
 
+### Bounded viewing — Unreleased source candidate
+
+Viewing now has a persistent30minute cap, shortened by a freshly verified lamp
+schedule boundary. Manual off cancels it. Old unbounded saved viewing is ended
+on upgrade; unsupported timing falls back to the cap. HA must be available to
+execute the return. Not deployed: see [behavior and upgrade limits](docs/viewing-lifetime.md).
+
 ### Channel colours
 
 Chinese channel and viewing labels describe the tested M5-80M mapping:
