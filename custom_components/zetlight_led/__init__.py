@@ -530,7 +530,7 @@ class ZetlightCoordinator(DataUpdateCoordinator[protocol.DeviceStatus]):
             rnd = random.random
 
             def vec(level: float) -> tuple[int, ...]:
-                # white + blue (first two channels) only; the rest off
+                # first two channels (A+B) only; the rest off
                 lvl = max(0, min(100, int(level)))
                 return tuple(lvl if i < 2 else 0 for i in range(nch))
 

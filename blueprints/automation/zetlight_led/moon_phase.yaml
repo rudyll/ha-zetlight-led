@@ -4,6 +4,8 @@ blueprint:
     夜间给蓝通道一个微弱月光,亮度随真实月相变化(满月更亮、新月几乎无),早上恢复日程。
     月光本就很暗、相邻月相差别细微——这是"自然感"点缀,别指望戏剧效果。需要 HA 的
     Moon 集成(实体一般是 sensor.moon)。
+    通道按用途手动选择，不按字母推断颜色；M5-M 的 B 是 UV 紫光，
+    不应将 B 当作蓝色月光。旧实例不会自动重绑，请核对已有选择。
 
     At night, set a faint blue moonlight scaled by the real lunar phase (brighter
     near full moon), and resume the schedule in the morning. Subtle by nature.
@@ -24,19 +26,19 @@ blueprint:
             - integration: zetlight_led
               domain: light
     ch_white:
-      name: 白通道 A / White channel A
+      name: 关闭通道 1（例如白光 A） / Off channel 1
       selector:
         entity: { filter: [{ integration: zetlight_led, domain: number }] }
     ch_blue:
-      name: 蓝通道 B / Blue channel B
+      name: 月光输出通道（M5-M 可选深蓝 C） / Moonlight output channel
       selector:
         entity: { filter: [{ integration: zetlight_led, domain: number }] }
     ch_color:
-      name: 色通道 C / Color channel C
+      name: 关闭通道 2（例如 UV 紫光 B） / Off channel 2
       selector:
         entity: { filter: [{ integration: zetlight_led, domain: number }] }
     ch_purple:
-      name: 紫通道 D / Purple channel D
+      name: 关闭通道 3（例如浅蓝 D） / Off channel 3
       selector:
         entity: { filter: [{ integration: zetlight_led, domain: number }] }
     max_blue:

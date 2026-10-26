@@ -50,7 +50,7 @@ class _ZetlightButton(CoordinatorEntity[ZetlightCoordinator], ButtonEntity):
 
 
 class ZetlightLightningButton(_ZetlightButton):
-    """Trigger a custom lightning flash (white+blue, no purple afterglow)."""
+    """Trigger a custom lightning flash using the first two channels (A+B)."""
 
     _attr_translation_key = "lightning"
     _attr_icon = "mdi:flash"

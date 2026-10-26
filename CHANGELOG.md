@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Correct Chinese channel/viewing labels for the tested M5-80M: A white,
+  B UV violet, C royal blue, D ice blue. Preserve entity IDs, custom names,
+  channel values and viewing defaults. Other models require their own mapping.
+- Remove incorrect fixed-letter colour hints from the optional moonlight
+  blueprint. Input keys/actions remain compatible; existing bindings are not
+  migrated. Verify the chosen output is blue, rather than M5-M B UV violet.
+
+
 ## 0.24.0 — 2026-10-26
 
 - Correct the existing Moon phase label to Moonlight / 月光开关. Preserve its

@@ -383,3 +383,24 @@ private. Report docs/zetlight-024-deployment-20261026.md. No new monitor/export.
 F30-P01 deployed/identity-accepted; physical night effects NOT tested. F30-P02
 remains an unused-blueprint proposal. No further ready authorized device work;
 next scoped acceptance or proposal prioritization, strong reasoning.
+
+
+### F31 — M5-M Chinese channel labels and source audit (2026-10-26)
+
+Source: Rudy requests corrected channel names and official/third-party research;
+then suggests cross-model consistency. Requested, Codex/P1, depends F30-R01 complete.
+Implemented: channel/viewing A white, B UV violet, C royal blue, D ice blue; labels
+follow owner-confirmed M5-80M mapping. Official M5-M diagram and retailer support
+four groups/ranges, not universal A–D letter mapping. Evidence docs/channel-colours.md.
+F30-P02 label-only scope addressed: optional moonlight inputs describe roles without
+wrong B-blue hint; legacy keys/actions/bindings unchanged. Existing binding safety
+and effect spectrum review remain proposed, not silently migrated or executed.
+Success criteria: exact eight translation-name changes, valid JSON/YAML, unchanged
+identities/defaults/actions, software checks; no live actions or publication.
+DONE for source/research scope: 120 tests/52 subtests PASS; JSON/YAML and diff
+checks PASS. Exactly eight translated names; number AST and blueprint actions,
+keys/defaults/selectors unchanged. Additional lightning comments/docstring now say
+A+B rather than white+blue/no-purple; executable AST unchanged. No HA access,
+install/restart or output changes. System Python lacked pytest; successful full
+run used existing /opt/miniconda3/bin/python.
+Next release/install is pending explicit scope; strong reasoning.

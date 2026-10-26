@@ -28,10 +28,10 @@ SCAN_INTERVAL = timedelta(seconds=30)
 REQUEST_TIMEOUT = 3.0
 
 # Custom lightning effect defaults (built from live 0x13 frames, not the
-# vendor's effect command). Flashes white+blue only, so there is no purple
-# afterglow like the app's built-in lightning.
+# vendor's effect command). Flashes channels A+B only; on the confirmed
+# M5-80M these are white + UV violet.
 LIGHTNING_DEFAULT_FLASHES = 3      # number of strokes per bolt
-LIGHTNING_DEFAULT_INTENSITY = 100  # peak white/blue level per flash (0-100)
+LIGHTNING_DEFAULT_INTENSITY = 100  # peak A/B level per flash (0-100)
 LIGHTNING_DEFAULT_ON_MS = 80       # on-time per flash, milliseconds
 
 # Feeding / maintenance mode: temporarily dim all channels, then auto-restore.

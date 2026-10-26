@@ -241,7 +241,8 @@ class ZetlightFadeMinutes(CoordinatorEntity[ZetlightCoordinator], NumberEntity):
         await self.coordinator.async_set_fade(enabled, int(value))
 
 
-# Default viewing mix per channel: white high, blue moderate, violet damped.
+# Legacy viewing defaults in A/B/C/D order; retained unchanged.
+# Channel colours and manufacturer specifications: docs/channel-colours.md.
 _VIEWING_DEFAULTS = (90, 50, 60, 25)
 
 

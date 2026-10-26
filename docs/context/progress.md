@@ -1,3 +1,21 @@
+## Latest: F31 channel labels and source evidence corrected — 2026-10-26
+
+Source-only DONE: A白光 / B UV紫光 / C深蓝 / D浅蓝, including viewing labels.
+Owner confirms M5-80M letter mapping; official M5-M module diagram confirms four
+LED groups/ranges, retailer agrees. No independent measured or universal cross-
+model A–D evidence. docs/channel-colours.md preserves sources, image hash and limits.
+Optional moonlight selector hints now describe roles; existing input IDs/actions
+unchanged, no migration/activation. Lightning descriptions corrected to actual A+B;
+no changed flash output or viewing defaults. 120tests/52subtests PASS, exact-eight
+JSON comparison, YAML action/default equivalence, executable AST/diff checks PASS.
+System Python pytest unavailable; existing miniconda environment passed full suite.
+No HA connection, metadata write, install, restart, release or device command.
+Manifest remains0.24.0 with pending Unreleased notes. Next proposed publication/
+installation plus any spectrum-behaviour changes require explicit scope, strong
+reasoning; current HA names have not been updated by this task.
+
+---
+
 ## Latest:0.24.0 formally released, HA upgraded, identity verified — 2026-10-26
 
 F30-R01 DONE, readback2026-10-26T14:35:11+08:00. Official latestv0.24.0 on3801a8ef; remote main/tag

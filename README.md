@@ -42,7 +42,7 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Turn on / off | ✅ Working (device-verified commands `0x1E` / `0x1F`) |
 | Overall brightness | ✅ Working (device-verified command `0x13`) |
 | Per-channel A/B/C/D dimming | ✅ Working (four `number` sliders, 0–100%) |
-| Custom lightning effect | ✅ Working (`button.lightning`, tunable; white+blue flash) |
+| Custom lightning effect | ✅ Working (`button.lightning`, tunable; A+B channel flash) |
 | Custom cloud effect | ✅ Working (`button.cloud`; ramp down → hold → up) |
 | Feeding / maintenance mode | ✅ Working (`switch.feeding_mode`; dim + auto-restore) |
 | Acclimation mode | ✅ `Acclimation` number scales your schedule's output (non-destructive; 100% restores; persists until changed) |
@@ -50,6 +50,14 @@ in [`docs/roadmap.md`](docs/roadmap.md).
 | Write daily schedule | ✅ `zetlight_led.set_schedule` (brightness + times verified; **overwrites stored program**) |
 | Read daily schedule | ✅ `sensor.schedule` (5×4 brightness, raw %) |
 | Reachability polling | ✅ Reads device status (`0x0C`) every 30 s |
+
+### Channel colours
+
+Chinese channel and viewing labels describe the tested M5-80M mapping:
+A white, B UV violet, C royal blue, D ice blue. The manufacturer M5-M
+marine-family specifications support these four LED groups; they do not establish
+a universal A–D mapping for every Zetlight model. See [sources and limits](docs/channel-colours.md).
+Existing entity IDs, custom names and output values are unchanged.
 
 ### Native moon controls (0.24.0)
 
@@ -77,8 +85,7 @@ not a physical night-effect test. No mode is enabled by entity setup.
 
 ### Lightning, clock & schedule
 
-- **Lightning** — press `button.lightning` for a crisp white+blue flash (no
-  purple afterglow). Tune it with the `Lightning flashes`, `Lightning intensity`
+- **Lightning** — press `button.lightning` for an A+B channel flash (M5-M: white + UV violet). Tune it with the `Lightning flashes`, `Lightning intensity`
   and `Lightning flash duration` config numbers. It is built from live `0x13`
   frames and restores the previous levels, so it never touches the stored program.
 - **Clock** — the device clock is set to Home Assistant's local time on setup,
