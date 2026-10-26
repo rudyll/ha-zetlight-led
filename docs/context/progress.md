@@ -1,3 +1,23 @@
+## Latest: F32昼夜观赏候选已测试，未安装 — 2026-10-26
+
+User requests viewing automation based on sunset, dimmer until sunrise. Candidate
+preserves button-controlled entry/exit and only selects profile: day10/10/30/25,
+night50% floored5/5/15/12. Existing real viewing values90/50/60/25 remain unchanged.
+Clarification pending: profile-only versus automatically entering/exiting viewing.
+No HA automation save/reload/enable, no number writes, pump/lamp commands or timers.
+
+New blueprint viewing_sun.yaml, test_viewing_sun.py and docs/viewing-sun.md.
+134tests/83subtests PASS including14focused/31subtests; local native schemas plus
+actual HA readonly validate_config triggers/actions PASS. Actual target unique IDs
+and same-lamp identity verified, private disabled instance prepared in ignored
+.private/viewing-sun-20261026. Stops on feeding/maintenance/recovery/missing data,
+guards each channel, no compounded night scaling; no atomic/ramped update claimed.
+All existing weather/storm/protection rules unchanged by this task. No component
+version change or publication. Next F32 confirm semantics/concrete levels and
+scoped activation, then established protected reload and readback, strong reasoning.
+
+---
+
 ## Latest: 0.24.1 deployed; weather/storm explicitly released — 2026-10-26
 
 F31-R01/F31-A01 DONE, readback16:01:39+08. Official v0.24.1 final7d82b99,

@@ -1,0 +1,268 @@
+blueprint:
+  name: 积光灯 — 观赏亮度随昼夜 / Viewing levels by sun
+  description: 仅自动选择观赏预设，不开启或退出观赏模式，不写灯具日程。白天使用配置值，日落至日出按比例调暗；每个通道向下取整。观赏关闭时预先更新本地观赏参数；只有观赏正在运行时才改变实际观赏输出。喂食、维护、维护恢复、缺测时跳过，每次写入前重新检查。四个目标必须是同一灯具的观赏参数，不能选择实时通道。日出/日落使用HA家庭位置；夜间不会自行开灯，也不会在观赏结束后持续提供月光。未实现跨通道原子写入或渐变，四通道依次更新；错误停止，已完成的通道不回滚。
+  domain: automation
+  input:
+    viewing_switch:
+      name: 观赏模式开关
+      selector:
+        entity:
+          filter:
+          - domain: switch
+            integration: zetlight_led
+    light_entity:
+      name: 珊瑚灯（用于检查当前模式）
+      selector:
+        entity:
+          filter:
+          - domain: light
+            integration: zetlight_led
+    feeding_switch:
+      name: 喂食开关
+      selector:
+        entity:
+          filter:
+          - domain: switch
+            integration: zetlight_led
+    maintenance_toggle:
+      name: 整缸维护开关
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    maintenance_restore_marker:
+      name: 维护恢复标记
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    viewing_a:
+      name: 观赏 A（M5-M：白光）
+      selector:
+        entity:
+          filter:
+          - domain: number
+            integration: zetlight_led
+    viewing_b:
+      name: 观赏 B（M5-M：UV 紫光）
+      selector:
+        entity:
+          filter:
+          - domain: number
+            integration: zetlight_led
+    viewing_c:
+      name: 观赏 C（M5-M：深蓝）
+      selector:
+        entity:
+          filter:
+          - domain: number
+            integration: zetlight_led
+    viewing_d:
+      name: 观赏 D（M5-M：浅蓝）
+      selector:
+        entity:
+          filter:
+          - domain: number
+            integration: zetlight_led
+    day_a:
+      name: 白天观赏 A
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    day_b:
+      name: 白天观赏 B
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    day_c:
+      name: 白天观赏 C
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    day_d:
+      name: 白天观赏 D
+      default: 25
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    night_scale:
+      name: 夜间相对白天的亮度
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+mode: restart
+variables:
+  viewing_switch: !input viewing_switch
+  light_entity: !input light_entity
+  feeding_switch: !input feeding_switch
+  maintenance_toggle: !input maintenance_toggle
+  maintenance_restore_marker: !input maintenance_restore_marker
+  viewing_a: !input viewing_a
+  viewing_b: !input viewing_b
+  viewing_c: !input viewing_c
+  viewing_d: !input viewing_d
+  day_a: !input day_a
+  day_b: !input day_b
+  day_c: !input day_c
+  day_d: !input day_d
+  night_scale: !input night_scale
+trigger:
+- platform: state
+  entity_id: sun.sun
+  to: above_horizon
+- platform: state
+  entity_id: sun.sun
+  to: below_horizon
+- platform: state
+  entity_id: !input viewing_switch
+  to: 'on'
+- platform: state
+  entity_id: !input viewing_switch
+  to: 'off'
+- platform: state
+  entity_id: !input feeding_switch
+  to: 'off'
+- platform: state
+  entity_id: !input maintenance_toggle
+  to: 'off'
+- platform: state
+  entity_id: !input maintenance_restore_marker
+  to: 'off'
+- platform: state
+  entity_id: !input light_entity
+  attribute: active_mode
+  to: viewing
+- platform: state
+  entity_id: !input light_entity
+  attribute: active_mode
+  to: schedule
+- platform: state
+  entity_id: !input light_entity
+  attribute: active_mode
+  to: 'off'
+- platform: state
+  entity_id: !input light_entity
+  attribute: active_mode
+  to: manual
+- platform: state
+  entity_id: !input viewing_a
+  from:
+  - unknown
+  - unavailable
+- platform: state
+  entity_id: !input viewing_b
+  from:
+  - unknown
+  - unavailable
+- platform: state
+  entity_id: !input viewing_c
+  from:
+  - unknown
+  - unavailable
+- platform: state
+  entity_id: !input viewing_d
+  from:
+  - unknown
+  - unavailable
+- platform: homeassistant
+  event: start
+action:
+- condition: template
+  value_template: "{{ states('sun.sun') in ['above_horizon', 'below_horizon']\n   and is_state(feeding_switch, 'off')\n\
+    \   and is_state(maintenance_toggle, 'off')\n   and is_state(maintenance_restore_marker, 'off')\n   and ((is_state(viewing_switch,\
+    \ 'off') and state_attr(light_entity, 'active_mode') in ['schedule','off','manual'])\n        or (is_state(viewing_switch,\
+    \ 'on') and state_attr(light_entity, 'active_mode') == 'viewing'))\n   and [viewing_a, viewing_b, viewing_c,\
+    \ viewing_d] | unique | list | count == 4\n   and is_number(states(viewing_a)) and is_number(states(viewing_b))\n\
+    \   and is_number(states(viewing_c)) and is_number(states(viewing_d))\n   and is_number(day_a) and 0 <= day_a\
+    \ | float <= 100\n   and is_number(day_b) and 0 <= day_b | float <= 100\n   and is_number(day_c) and 0 <= day_c\
+    \ | float <= 100\n   and is_number(day_d) and 0 <= day_d | float <= 100\n   and is_number(night_scale) and 0\
+    \ <= night_scale | float <= 100 }}"
+- variables:
+    target_level: '{{ (day_a | float * (1 if is_state(''sun.sun'', ''above_horizon'') else night_scale | float /
+      100)) | round(0, ''floor'') | int }}'
+- if: '{{ states(viewing_a) | float != target_level | float }}'
+  then:
+  - service: number.set_value
+    target:
+      entity_id: !input viewing_a
+    data:
+      value: '{{ target_level }}'
+- condition: template
+  value_template: "{{ states('sun.sun') in ['above_horizon', 'below_horizon']\n   and is_state(feeding_switch, 'off')\n\
+    \   and is_state(maintenance_toggle, 'off')\n   and is_state(maintenance_restore_marker, 'off')\n   and ((is_state(viewing_switch,\
+    \ 'off') and state_attr(light_entity, 'active_mode') in ['schedule','off','manual'])\n        or (is_state(viewing_switch,\
+    \ 'on') and state_attr(light_entity, 'active_mode') == 'viewing'))\n   and [viewing_a, viewing_b, viewing_c,\
+    \ viewing_d] | unique | list | count == 4\n   and is_number(states(viewing_a)) and is_number(states(viewing_b))\n\
+    \   and is_number(states(viewing_c)) and is_number(states(viewing_d))\n   and is_number(day_a) and 0 <= day_a\
+    \ | float <= 100\n   and is_number(day_b) and 0 <= day_b | float <= 100\n   and is_number(day_c) and 0 <= day_c\
+    \ | float <= 100\n   and is_number(day_d) and 0 <= day_d | float <= 100\n   and is_number(night_scale) and 0\
+    \ <= night_scale | float <= 100 }}"
+- variables:
+    target_level: '{{ (day_b | float * (1 if is_state(''sun.sun'', ''above_horizon'') else night_scale | float /
+      100)) | round(0, ''floor'') | int }}'
+- if: '{{ states(viewing_b) | float != target_level | float }}'
+  then:
+  - service: number.set_value
+    target:
+      entity_id: !input viewing_b
+    data:
+      value: '{{ target_level }}'
+- condition: template
+  value_template: "{{ states('sun.sun') in ['above_horizon', 'below_horizon']\n   and is_state(feeding_switch, 'off')\n\
+    \   and is_state(maintenance_toggle, 'off')\n   and is_state(maintenance_restore_marker, 'off')\n   and ((is_state(viewing_switch,\
+    \ 'off') and state_attr(light_entity, 'active_mode') in ['schedule','off','manual'])\n        or (is_state(viewing_switch,\
+    \ 'on') and state_attr(light_entity, 'active_mode') == 'viewing'))\n   and [viewing_a, viewing_b, viewing_c,\
+    \ viewing_d] | unique | list | count == 4\n   and is_number(states(viewing_a)) and is_number(states(viewing_b))\n\
+    \   and is_number(states(viewing_c)) and is_number(states(viewing_d))\n   and is_number(day_a) and 0 <= day_a\
+    \ | float <= 100\n   and is_number(day_b) and 0 <= day_b | float <= 100\n   and is_number(day_c) and 0 <= day_c\
+    \ | float <= 100\n   and is_number(day_d) and 0 <= day_d | float <= 100\n   and is_number(night_scale) and 0\
+    \ <= night_scale | float <= 100 }}"
+- variables:
+    target_level: '{{ (day_c | float * (1 if is_state(''sun.sun'', ''above_horizon'') else night_scale | float /
+      100)) | round(0, ''floor'') | int }}'
+- if: '{{ states(viewing_c) | float != target_level | float }}'
+  then:
+  - service: number.set_value
+    target:
+      entity_id: !input viewing_c
+    data:
+      value: '{{ target_level }}'
+- condition: template
+  value_template: "{{ states('sun.sun') in ['above_horizon', 'below_horizon']\n   and is_state(feeding_switch, 'off')\n\
+    \   and is_state(maintenance_toggle, 'off')\n   and is_state(maintenance_restore_marker, 'off')\n   and ((is_state(viewing_switch,\
+    \ 'off') and state_attr(light_entity, 'active_mode') in ['schedule','off','manual'])\n        or (is_state(viewing_switch,\
+    \ 'on') and state_attr(light_entity, 'active_mode') == 'viewing'))\n   and [viewing_a, viewing_b, viewing_c,\
+    \ viewing_d] | unique | list | count == 4\n   and is_number(states(viewing_a)) and is_number(states(viewing_b))\n\
+    \   and is_number(states(viewing_c)) and is_number(states(viewing_d))\n   and is_number(day_a) and 0 <= day_a\
+    \ | float <= 100\n   and is_number(day_b) and 0 <= day_b | float <= 100\n   and is_number(day_c) and 0 <= day_c\
+    \ | float <= 100\n   and is_number(day_d) and 0 <= day_d | float <= 100\n   and is_number(night_scale) and 0\
+    \ <= night_scale | float <= 100 }}"
+- variables:
+    target_level: '{{ (day_d | float * (1 if is_state(''sun.sun'', ''above_horizon'') else night_scale | float /
+      100)) | round(0, ''floor'') | int }}'
+- if: '{{ states(viewing_d) | float != target_level | float }}'
+  then:
+  - service: number.set_value
+    target:
+      entity_id: !input viewing_d
+    data:
+      value: '{{ target_level }}'

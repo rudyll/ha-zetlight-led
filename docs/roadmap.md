@@ -438,3 +438,32 @@ F31-D01 low-priority documentation follow-up: async_lightning method docstring
 still says white+blue/no purple, unlike the corrected public description and
 actual A+B implementation. Proposal, Codex, no output change or release authority;
 next correct that remaining internal prose in a future source maintenance window.
+
+
+### F32 — sun-based day/night viewing automation (2026-10-26)
+
+Source: Rudy asks for viewing automation based on sunset, darker until sunrise.
+Requested; Codex/P1. Scope being clarified: button-controlled viewing with automatic
+profile selection (recommended) versus automatic on/off at sunset/sunrise. Existing
+stored viewing mix is90/50/60/25, not the earlier AI suggestion. Candidate uses
+10/10/30/25 by day,50% at night; no real profile or schedule was changed.
+Implemented source blueprint + focused tests/docs, native schema/actual role binding
+checks pass; software-tested candidate only. Four actual viewing targets verified
+from registry unique IDs, same device/entry. Tests include unknowns, duplicate
+inputs, interruption/failure, off-mode and idempotence. Full-suite result below.
+Not installed, enabled, triggered, published or physically accepted; no HA output,
+automation reload or scheduler. Success: selected semantics confirmed, profile
+correct, guards/restoration preserved, then separately evidenced deployment.
+Next resolve pending user choice, then scoped activation using guarded reload;
+strong reasoning. No existing weather/storm or pump controller settings changed.
+
+
+F32 software evidence: full134tests/83subtests PASS (14focused/31subtests);
+native HA blueprint/expanded automation schemas pass and real HA readonly
+validate_config reports triggers/actions valid. Actual candidate role/device bindings
+verified; disabled private instance prepared, not saved to HA. No component code or
+manifest changes, no push/tag/release. Business choice and scoped profile activation
+remain pending; do not claim automation deployed. Next F32 user acceptance of
+button-controlled profile semantics, day10/10/30/25/night50%, then guarded HA
+blueprint install/reload/seed/readback; strong reasoning. Day/night percentages
+are recommendations, not actual records or optical output measurements.
