@@ -1,0 +1,326 @@
+blueprint:
+  name: 整缸联动 — 天气（灯光与造浪独立）v2 / Whole-tank weather v2
+  description: |-
+    灯光、GTS造浪分别配置晴天、多云、阴天、雨雪、大风、暴雨和雷暴百分比。
+    默认值是待确认的模板示例：灯100/90/75/60/75/50/50；潮汐80/80/80/90/90/95/100，不能当成任何缸的实测安全配置。
+    潮汐百分比只缩放已确认的曲线，天气变晴恢复所配晴天档；不会开灯、开泵或切运行模式。
+    喂食、维护、维护恢复及其状态缺测时不写入。灯只在日程模式下调节；泵只在已开启的tide模式且非喂食流态下调节。
+    手动风暴仍由另一条蓝图负责，本蓝图在其手动模式期间让出泵控制；回到tide后重新按天气应用。
+    天气缺测或未识别时保持现状，不冒充晴天。每个目标独立容错，同值不重复写。
+    替换旧天气调暗自动化，不能与旧整缸／只灯天气调暗、驯化共用同一比例实体。
+    不包含闪电／大浪执行器，也不保证另一条风暴蓝图的喂食维护互锁。停用本自动化不会自动还原比例，需先选定恢复值。
+
+    Independent light and GTS tidal-scale weather settings. No power/mode commands.
+    Unknown weather is skipped; feed, maintenance and restore block writes. Template
+    percentages need tank-specific acceptance. One weather/acclimation owner per number.
+  domain: automation
+  input:
+    weather_entity:
+      name: 天气来源 / Weather
+      selector:
+        entity:
+          filter:
+          - domain: weather
+    light_entity:
+      name: 珊瑚灯 / Coral light
+      selector:
+        entity:
+          filter:
+          - domain: light
+            integration: zetlight_led
+      description: 只在灯已开启且按日程运行时调整；不会开灯。
+    light_dimming:
+      name: 灯光调光比例 / Light dimming
+      selector:
+        entity:
+          filter:
+          - domain: number
+            integration: zetlight_led
+      description: 选择调光比例，不是单通道亮度；不可与驯化或另一条天气自动化共用。
+    pump_fan:
+      name: 造浪泵 / Wave pump
+      selector:
+        entity:
+          filter:
+          - domain: fan
+            integration: gts_wavepump
+      description: 只在泵已经开启时调整；不会启动泵。
+    pump_tidal:
+      name: 造浪潮汐强度 / Tidal scale
+      selector:
+        entity:
+          filter:
+          - domain: number
+            integration: gts_wavepump
+      description: 100% 是既有潮汐曲线，不是泵每小时满功率；不支持超过100%。
+    pump_run_mode:
+      name: 造浪运行模式 / Pump run mode
+      selector:
+        entity:
+          filter:
+          - domain: select
+            integration: gts_wavepump
+      description: 选择运行模式；只有 tide 时写入，不抢占手动风暴。
+    pump_flow_mode:
+      name: 造浪实际流态 / Pump flow mode
+      selector:
+        entity:
+          filter:
+          - domain: sensor
+            integration: gts_wavepump
+      description: 选择实际流态；喂食、停止或缺测时不写入。
+    feeding_switch:
+      name: 喂食模式开关 / Feeding switch
+      selector:
+        entity:
+          filter:
+          - domain: switch
+    maintenance_toggle:
+      name: 维护模式开关 / Maintenance toggle
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+    maintenance_restore_marker:
+      name: 维护灯光恢复标记 / Maintenance restore marker
+      selector:
+        entity:
+          filter:
+          - domain: input_boolean
+      description: 选择整缸喂食维护v2使用的恢复标记；恢复尚未结束时不调节。
+    light_sunny_pct:
+      name: 灯光 · 晴天／晴夜 / light sunny
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    light_partly_pct:
+      name: 灯光 · 多云 / light partly
+      default: 90
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    light_cloudy_pct:
+      name: 灯光 · 阴天／雾 / light cloudy
+      default: 75
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    light_rainy_pct:
+      name: 灯光 · 雨／雪 / light rainy
+      default: 60
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    light_windy_pct:
+      name: 灯光 · 大风 / light windy
+      default: 75
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    light_pouring_pct:
+      name: 灯光 · 暴雨／冰雹 / light pouring
+      default: 50
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    light_storm_pct:
+      name: 灯光 · 雷暴 / light storm
+      default: 50
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: '%'
+    pump_sunny_pct:
+      name: 造浪 · 晴天／晴夜 / pump sunny
+      default: 80
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+    pump_partly_pct:
+      name: 造浪 · 多云 / pump partly
+      default: 80
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+    pump_cloudy_pct:
+      name: 造浪 · 阴天／雾 / pump cloudy
+      default: 80
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+    pump_rainy_pct:
+      name: 造浪 · 雨／雪 / pump rainy
+      default: 90
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+    pump_windy_pct:
+      name: 造浪 · 大风 / pump windy
+      default: 90
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+    pump_pouring_pct:
+      name: 造浪 · 暴雨／冰雹 / pump pouring
+      default: 95
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+    pump_storm_pct:
+      name: 造浪 · 雷暴 / pump storm
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+    pump_ceiling:
+      name: 造浪天气缩放上限 / Tidal scale ceiling
+      description: 所有天气档位都受此上限约束；不会限制另一条风暴蓝图的手动大浪，后者需单独核定。
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 5
+          unit_of_measurement: '%'
+mode: restart
+variables:
+  weather_entity: !input 'weather_entity'
+  light_entity: !input 'light_entity'
+  light_dimming: !input 'light_dimming'
+  pump_fan: !input 'pump_fan'
+  pump_tidal: !input 'pump_tidal'
+  pump_run_mode: !input 'pump_run_mode'
+  pump_flow_mode: !input 'pump_flow_mode'
+  feeding_switch: !input 'feeding_switch'
+  maintenance_toggle: !input 'maintenance_toggle'
+  maintenance_restore_marker: !input 'maintenance_restore_marker'
+  pump_ceiling: !input 'pump_ceiling'
+  light_levels:
+    sunny: !input 'light_sunny_pct'
+    partly: !input 'light_partly_pct'
+    cloudy: !input 'light_cloudy_pct'
+    rainy: !input 'light_rainy_pct'
+    windy: !input 'light_windy_pct'
+    pouring: !input 'light_pouring_pct'
+    storm: !input 'light_storm_pct'
+  pump_levels:
+    sunny: !input 'pump_sunny_pct'
+    partly: !input 'pump_partly_pct'
+    cloudy: !input 'pump_cloudy_pct'
+    rainy: !input 'pump_rainy_pct'
+    windy: !input 'pump_windy_pct'
+    pouring: !input 'pump_pouring_pct'
+    storm: !input 'pump_storm_pct'
+  weather_groups:
+    sunny: sunny
+    clear-night: sunny
+    partlycloudy: partly
+    cloudy: cloudy
+    fog: cloudy
+    rainy: rainy
+    snowy: rainy
+    snowy-rainy: rainy
+    windy: windy
+    windy-variant: windy
+    pouring: pouring
+    hail: pouring
+    lightning: storm
+    lightning-rainy: storm
+trigger:
+- platform: state
+  entity_id:
+  - !input 'weather_entity'
+  - !input 'light_entity'
+  - !input 'pump_fan'
+  - !input 'pump_run_mode'
+  - !input 'pump_flow_mode'
+  - !input 'feeding_switch'
+  - !input 'maintenance_toggle'
+  - !input 'maintenance_restore_marker'
+- platform: homeassistant
+  event: start
+- platform: state
+  entity_id: !input 'light_dimming'
+  from: unknown
+- platform: state
+  entity_id: !input 'light_dimming'
+  from: unavailable
+- platform: state
+  entity_id: !input 'pump_tidal'
+  from: unknown
+- platform: state
+  entity_id: !input 'pump_tidal'
+  from: unavailable
+action:
+- variables:
+    weather_sample: '{{ states(weather_entity) }}'
+- variables:
+    bucket: '{{ weather_groups.get(weather_sample, ''unknown'') }}'
+- condition: template
+  value_template: |-
+    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and bucket in light_levels }}
+- variables:
+    light_target: '{% set v = light_levels.get(bucket) %}{{ ([[v | float, 10] | max, 100] | min) | int if is_number(v)
+      else -1 }}'
+    pump_target: |-
+      {% set v = pump_levels.get(bucket) %}{% if is_number(v) and is_number(pump_ceiling) %}{% set capped = [[v | float, pump_ceiling | float, 100] | min, 10] | max %}{{ ((capped / 5) | round(0, 'floor') * 5) | int }}{% else %}-1{% endif %}
+- if: |-
+    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_state(light_entity, 'on') and state_attr(light_entity, 'active_mode') == 'schedule' and state_attr(light_entity, 'schedule_recovery_required') != true and is_number(states(light_dimming)) and light_target | float >= 10 and (states(light_dimming) | float - light_target | float) | abs > 0.01 }}
+  then:
+  - service: number.set_value
+    continue_on_error: true
+    target:
+      entity_id: !input 'light_dimming'
+    data:
+      value: '{{ light_target | int }}'
+- if: |-
+    {{ is_state(feeding_switch, 'off') and is_state(maintenance_toggle, 'off') and is_state(maintenance_restore_marker, 'off') and states(weather_entity) == weather_sample and bucket in light_levels and is_number(pump_ceiling) and 10 <= pump_ceiling | float <= 100 and is_state(pump_fan, 'on') and is_state(pump_run_mode, 'tide') and states(pump_flow_mode) in ['constant', 'pulse', 'sine', 'turbulence', 'surge'] and state_attr(light_entity, 'active_mode') != 'feeding' and state_attr(pump_tidal, 'recovery_required') != true and is_number(states(pump_tidal)) and pump_target | float >= 10 and (states(pump_tidal) | float - pump_target | float) | abs > 0.01 }}
+  then:
+  - service: number.set_value
+    continue_on_error: true
+    target:
+      entity_id: !input 'pump_tidal'
+    data:
+      value: '{{ pump_target | int }}'

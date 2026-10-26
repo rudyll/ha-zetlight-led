@@ -1,3 +1,22 @@
+## Latest: F24 weather v2 source/tests complete; whole-tank names clarified — 2026-10-26
+
+Rudy requests independent light/wave weather levels and brand-neutral whole-tank
+names, with no real device actions. New opt-in weather_v2 has7 light/tidal profiles,
+cap, missing-state skip, feed/maintenance/restore guards, manual-storm yield,
+recovery triggers and branch isolation. Only two scaling-number targets, no power/
+mode commands. Defaults are template proposals, not actual accepted settings.
+Legacy weather input meanings retained;7existing names only changed to整缸联动 —,
+semantic comparison7/7. New eighth source uses same prefix; live aliases unchanged.
+
+19new tests; final fullsuite79passed/38subtests. HA read-only synthetic-trigger/
+condition/action validation valid. No install/reload/device actions/push/release/
+new scheduler. [Evidence and handoff](session-notes/2026-10-26-weather-v2.md).
+Next F24-P01 proposed real baseline/cap/ownership review before separately approved
+migration, strong reasoning. Separate manual-storm safety not certified by new
+weather guards. DK-R11 and F23 device gates remain separate.
+
+---
+
 ## Latest: F23 control coordinator enabled; physical acceptance pending — 2026-10-25
 
 User requests enabling controls and confirms independent DualKey supply, unaffected

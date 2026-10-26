@@ -1,5 +1,5 @@
 blueprint:
-  name: 积光整缸 — 驯化渐进（灯+泵） / Whole-tank acclimation ramp
+  name: 整缸联动 — 驯化渐进（灯+泵） / Whole-tank acclimation ramp
   description: >-
     新缸/新珊瑚整缸驯化：每天把灯的「调光比例」和泵的「潮汐强度」各提高一个步长(最高
     100%)，让光和流一起逐日加大。先把两者手动设低(如 40)再让它逐日升到 100。

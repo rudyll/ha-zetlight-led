@@ -1,5 +1,5 @@
 blueprint:
-  name: 积光整缸 — 泵跟随喂食模式 / Pump follows feeding
+  name: 整缸联动 — 泵跟随喂食模式 / Pump follows feeding
   description: >-
     灯进入"喂食模式"时自动停泵，喂食结束自动恢复。倒计时由 Zetlight HA 集成管理并持久保存，
     不是在灯具内部独立运行；HA 停机时无法执行插座恢复，恢复运行后才补执行。只按

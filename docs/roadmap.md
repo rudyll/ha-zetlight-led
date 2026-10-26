@@ -151,3 +151,21 @@ fix/installed configuration evidence does not close F18–F22 or certify all mod
 | ID | Priority | Source / scope | State / evidence | Next action |
 | --- | --- | --- | --- | --- |
 | F23 | P0 | Rudy requests maintenance stops wave/lamp/skimmer/return, confirms supply roles, specifies30s return-before-skimmer recovery and cancel-only keys; heater later | New opt-in whole_tank_modes_v2,17 actual-template tests and HA native validation pass; enabled on HA25Oct11:30 after explicit user request and independent-supply confirmation. Legacy feed OFF, key/coordinator ON. Native feed retained, maintenance wins, sequential acknowledgement guards, cancellation during settle and durable lamp restore marker. No physical actuation tested; controller currently offline11:29:57 | Configuration activation complete; persistent initial states and native validation verified. Supply coupling cleared by user confirmation, connectivity DK-R11 remains OPEN. Pump/light live acceptance requires available controller and separate authorization; strong reasoning |
+
+## F24 — independent whole-tank weather rules (2026-10-26)
+
+| ID | Source / authorization | Owner / priority | Scope and success criteria | State / next action |
+| --- | --- | --- | --- | --- |
+| F24 | Rudy requests independent lamp/pump weather rules, local implementation/tests only; explicitly no device operation | Codex / P1 | New opt-in weather v2: independent light/tidal percentages, windy/storm categories, bounded tidal baseline scaling; missing weather skipped; feeding/maintenance/restoration and manual storm ownership respected; recovery and independent failure paths tested | SOURCE/TEST COMPLETE:19 new methods, full79tests/38subtests; read-only HA synthetic trigger/condition/action validation passed.7existing whole-tank names brand-neutral, legacy actions/inputs unchanged. No deploy/device action/release/push; next F24-P01 proposal, strong reasoning |
+
+### F24 acceptance boundary / F24-P01
+
+New independent weather_v2 is opt-in; legacy retained. User naming clarification
+applies to8source blueprints (7existing name-only,1new), not live automation aliases.
+Evidence: docs/context/session-notes/2026-10-26-weather-v2.md.
+
+F24-P01 PROPOSAL, Codex/P1: confirm real baseline/weather levels/caps, separate
+manual-storm ownership/feeding-maintenance safety and a single scaling writer
+before separately authorized migration. Depends on user's selected limits and
+deployment authority. Source/tests complete; no live test/install approved.
+Strong reasoning.

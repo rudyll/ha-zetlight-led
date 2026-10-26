@@ -1,5 +1,5 @@
 blueprint:
-  name: 积光整缸 — 阴雨天调暗（灯+泵） / Whole-tank weather dimming
+  name: 整缸联动 — 阴雨天调暗（灯+泵） / Whole-tank weather dimming
   description: >-
     按天气同时把灯的「调光比例」和泵的「潮汐强度」设成对应百分比:晴天满,阴雨逐级调暗,
     天气转好回升。窗边缸很合适。每级百分比可自定义。泵的潮汐强度只在 tide 模式下有效。

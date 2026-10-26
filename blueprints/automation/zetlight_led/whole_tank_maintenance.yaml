@@ -1,5 +1,5 @@
 blueprint:
-  name: 积光整缸 — 维护模式 / Maintenance mode
+  name: 整缸联动 — 维护模式 / Maintenance mode
   description: >-
     换水/清缸时打开一个辅助开关：停泵 + 切断额外设备 + 灯各通道全亮（方便看清）。此模板没有自动倒计时，需手动关闭维护开关；关掉则
     全部恢复：泵开、额外设备上电、灯回到存储日程。请先创建一个 input_boolean（辅助

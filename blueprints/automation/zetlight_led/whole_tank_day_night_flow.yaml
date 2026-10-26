@@ -1,5 +1,5 @@
 blueprint:
-  name: 积光整缸 — 昼夜流态 / Day-night flow
+  name: 整缸联动 — 昼夜流态 / Day-night flow
   description: >-
     日出时把造浪泵设为较强的"白天"强度，日落时设为较柔的"夜间"强度，让水流跟随灯的
     节律。（GTS 泵控制是 fan 实体。另一个选择：直接把泵的 run_mode 设为 tide，

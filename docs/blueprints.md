@@ -42,7 +42,45 @@
 | whole_tank_day_night_flow | 日出强流、日落柔流 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_day_night_flow.yaml) |
 | whole_tank_maintenance | 开关：停泵 + 灯全白（换水） | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_maintenance.yaml) |
 | whole_tank_acclimation | **整缸驯化**:每天同时升灯「调光比例」+泵「潮汐强度」 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_acclimation.yaml) |
-| whole_tank_weather_dimming | **整缸天气调暗**:按天气同时调灯+泵强度 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_weather_dimming.yaml) |
+| whole_tank_weather_dimming | **旧版整缸天气调暗**：灯和泵共用百分比；保留兼容，独立配置请用 v2 | [导入](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Frudyll%2Fha-zetlight-led%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fzetlight_led%2Fwhole_tank_weather_dimming.yaml) |
+
+## 整缸联动：天气 v2（灯光与造浪独立）
+
+整缸模板统一显示为“**整缸联动 — …**”，表示珊瑚灯、造浪泵或已选供电设备的联动，
+不再冠以积光品牌。只控制积光灯的模板保留品牌名。已有自动化的自定义名称不会随之改名。
+
+新模板 [`whole_tank_weather_v2.yaml`](../blueprints/automation/zetlight_led/whole_tank_weather_v2.yaml)
+在源码中提供，**尚未发布、导入或启用到家庭 HA**。旧模板文件和输入含义保留不变。
+
+| 天气 | 灯光调光比例 | 造浪潮汐曲线比例 |
+| --- | ---: | ---: |
+| 晴天／晴夜 | 100% | 80% |
+| 多云 | 90% | 80% |
+| 阴天／雾 | 75% | 80% |
+| 雨／雪 | 60% | 90% |
+| 大风 | 75% | 90% |
+| 暴雨／冰雹 | 50% | 95% |
+| 雷暴 | 50% | 100% |
+
+以上仅为**可编辑的模板初值**，不是 Rudy 的实际设置，也未通过任何缸的实机强度验收。
+灯和泵各有七档输入，互不套用。造浪是既有潮汐曲线的10–100%缩放，并不是每时段的
+泵功率；100%恢复基线，不能超过基线。独立上限约束所有天气的潮汐缩放，按5%向下取整。
+雷暴时的手动间歇大浪由风暴蓝图单独控制，这里的上限不限制其大浪强度。
+
+填写天气、珊瑚灯及调光比例、GTS造浪泵及潮汐强度、运行模式、实际流态，以及喂食开关、
+维护开关、维护灯光恢复标记。恢复标记使用整缸喂食维护v2的同一个标记，不是新建另一套
+维护所有权。只在三个模式／恢复输入都明确关闭时写入；缺测或进行中均不写。
+
+- 灯已开启且处于日程模式时调光，不开灯、不覆盖观赏／手动／喂食；待恢复的日程写入不覆盖。
+- 泵已开启、运行模式为tide且流态明确正常时才调整潮汐曲线，不开泵、不切模式、不覆盖原生喂食或手动风暴。
+- 天气缺测、未识别或exceptional时保持现状。一个目标离线或写入失败，另一目标仍可独立处理；同值不重复写。
+- 天气转晴按所配晴天档恢复；喂食／维护／恢复标记结束、设备重新上线或手动风暴回到tide时，按当前天气重新核对。
+- 无法确认设备状态时不补猜，不启动定时重试；服务失败保留HA自动化跟踪可见性，下次相关状态变化再核对。
+
+迁移前停用占用同一比例实体的旧整缸天气、只灯天气调暗或驯化自动化，保留配置备份，
+再选择基线、上限和各天气档。新版不会自动修改已有自动化，也不会把既有95%手动风暴
+强度当成已确认安全值。风暴蓝图仍是独立所有者，其喂食／维护互锁需另行检查，不能因为
+本模板有保护就认为其他自动化也有同样保护。停用本模板不会自动恢复比例，须先选定恢复值。
 
 ## 整缸蓝图是"开放模板"，别被字段框死
 
