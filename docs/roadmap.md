@@ -319,3 +319,16 @@ remain private/ignored. No monitor, export or new publication.
 Next possible enablement/supervised acceptance is unapproved, strong reasoning.
 F29-E01: startup edge_tts error observed, out of these integration domains;
 diagnosis only a proposal for the kitchen-assistant owner, not a blocker/fix claim.
+
+## F30 — native moon control meaning (2026-10-26)
+
+Source Rudy asks why HA moon-phase switch differs from App. Codex/P1; read-only
+analysis DONE. App4.4.2 decompilation and current integration agree: HA reads moon/
+writes0x19 (Moon Light); App phase is separate0x14 second byte, parsed but not
+exposed as a switch. Naming/semantic claim defect confirmed, no device change.
+3focused protocol tests PASS,25deselected; docs/moon-controls-audit-20261026.md.
+F30-P01 proposed correction: preserve existing UID/command, rename Moonlight and
+add separate Lunar Phase control with unrelated-option preservation/semantic tests.
+F30-P02 proposed audit of unused moonlight blueprint's assumed channel labels.
+Physical M5 night effect and current iOS UI unverified. Next F30-P01 source fix if
+authorized, strong reasoning; no automatic HA install/release/device test.

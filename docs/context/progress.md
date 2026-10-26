@@ -1,3 +1,19 @@
+## Latest: F30 confirms moonlight mislabelled as lunar phase — 2026-10-26
+
+Read-only investigation of Rudy's App/HA discrepancy: current HA Moon phase switch
+reads options.moon/writes0x19, corresponding to App Moon Light. App Lunar Phase
+is options.phase/0x14 second byte, not exposed separately. Android4.4.2 App callbacks
+and builders independently confirm mapping;3focused protocol tests PASS. Label/
+docstring error and missing separate control recorded; no implementation or HA/
+device change. Report docs/moon-controls-audit-20261026.md, static source hashes
+ignored.private/moon-controls-audit-20261026. Actual M5 effect not inferred; current
+iOS UI not inspected. F29 installation remains complete, weather/storm disabled.
+Next proposed F30-P01 backwards-compatible label + distinct lunar control correction,
+strong reasoning, only if authorized. Unused moonlight blueprint channel assumptions
+recorded as F30-P02 proposal, not installed/activated by this task.
+
+---
+
 ## Latest: HA upgraded,14blueprints verified, weather/storm still OFF — 2026-10-26
 
 F29/GTS-R13 DONE for installation/runtime upgrade, verified2026-10-26T13:37:48+08:00.
