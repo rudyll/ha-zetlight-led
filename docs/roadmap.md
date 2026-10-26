@@ -235,3 +235,15 @@ This supersedes earlier unfinished source status, not physical acceptance.
 F28 remains HELD pending explicit formal-release approval; prepared changelog and
 matching release body updated. Next F28 release review (strong reasoning), then
 separately approved installation and supervised acceptance; no automatic activation.
+
+## F27-C01 — user-confirmed channel definition correction (2026-10-26)
+
+Rudy supplies actual installed-lamp channel definitions. Codex/P2, documentation
+correction only: DONE for ignored.private/lighting-review-20261026 context and
+analysis. Prior inferred physical-channel labels superseded with traceable text;
+historical sample values/time/raw read-config unchanged. No wavelength/irradiance
+measurement inferred. No public integration labels, HA/device settings or personal
+handoff export changed; no automatic Xiaochen sync claimed. Verification: JSON
+parse, exact label readback and git-ignore check. Raw config was not written;
+no before/after hash comparison was performed. Next F28 release decision (strong reasoning); new spectrum optimization
+is not authorized or completed by a label confirmation.

@@ -1,3 +1,14 @@
+## Latest: F27-C01 channel interpretation corrected — 2026-10-26
+
+User confirms installed lamp channel meanings. Corrected ignored private lighting
+context/analysis and preserved previous interpretation as superseded, without
+changing raw samples, strengths, schedules or HA. No measured spectrum/wavelength
+inferred and no Xiaochen handoff export/sync performed. Only task/progress receipt
+is tracked; private user facts stay ignored. Next F28 publication decision, strong
+reasoning; software completion and release boundary below remain unchanged.
+
+---
+
 ## Latest: F26-P01 relative storm source/tests complete, release held — 2026-10-26
 
 Rudy approves completing relative storm before formal publication. New additive
