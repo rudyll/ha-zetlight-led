@@ -49,6 +49,12 @@ blueprint:
       selector:
         entity:
           domain: switch
+    skimmer_dosing_pause:
+      name: 蛋分加菌暂停（可选）
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
     return_supply:
       name: 回水泵供电
       default: []
@@ -75,6 +81,7 @@ variables:
   feed_button: !input 'pump_feed_button'
   flow: !input 'pump_flow_mode'
   skimmer: !input 'skimmer_supply'
+  skimmer_pause: !input 'skimmer_dosing_pause'
   return_pump: !input 'return_supply'
 trigger:
 - platform: homeassistant
@@ -223,7 +230,7 @@ action:
           continue_on_error: true
           target:
             entity_id: !input 'return_supply'
-      - if: '{{ skimmer not in [none, '''', []] and not is_state(skimmer, ''on'') }}'
+      - if: '{{ skimmer not in [none, '''', []] and not is_state(skimmer, ''on'') and (skimmer_pause in [none, '''', []] or is_state(skimmer_pause, ''off'')) }}'
         then:
         - wait_template: '{{ return_pump in [none, '''', []] or is_state(return_pump, ''on'') }}'
           timeout: 00:00:10
@@ -235,7 +242,7 @@ action:
         - delay:
             seconds: !input 'skimmer_settle_seconds'
         - if: '{{ not is_state(maintenance, ''off'') or not is_state(feeding, ''off'') or (return_pump not in [none,
-            '''', []] and not is_state(return_pump, ''on'')) }}'
+            '''', []] and not is_state(return_pump, ''on'')) or (skimmer_pause not in [none, '''', []] and not is_state(skimmer_pause, ''off'')) }}'
           then:
           - stop: 等待期间模式或回水状态改变；不启动蛋分。
             error: true
