@@ -221,7 +221,9 @@ blueprint:
           max: 200
           step: 5
           unit_of_measurement: '%'
-mode: restart
+mode: queued
+max: 2
+max_exceeded: silent
 variables:
   weather_entity: !input 'weather_entity'
   light_entity: !input 'light_entity'
@@ -269,13 +271,19 @@ trigger:
 - platform: state
   entity_id:
   - !input 'weather_entity'
-  - !input 'light_entity'
   - !input 'pump_fan'
   - !input 'pump_run_mode'
   - !input 'pump_flow_mode'
   - !input 'feeding_switch'
   - !input 'maintenance_toggle'
   - !input 'maintenance_restore_marker'
+- platform: state
+  entity_id: !input 'light_entity'
+  to: 'on'
+- platform: state
+  entity_id: !input 'light_entity'
+  attribute: active_mode
+  to: 'schedule'
 - platform: homeassistant
   event: start
 - platform: state
